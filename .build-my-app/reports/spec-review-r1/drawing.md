@@ -1,0 +1,5 @@
+# Spec review round 1 — drawing (F-003..F-006)
+Blockers: (1) RULE-07 white-on-orange/green contrast fails → black on yellow/orange/green/white, white on red/blue/purple/black; AC for orange. (2) RULE-19 Esc vs F-005 R3 → Esc ends text edit keeping text. (3) RULE-19 key ownership while editing text. (4) RULE-04 step size meaning → diameter 2× text size; AC5 64 px on 1000×800 M.
+Major: (5) RULE-08 outline undefined → colour pairing RULE-07, width max(1, 0.08×size). (6) text-tool click behaviour [owner]. (7) text anchor top-left, no wrapping. (8) RULE-11 text undo steps. (9) CMP-StylePanel undo vs RULE-11. (10) Enter placement collisions; keyboard placement for text/step/pen/highlight. (11) RULE-06 highlight + square side = longer side; F-003 AC6 200×200.
+Minor: (12) F-004 AC1 subjective smoothness. (13) arrowhead ratio 4×/3×. (14) step pill for 3+ digits. (15) duplicated step gets next number. (16) paste past 2,000 truncated. (17) tokens repeat opacities. (18) en-US "Colour"→"Color".
+Owner decisions: text click behaviour; step badge factor; outline pairing.

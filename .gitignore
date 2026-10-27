@@ -1,0 +1,6 @@
+__pycache__/
+.DS_Store
+.build-my-app/tmp/
+.env
+.env.*
+!.env.example

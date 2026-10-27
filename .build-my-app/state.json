@@ -1,0 +1,511 @@
+{
+  "version": 2,
+  "created": "2026-10-27T04:27:25+00:00",
+  "autonomy": "balanced",
+  "profile": {
+    "goal": "personal/portfolio",
+    "experience": "experienced-developer",
+    "budget": "none-reuse-tarokit",
+    "notes": "Sibling of json-formatter/text-case-converter/data-analysts-file-viewer in TaroKit portal (iframe-embedded); match their quality bar and conventions. All data stays local, no upload."
+  },
+  "stack": null,
+  "design_tool": null,
+  "phases": {
+    "setup": {
+      "title": "0 Setup & discovery",
+      "status": "done",
+      "step": "setup: G0 checks",
+      "gate": {
+        "status": "passed",
+        "at": "2026-10-27T04:29:18+00:00",
+        "note": "Greenfield TaroKit sibling; profile reused from siblings; balanced autonomy"
+      }
+    },
+    "product-spec": {
+      "title": "1 Product & spec",
+      "status": "done",
+      "step": "1.3 spec review round 2",
+      "gate": {
+        "status": "passed",
+        "at": "2026-10-27T08:52:47+00:00",
+        "note": "18 features ready; 2 review rounds; D-001..D-010; UI tokens→design, reference blur→architecture"
+      }
+    },
+    "design": {
+      "title": "2 Design",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "architecture": {
+      "title": "3 Architecture & spikes",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "build": {
+      "title": "4 Implementation",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "qa": {
+      "title": "5 QA & hardening",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "release": {
+      "title": "6 Release candidate",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "deploy": {
+      "title": "7 Deploy",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    },
+    "iterate": {
+      "title": "8 Iterate",
+      "status": "pending",
+      "step": null,
+      "gate": {
+        "status": "pending",
+        "at": null,
+        "note": null
+      }
+    }
+  },
+  "decisions": [
+    {
+      "id": "D-001",
+      "question": "Milestone split",
+      "options": [
+        "Middle cut",
+        "Lean cut",
+        "Everything in M-1"
+      ],
+      "recommendation": "Middle cut",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Everything in M-1 (user chose against recommendation; strategist warned of size risk)",
+      "asked": "2026-10-27T04:36:39+00:00",
+      "answered": "2026-10-27T04:36:45+00:00"
+    },
+    {
+      "id": "D-002",
+      "question": "Crop behaviour",
+      "options": [
+        "Non-destructive",
+        "Destructive"
+      ],
+      "recommendation": "Non-destructive",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Non-destructive",
+      "asked": "2026-10-27T04:36:40+00:00",
+      "answered": "2026-10-27T04:36:45+00:00"
+    },
+    {
+      "id": "D-003",
+      "question": "Local-only proof",
+      "options": [
+        "Badge + strict CSP",
+        "Strict CSP only"
+      ],
+      "recommendation": "Badge + strict CSP",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Badge + strict CSP",
+      "asked": "2026-10-27T04:36:40+00:00",
+      "answered": "2026-10-27T04:36:45+00:00"
+    },
+    {
+      "id": "D-004",
+      "question": "Warn on leaving with unexported work",
+      "options": [
+        "Warn",
+        "Don't warn"
+      ],
+      "recommendation": "Warn",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Warn",
+      "asked": "2026-10-27T04:36:40+00:00",
+      "answered": "2026-10-27T04:36:45+00:00"
+    },
+    {
+      "id": "D-005",
+      "question": "Approve vision brief",
+      "options": [
+        "Approve",
+        "Change"
+      ],
+      "recommendation": "Approve",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Approved",
+      "asked": "2026-10-27T04:38:32+00:00",
+      "answered": "2026-10-27T04:38:32+00:00"
+    },
+    {
+      "id": "D-006",
+      "question": "Portal frame grants (downloads, leave-page dialog, focus after ready)",
+      "options": [
+        "Request all three",
+        "Downloads+dialog only",
+        "No portal changes"
+      ],
+      "recommendation": "Request all three",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Request all three; portal change request written; fallbacks: click-then-paste hint, standalone",
+      "asked": "2026-10-27T05:34:09+00:00",
+      "answered": "2026-10-27T05:34:10+00:00"
+    },
+    {
+      "id": "D-007",
+      "question": "Redaction count placement",
+      "options": [
+        "Live count + after export",
+        "After export only"
+      ],
+      "recommendation": "Live count + after export",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Live count next to Copy/Download + after-export confirmation; counts redactions overlapping the frame",
+      "asked": "2026-10-27T05:34:09+00:00",
+      "answered": "2026-10-27T05:34:10+00:00"
+    },
+    {
+      "id": "D-008",
+      "question": "WCAG 2.5.7 non-drag alternative",
+      "options": [
+        "X/Y/W/H fields",
+        "Click to pick up/drop",
+        "Keyboard only"
+      ],
+      "recommendation": "X/Y/W/H fields",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "X/Y/W/H (X1/Y1/X2/Y2 for lines) fields in style panel for single selection and crop frame",
+      "asked": "2026-10-27T05:34:09+00:00",
+      "answered": "2026-10-27T05:34:10+00:00"
+    },
+    {
+      "id": "D-009",
+      "question": "Product name and repository",
+      "options": [
+        "Image Annotator",
+        "Screenshot Annotator"
+      ],
+      "recommendation": "Image Annotator",
+      "kind": "product",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Image Annotator; https://github.com/thanh-taro/image-annotator",
+      "asked": "2026-10-27T05:34:09+00:00",
+      "answered": "2026-10-27T05:34:10+00:00"
+    },
+    {
+      "id": "D-010",
+      "question": "Minor spec defaults from review round 1",
+      "options": [
+        "Apply reviewer recommendations"
+      ],
+      "recommendation": "Apply reviewer recommendations",
+      "kind": "design",
+      "phase": "product-spec",
+      "status": "answered",
+      "answer": "Decided by orchestrator (balanced, non-product): text click ends edit/edits existing, tool stays; step diameter 2x text size; outline pairing per RULE-07; disable padding over limit; undo-back still unexported; export 1.5 s for 14.7 MP; zoom keys Shift+1/Shift+0; [ ] for reorder; keyboard multi-select limited to select all",
+      "asked": "2026-10-27T05:34:10+00:00",
+      "answered": "2026-10-27T05:34:10+00:00"
+    }
+  ],
+  "loops": {
+    "spec-review": {
+      "round": 2,
+      "max": 3,
+      "active": false,
+      "started": "2026-10-27T04:46:14+00:00",
+      "outcome": "converged after 2 rounds; A6 deferred to design, N5 to architecture",
+      "ended": "2026-10-27T08:50:37+00:00"
+    }
+  },
+  "log": [
+    {
+      "at": "2026-10-27T04:27:25+00:00",
+      "event": "initialized (autonomy=balanced)"
+    },
+    {
+      "at": "2026-10-27T04:27:25+00:00",
+      "event": "phase setup -> in_progress"
+    },
+    {
+      "at": "2026-10-27T04:28:10+00:00",
+      "event": "set profile"
+    },
+    {
+      "at": "2026-10-27T04:28:10+00:00",
+      "event": "set autonomy"
+    },
+    {
+      "at": "2026-10-27T04:28:10+00:00",
+      "event": "set environment"
+    },
+    {
+      "at": "2026-10-27T04:28:10+00:00",
+      "event": "set idea"
+    },
+    {
+      "at": "2026-10-27T04:28:11+00:00",
+      "event": "setup step: setup: G0 checks"
+    },
+    {
+      "at": "2026-10-27T04:28:20+00:00",
+      "event": "phase setup -> gate"
+    },
+    {
+      "at": "2026-10-27T04:29:18+00:00",
+      "event": "gate setup passed: Greenfield TaroKit sibling; profile reused from siblings; balanced autonomy"
+    },
+    {
+      "at": "2026-10-27T04:29:21+00:00",
+      "event": "phase product-spec -> in_progress"
+    },
+    {
+      "at": "2026-10-27T04:29:36+00:00",
+      "event": "product-spec step: 1.1 brainstorm: problem + market research"
+    },
+    {
+      "at": "2026-10-27T04:31:34+00:00",
+      "event": "Market research saved; problem round: all 4 use cases, clipboard+files equal, one-shot sessions"
+    },
+    {
+      "at": "2026-10-27T04:31:35+00:00",
+      "event": "product-spec step: 1.1 brainstorm: positioning + scope"
+    },
+    {
+      "at": "2026-10-27T04:34:39+00:00",
+      "event": "set spike_candidates"
+    },
+    {
+      "at": "2026-10-27T04:36:39+00:00",
+      "event": "decision D-001 opened: Milestone split"
+    },
+    {
+      "at": "2026-10-27T04:36:40+00:00",
+      "event": "decision D-002 opened: Crop behaviour"
+    },
+    {
+      "at": "2026-10-27T04:36:40+00:00",
+      "event": "decision D-003 opened: Local-only proof"
+    },
+    {
+      "at": "2026-10-27T04:36:40+00:00",
+      "event": "decision D-004 opened: Warn on leaving with unexported work"
+    },
+    {
+      "at": "2026-10-27T04:36:45+00:00",
+      "event": "decision D-001 answered: Everything in M-1 (user chose against recommendation; strategist warned of size risk)"
+    },
+    {
+      "at": "2026-10-27T04:36:45+00:00",
+      "event": "decision D-002 answered: Non-destructive"
+    },
+    {
+      "at": "2026-10-27T04:36:45+00:00",
+      "event": "decision D-003 answered: Badge + strict CSP"
+    },
+    {
+      "at": "2026-10-27T04:36:45+00:00",
+      "event": "decision D-004 answered: Warn"
+    },
+    {
+      "at": "2026-10-27T04:36:45+00:00",
+      "event": "product-spec step: 1.1 vision brief: awaiting approval"
+    },
+    {
+      "at": "2026-10-27T04:38:32+00:00",
+      "event": "decision D-005 opened: Approve vision brief"
+    },
+    {
+      "at": "2026-10-27T04:38:32+00:00",
+      "event": "decision D-005 answered: Approved"
+    },
+    {
+      "at": "2026-10-27T04:38:32+00:00",
+      "event": "product-spec step: 1.2 idea → spec"
+    },
+    {
+      "at": "2026-10-27T04:38:32+00:00",
+      "event": "Vision brief approved"
+    },
+    {
+      "at": "2026-10-27T04:46:14+00:00",
+      "event": "Phase-1 specs written: 18 features, 19 rules, 5 INV, 9 NFR, lint clean"
+    },
+    {
+      "at": "2026-10-27T04:46:14+00:00",
+      "event": "product-spec step: 1.3 spec review loop round 1"
+    },
+    {
+      "at": "2026-10-27T04:46:14+00:00",
+      "event": "loop spec-review started (max 3)"
+    },
+    {
+      "at": "2026-10-27T05:34:09+00:00",
+      "event": "decision D-006 opened: Portal frame grants (downloads, leave-page dialog, focus after ready)"
+    },
+    {
+      "at": "2026-10-27T05:34:09+00:00",
+      "event": "decision D-007 opened: Redaction count placement"
+    },
+    {
+      "at": "2026-10-27T05:34:09+00:00",
+      "event": "decision D-008 opened: WCAG 2.5.7 non-drag alternative"
+    },
+    {
+      "at": "2026-10-27T05:34:09+00:00",
+      "event": "decision D-009 opened: Product name and repository"
+    },
+    {
+      "at": "2026-10-27T05:34:10+00:00",
+      "event": "decision D-010 opened: Minor spec defaults from review round 1"
+    },
+    {
+      "at": "2026-10-27T05:34:10+00:00",
+      "event": "decision D-006 answered: Request all three; portal change request written; fallbacks: click-then-paste hint, standalone"
+    },
+    {
+      "at": "2026-10-27T05:34:10+00:00",
+      "event": "decision D-007 answered: Live count next to Copy/Download + after-export confirmation; counts redactions overlapping the frame"
+    },
+    {
+      "at": "2026-10-27T05:34:10+00:00",
+      "event": "decision D-008 answered: X/Y/W/H (X1/Y1/X2/Y2 for lines) fields in style panel for single selection and crop frame"
+    },
+    {
+      "at": "2026-10-27T05:34:10+00:00",
+      "event": "decision D-009 answered: Image Annotator; https://github.com/thanh-taro/image-annotator"
+    },
+    {
+      "at": "2026-10-27T05:34:10+00:00",
+      "event": "decision D-010 answered: Decided by orchestrator (balanced, non-product): text click ends edit/edits existing, tool stays; step diameter 2x text size; outline pairing per RULE-07; disable padding over limit; undo-back still unexported; export 1.5 s for 14.7 MP; zoom keys Shift+1/Shift+0; [ ] for reorder; keyboard multi-select limited to select all"
+    },
+    {
+      "at": "2026-10-27T05:34:10+00:00",
+      "event": "product-spec step: 1.3 spec review round 1: applying fixes"
+    },
+    {
+      "at": "2026-10-27T08:42:04+00:00",
+      "event": "loop spec-review round 2"
+    },
+    {
+      "at": "2026-10-27T08:42:04+00:00",
+      "event": "product-spec step: 1.3 spec review round 2"
+    },
+    {
+      "at": "2026-10-27T08:42:04+00:00",
+      "event": "Round 1: 5 blockers + majors fixed; D-006..D-010; lint 0/0"
+    },
+    {
+      "at": "2026-10-27T08:50:37+00:00",
+      "event": "loop spec-review ended: converged after 2 rounds; A6 deferred to design, N5 to architecture"
+    },
+    {
+      "at": "2026-10-27T08:50:38+00:00",
+      "event": "Spec review converged in 2 rounds"
+    },
+    {
+      "at": "2026-10-27T08:50:38+00:00",
+      "event": "phase product-spec -> gate"
+    },
+    {
+      "at": "2026-10-27T08:52:47+00:00",
+      "event": "gate product-spec passed: 18 features ready; 2 review rounds; D-001..D-010; UI tokens→design, reference blur→architecture"
+    }
+  ],
+  "updated": "2026-10-27T08:52:47+00:00",
+  "environment": {
+    "git": "2.54.0",
+    "node": "24.19.0",
+    "pnpm": "11.25.0",
+    "python": "3.14.7",
+    "reference_project": "../json-formatter",
+    "stack_hint": "Preact+Vite+TypeScript+vitest+Playwright+CloudflareWorkers (confirm in phase 3)",
+    "cli": [
+      "gh",
+      "postman"
+    ],
+    "mcp": [
+      "claude-in-chrome",
+      "claude-docs"
+    ]
+  },
+  "idea": "Image annotator: annotate images/screenshots with circles, highlights, blur, etc. All data stays local, no upload.",
+  "spike_candidates": [
+    {
+      "id": "SP-iframe-clipboard",
+      "q": "Paste event + ClipboardItem PNG write + download in portal iframe on Chromium/Gecko/WebKit"
+    },
+    {
+      "id": "SP-engine",
+      "q": "Hand-rolled canvas object engine vs Konva: hit-test/move/resize/undo for 4 shapes in 2 days, bundle size"
+    },
+    {
+      "id": "SP-large-image",
+      "q": "5K/6K screenshots, iOS 16.7MP cap, DPR: separate display vs native export canvas?"
+    },
+    {
+      "id": "SP-text",
+      "q": "Textarea overlay vs canvas-rendered text fidelity (<2px drift)"
+    },
+    {
+      "id": "SP-csp",
+      "q": "Strict CSP connect-src none + frame-ancestors on Cloudflare with embedding"
+    },
+    {
+      "id": "SP-exif",
+      "q": "createImageBitmap imageOrientation from-image on rotated photos"
+    },
+    {
+      "id": "SP-blur",
+      "q": "Blur/pixelate performance and Safari ctx.filter support (M-3+)"
+    }
+  ]
+}

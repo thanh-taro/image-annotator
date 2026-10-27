@@ -1,0 +1,5 @@
+# Spec review round 1 — cross-cutting
+Blocker B1: same as redact B1 (blur over solid reveals) → RULE-10/INV-02 rewrite + AC.
+Major: M1 RULE-18 vs F-014 [O2 keep any step counts]. M2 redaction kind into ENT-Style. M3 text box geometry derived, no resize handles. M4 RULE-19 missing ?, Enter, Tab, Alt+drag, Ctrl+V; line end-point keyboard. M5 downloaded_redactions + plural forms + when used. M6 missing copy: load.loading, error.export_failed, shortcuts.history, shortcut action labels, a11y canvas/annotation names/announcement, app title. M7 redaction count before export per brief [O1].
+Minor: domain→feature/copy refs (dependency direction); highlight width wording; RULE-02 single fixed limit; ConfirmDialog variant mapping + titles + "changes"; Notice 4 s; SCR loading threshold, style panel canvas variant; tokens opacities duplicate; unsupported_format {formats}; vi "Mờ" → "Bán trong suốt"; glossary secure; session cleared; NFR-07 tablets; NFR-03 1.5 s vs brief [O3].
+Owner: O1 count before export; O2 undo-back warns; O3 export 1.5 s; O4 name + repo URL; O5 annotations over solid allowed, effects never reveal.

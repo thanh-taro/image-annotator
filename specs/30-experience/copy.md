@@ -1,0 +1,191 @@
+# Copy
+
+Tone: short, plain, specific; say what happened and what to do. Placeholders in `{braces}`.
+One text column per supported language (RULE-17, F-018); every language has the same
+placeholders. Stays as written in every language: the product name, "PNG", "GitHub".
+Numbers in placeholders are formatted for the active language. Strings with a count give one
+form per plural category (en-US: `one` / `other`; vi-VN: one form).
+
+## Tools
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-tool.select** | Select | Chọn | |
+| **COPY-tool.rectangle** | Rectangle | Hình chữ nhật | |
+| **COPY-tool.ellipse** | Ellipse | Hình elip | |
+| **COPY-tool.line** | Line | Đường thẳng | |
+| **COPY-tool.arrow** | Arrow | Mũi tên | |
+| **COPY-tool.pen** | Pen | Bút vẽ | |
+| **COPY-tool.highlight** | Highlight | Tô sáng | |
+| **COPY-tool.text** | Text | Chữ | |
+| **COPY-tool.step** | Step | Bước | Numbered badge |
+| **COPY-tool.redact** | Redact | Che thông tin | |
+| **COPY-tool.crop** | Crop | Cắt | |
+| **COPY-tool.shortcut_hint** | {tool} ({key}) | {tool} ({key}) | Tooltip; {key} per RULE-19 |
+
+## Actions
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-action.open** | Open image | Mở ảnh | |
+| **COPY-action.copy** | Copy | Sao chép | Copies the result image |
+| **COPY-action.download** | Download | Tải xuống | |
+| **COPY-action.undo** | Undo | Hoàn tác | |
+| **COPY-action.redo** | Redo | Làm lại | |
+| **COPY-action.delete** | Delete | Xoá | |
+| **COPY-action.duplicate** | Duplicate | Nhân bản | |
+| **COPY-action.bring_forward** | Bring forward | Đưa lên trên | |
+| **COPY-action.send_backward** | Send backward | Đưa xuống dưới | |
+| **COPY-action.crop_reset** | Reset crop | Bỏ cắt | |
+| **COPY-action.zoom_in** | Zoom in | Phóng to | |
+| **COPY-action.zoom_out** | Zoom out | Thu nhỏ | |
+| **COPY-action.zoom_fit** | Fit to view | Vừa khung nhìn | |
+| **COPY-action.zoom_actual** | Actual size | Kích thước thật | 100 % |
+| **COPY-action.clear** | Start over | Bắt đầu lại | Removes the image |
+| **COPY-action.shortcuts** | Keyboard shortcuts | Phím tắt | |
+| **COPY-action.more** | More actions | Thao tác khác | Overflow menu |
+| **COPY-action.cancel** | Cancel | Huỷ | |
+| **COPY-action.replace** | Replace | Thay ảnh | Confirms replacing the image |
+| **COPY-action.close** | Close | Đóng | |
+
+## Style & canvas
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-style.color** | Color | Màu | |
+| **COPY-style.size** | Size | Cỡ | Stroke or text size |
+| **COPY-style.size_s** | Small | Nhỏ | |
+| **COPY-style.size_m** | Medium | Vừa | |
+| **COPY-style.size_l** | Large | Lớn | |
+| **COPY-style.fill** | Fill | Tô nền | |
+| **COPY-style.fill_none** | None | Không | |
+| **COPY-style.fill_solid** | Solid | Đặc | |
+| **COPY-style.fill_translucent** | Translucent | Bán trong suốt | |
+| **COPY-style.strength** | Strength | Độ mạnh | Blur and pixelate |
+| **COPY-color.red** | Red | Đỏ | |
+| **COPY-color.orange** | Orange | Cam | |
+| **COPY-color.yellow** | Yellow | Vàng | |
+| **COPY-color.green** | Green | Xanh lá | |
+| **COPY-color.blue** | Blue | Xanh dương | |
+| **COPY-color.purple** | Purple | Tím | |
+| **COPY-color.black** | Black | Đen | |
+| **COPY-color.white** | White | Trắng | |
+| **COPY-canvas.padding** | Padding | Khoảng đệm | |
+| **COPY-canvas.padding_none** | None | Không | |
+| **COPY-canvas.background** | Background | Nền | |
+| **COPY-canvas.transparent** | Transparent | Trong suốt | |
+| **COPY-crop.size** | {width} × {height} px | {width} × {height} px | |
+
+## Redaction
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-redact.kind** | Redaction type | Kiểu che | |
+| **COPY-redact.solid** | Solid (secure) | Khối đặc (an toàn) | |
+| **COPY-redact.blur** | Blur | Làm mờ | |
+| **COPY-redact.pixelate** | Pixelate | Làm vỡ điểm ảnh | |
+| **COPY-redact.not_secure** | Not secure: blurred or pixelated text can sometimes be recovered. | Không an toàn: chữ bị làm mờ hoặc vỡ điểm ảnh đôi khi có thể khôi phục được. | |
+| **COPY-redact.use_solid** | Use solid | Dùng khối đặc | Switches the selection, or else the tool's current kind, to solid |
+
+## Loading
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-load.empty_title** | Paste, drop or open an image | Dán, thả hoặc mở một ảnh | |
+| **COPY-load.empty_hint** | Press {paste_key} to paste a screenshot, drop an image file here, or choose Open image. | Nhấn {paste_key} để dán ảnh chụp màn hình, thả tệp ảnh vào đây, hoặc chọn Mở ảnh. | {paste_key}: Ctrl+V or ⌘V |
+| **COPY-load.drop_here** | Drop to open | Thả để mở | |
+| **COPY-load.click_to_paste** | Click here, then press {paste_key} to paste. | Nhấp vào đây, rồi nhấn {paste_key} để dán. | Shown when embedded and the tool has no focus |
+| **COPY-load.loading** | Opening image… | Đang mở ảnh… | |
+| **COPY-load.no_image_in_clipboard** | The clipboard has no image. | Bộ nhớ tạm không có ảnh. | |
+| **COPY-load.first_only** | Opened the first image only. | Chỉ mở ảnh đầu tiên. | |
+| **COPY-load.scale_down_title** | This image is very large | Ảnh này rất lớn | |
+| **COPY-load.scale_down** | Open it scaled down to {width} × {height} px? The original file is not changed. | Mở ảnh thu nhỏ còn {width} × {height} px? Tệp gốc không bị thay đổi. | |
+| **COPY-load.scale_down_action** | Open scaled down | Mở bản thu nhỏ | |
+
+## Confirmations
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-confirm.replace_title** | Replace this image? | Thay ảnh này? | |
+| **COPY-confirm.replace** | Your changes haven't been copied or downloaded. They will be lost. | Các thay đổi của bạn chưa được sao chép hoặc tải xuống và sẽ bị mất. | |
+| **COPY-confirm.clear_title** | Start over? | Bắt đầu lại? | |
+| **COPY-confirm.clear** | Your changes haven't been copied or downloaded. They will be lost, and this can't be undone. | Các thay đổi của bạn chưa được sao chép hoặc tải xuống và sẽ bị mất. Không thể hoàn tác. | |
+
+## Export
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-export.preparing** | Preparing image… | Đang chuẩn bị ảnh… | |
+| **COPY-export.copied** | Copied to clipboard. | Đã sao chép vào bộ nhớ tạm. | Used when the redaction count is 0 |
+| **COPY-export.copied_redactions** | one: Copied, with {count} redaction applied. · other: Copied, with {count} redactions applied. | Đã sao chép, đã áp dụng {count} vùng che. | Used when the count (RULE-20) is ≥ 1 |
+| **COPY-export.downloaded** | Downloaded {file_name}. | Đã tải xuống {file_name}. | Used when the redaction count is 0 |
+| **COPY-export.downloaded_redactions** | one: Downloaded {file_name}, with {count} redaction applied. · other: Downloaded {file_name}, with {count} redactions applied. | Đã tải xuống {file_name}, đã áp dụng {count} vùng che. | Used when the count is ≥ 1 |
+| **COPY-export.redaction_count** | one: {count} redaction · other: {count} redactions | {count} vùng che | Live count next to the export actions; hidden at 0 |
+
+## Errors
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-error.unsupported_format** | This file type isn't supported. Use {formats}. | Không hỗ trợ loại tệp này. Hãy dùng {formats}. | {formats}: the RULE-01 formats this browser can decode |
+| **COPY-error.export_failed** | The image couldn't be exported. Try again, or crop it smaller. | Không xuất được ảnh. Hãy thử lại hoặc cắt nhỏ hơn. | |
+| **COPY-error.decode_failed** | This image couldn't be opened. The file may be damaged. | Không mở được ảnh này. Tệp có thể bị hỏng. | |
+| **COPY-error.file_too_large** | This file is larger than {limit}. | Tệp này lớn hơn {limit}. | {limit}: 50 MB |
+| **COPY-error.clipboard** | The browser blocked copying the image. Download it instead. | Trình duyệt đã chặn sao chép ảnh. Hãy tải xuống thay thế. | |
+
+## Text
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-text.placeholder** | Type here | Nhập chữ | |
+
+## Position & size
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-geometry.title** | Position and size | Vị trí và kích thước | |
+| **COPY-geometry.x** | X | X | |
+| **COPY-geometry.y** | Y | Y | |
+| **COPY-geometry.width** | Width | Rộng | |
+| **COPY-geometry.height** | Height | Cao | |
+| **COPY-geometry.start** | Start | Điểm đầu | Line/arrow tail |
+| **COPY-geometry.end** | End | Điểm cuối | Line/arrow head |
+
+## App & accessibility
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-app.title** | Image Annotator | Image Annotator | Product name and page title; same in every language |
+| **COPY-a11y.canvas** | Image canvas | Vùng ảnh | |
+| **COPY-a11y.annotation** | {kind} at {x}, {y} | {kind} tại {x}, {y} | {kind}: the tool name, or the redaction kind name |
+| **COPY-a11y.tool_active** | {tool} tool | Công cụ {tool} | |
+| **COPY-a11y.placed** | {kind} added | Đã thêm {kind} | |
+| **COPY-a11y.undone** | Undone | Đã hoàn tác | |
+| **COPY-a11y.redone** | Redone | Đã làm lại | |
+| **COPY-a11y.deleted_count** | one: {count} annotation deleted · other: {count} annotations deleted | Đã xoá {count} chú thích | |
+| **COPY-a11y.duplicated_count** | one: {count} annotation duplicated · other: {count} annotations duplicated | Đã nhân bản {count} chú thích | |
+| **COPY-a11y.selected_count** | one: {count} annotation selected · other: {count} annotations selected | Đã chọn {count} chú thích | |
+
+## Status & privacy
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-status.zoom** | {percent} % | {percent} % | |
+| **COPY-status.image_size** | {width} × {height} px | {width} × {height} px | |
+| **COPY-privacy.badge** | Runs locally, nothing uploaded | Chạy trên máy, không tải lên | |
+| **COPY-privacy.badge_label** | Privacy: runs locally, nothing uploaded | Quyền riêng tư: chạy trên máy, không tải lên | Icon-only accessible name |
+| **COPY-privacy.details** | Your images are opened and edited only in this browser. Nothing is uploaded, stored or tracked, and the tool blocks all network requests after it loads. Exported images contain no metadata from the original. Blur and pixelate can sometimes be reversed; use solid redaction for secrets. | Ảnh của bạn chỉ được mở và chỉnh sửa trong trình duyệt này. Không có gì được tải lên, lưu lại hay theo dõi, và công cụ chặn mọi yêu cầu mạng sau khi tải xong. Ảnh xuất ra không chứa siêu dữ liệu của ảnh gốc. Làm mờ và vỡ điểm ảnh đôi khi có thể đảo ngược; hãy dùng khối đặc cho thông tin bí mật. | |
+| **COPY-privacy.source_label** | Source code on GitHub | Mã nguồn trên GitHub | |
+| **COPY-privacy.notices** | Open-source notices | Thông báo mã nguồn mở | |
+
+## Shortcuts help
+| ID | en-US | vi-VN | Notes |
+|---|---|---|---|
+| **COPY-shortcuts.title** | Keyboard shortcuts | Phím tắt | |
+| **COPY-shortcuts.tools** | Tools | Công cụ | |
+| **COPY-shortcuts.edit** | Edit | Chỉnh sửa | |
+| **COPY-shortcuts.view** | View | Xem | |
+| **COPY-shortcuts.export** | Export | Xuất ảnh | |
+| **COPY-shortcuts.history** | History | Lịch sử | |
+| **COPY-shortcuts.canvas** | Canvas | Vùng ảnh | |
+| **COPY-shortcuts.load** | Open | Mở | |
+| **COPY-shortcuts.help** | Help | Trợ giúp | |
+| **COPY-shortcuts.pointer** | Pointer | Con trỏ | |
+| **COPY-shortcut.place** | Place an annotation | Đặt chú thích | |
+| **COPY-shortcut.next** | Next / previous annotation | Chú thích tiếp theo / trước | |
+| **COPY-shortcut.select_all** | Select all | Chọn tất cả | |
+| **COPY-shortcut.cancel** | Cancel, finish editing, deselect | Huỷ, xong chỉnh sửa, bỏ chọn | |
+| **COPY-shortcut.edit_text** | Edit selected text | Sửa chữ đang chọn | |
+| **COPY-shortcut.zoom_pointer** | Zoom at pointer | Thu phóng tại con trỏ | |
+| **COPY-shortcut.move** | Move selection | Di chuyển vùng chọn | |
+| **COPY-shortcut.resize** | Resize selection | Đổi kích thước vùng chọn | |
+| **COPY-shortcut.pan** | Pan the view | Kéo khung nhìn | |
+| **COPY-shortcut.move_while_drawing** | Move while drawing | Di chuyển khi đang vẽ | |
+| **COPY-shortcut.paste** | Paste an image | Dán ảnh | |
