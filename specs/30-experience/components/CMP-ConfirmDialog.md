@@ -1,7 +1,7 @@
 ---
 id: CMP-ConfirmDialog
 title: Confirm dialog
-status: draft
+status: ready
 tokens: []
 ---
 

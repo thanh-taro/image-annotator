@@ -1,7 +1,7 @@
 ---
 id: CMP-TextEditor
 title: Text editor
-status: draft
+status: ready
 tokens: []
 ---
 

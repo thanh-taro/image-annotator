@@ -1,7 +1,7 @@
 ---
 id: CMP-Toolbar
 title: Toolbar
-status: draft
+status: ready
 tokens: []
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: CMP-Canvas
 title: Canvas
-status: draft
+status: ready
 tokens: []
 ---
 

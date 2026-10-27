@@ -1,7 +1,7 @@
 ---
 id: FLOW-01
 title: Bug report with redaction
-status: draft
+status: ready
 features: [F-001, F-003, F-005, F-007, F-012]
 screens: [SCR-Annotator]
 ---

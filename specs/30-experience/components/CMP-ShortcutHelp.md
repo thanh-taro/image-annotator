@@ -1,7 +1,7 @@
 ---
 id: CMP-ShortcutHelp
 title: Shortcut help
-status: draft
+status: ready
 tokens: []
 ---
 

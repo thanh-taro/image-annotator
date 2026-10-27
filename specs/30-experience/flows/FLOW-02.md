@@ -1,7 +1,7 @@
 ---
 id: FLOW-02
 title: How-to steps for docs
-status: draft
+status: ready
 features: [F-001, F-006, F-004, F-010, F-011, F-012]
 screens: [SCR-Annotator]
 ---

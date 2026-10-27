@@ -1,7 +1,7 @@
 ---
 id: SCR-Annotator
 title: Annotator
-status: draft
+status: ready
 features: [F-001, F-002, F-003, F-004, F-005, F-006, F-007, F-008, F-009, F-010, F-011, F-012, F-013, F-014, F-015, F-016, F-017, F-018]
 components: [CMP-Toolbar, CMP-StylePanel, CMP-Canvas, CMP-TextEditor, CMP-EmptyState, CMP-DropOverlay, CMP-StatusBar, CMP-Notice, CMP-ConfirmDialog, CMP-ShortcutHelp]
 ---

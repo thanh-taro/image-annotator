@@ -1,7 +1,7 @@
 ---
 id: F-002
 title: Zoom and pan the view
-status: draft
+status: ready
 milestone: M-1
 priority: P0
 personas: [PER-01]

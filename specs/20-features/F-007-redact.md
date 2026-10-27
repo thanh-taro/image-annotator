@@ -1,7 +1,7 @@
 ---
 id: F-007
 title: Redact part of the image
-status: draft
+status: ready
 milestone: M-1
 priority: P0
 personas: [PER-01]

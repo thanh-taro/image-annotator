@@ -1,7 +1,7 @@
 ---
 id: CMP-StatusBar
 title: Status bar
-status: draft
+status: ready
 tokens: []
 ---
 

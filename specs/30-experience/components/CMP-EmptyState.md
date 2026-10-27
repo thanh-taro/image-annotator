@@ -1,7 +1,7 @@
 ---
 id: CMP-EmptyState
 title: Empty state
-status: draft
+status: ready
 tokens: []
 ---
 

@@ -1,7 +1,7 @@
 ---
 id: F-012
 title: Copy and download the result
-status: draft
+status: ready
 milestone: M-1
 priority: P0
 personas: [PER-01]

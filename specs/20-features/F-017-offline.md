@@ -1,7 +1,7 @@
 ---
 id: F-017
 title: Work offline
-status: draft
+status: ready
 milestone: M-1
 priority: P2
 personas: [PER-01, PER-02]

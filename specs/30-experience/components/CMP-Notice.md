@@ -1,7 +1,7 @@
 ---
 id: CMP-Notice
 title: Notice
-status: draft
+status: ready
 tokens: []
 ---
 

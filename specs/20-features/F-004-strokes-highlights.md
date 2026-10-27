@@ -1,7 +1,7 @@
 ---
 id: F-004
 title: Draw strokes and highlights
-status: draft
+status: ready
 milestone: M-1
 priority: P0
 personas: [PER-01]

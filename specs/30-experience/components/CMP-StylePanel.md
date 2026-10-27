@@ -1,7 +1,7 @@
 ---
 id: CMP-StylePanel
 title: Style panel
-status: draft
+status: ready
 tokens: []
 ---
 

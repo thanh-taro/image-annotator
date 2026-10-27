@@ -1,7 +1,7 @@
 ---
 id: F-008
 title: Select and edit annotations
-status: draft
+status: ready
 milestone: M-1
 priority: P0
 personas: [PER-01]

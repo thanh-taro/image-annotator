@@ -1,7 +1,7 @@
 ---
 id: F-014
 title: Warn before losing work
-status: draft
+status: ready
 milestone: M-1
 priority: P1
 personas: [PER-01]

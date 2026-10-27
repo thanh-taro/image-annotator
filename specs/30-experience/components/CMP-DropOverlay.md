@@ -1,7 +1,7 @@
 ---
 id: CMP-DropOverlay
 title: Drop overlay
-status: draft
+status: ready
 tokens: []
 ---
 
