@@ -23,4 +23,4 @@ Esc and cancel keep everything as it was. If the language changes while the dial
 text switches and the pending choice is unchanged.
 
 ## Accessibility
-Modal dialog; focus moves to the safe choice (cancel) and returns on close.
+Modal dialog; focus moves to the safe choice (cancel), stays inside the dialog and returns on close; the rest of the tool is inert and RULE-19 shortcuts are off while it is open, and the canvas live regions announce nothing until it closes. Clicking outside the dialog does not close it.

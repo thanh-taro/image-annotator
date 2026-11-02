@@ -8,8 +8,8 @@
     "budget": "none-reuse-tarokit",
     "notes": "Sibling of json-formatter/text-case-converter/data-analysts-file-viewer in TaroKit portal (iframe-embedded); match their quality bar and conventions. All data stays local, no upload."
   },
-  "stack": null,
-  "design_tool": null,
+  "stack": "Preact 10 + signals, TS, Vite, pnpm, Vitest + fast-check, Playwright (Chromium+WebKit), own Canvas 2D engine, Cloudflare static assets",
+  "design_tool": "claude-design-canvas",
   "phases": {
     "setup": {
       "title": "0 Setup & discovery",
@@ -33,28 +33,28 @@
     },
     "design": {
       "title": "2 Design",
-      "status": "pending",
-      "step": null,
+      "status": "done",
+      "step": "2.4 design D4 converged; G2 checks",
       "gate": {
-        "status": "pending",
-        "at": null,
+        "status": "passed",
+        "at": "2026-11-02T03:49:07+00:00",
         "note": null
       }
     },
     "architecture": {
       "title": "3 Architecture & spikes",
-      "status": "pending",
-      "step": null,
+      "status": "done",
+      "step": "Gate G3: awaiting owner approval",
       "gate": {
-        "status": "pending",
-        "at": null,
+        "status": "passed",
+        "at": "2026-11-02T08:53:32+00:00",
         "note": null
       }
     },
     "build": {
       "title": "4 Implementation",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "4 plan written; awaiting owner OK + commit policy",
       "gate": {
         "status": "pending",
         "at": null,
@@ -254,6 +254,278 @@
       "answer": "Decided by orchestrator (balanced, non-product): text click ends edit/edits existing, tool stays; step diameter 2x text size; outline pairing per RULE-07; disable padding over limit; undo-back still unexported; export 1.5 s for 14.7 MP; zoom keys Shift+1/Shift+0; [ ] for reorder; keyboard multi-select limited to select all",
       "asked": "2026-10-27T05:34:10+00:00",
       "answered": "2026-10-27T05:34:10+00:00"
+    },
+    {
+      "id": "D-011",
+      "question": "Style direction",
+      "options": [
+        "Same Workbench",
+        "Workbench more visual",
+        "New direction"
+      ],
+      "recommendation": "Same Workbench",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Same Workbench style; portal tokens reused exactly; add image-editor roles only",
+      "asked": "2026-10-27T08:55:06+00:00",
+      "answered": "2026-10-27T08:55:06+00:00"
+    },
+    {
+      "id": "D-012",
+      "question": "Layout",
+      "options": [
+        "Top toolbar + right panel",
+        "Left rail + floating style bar"
+      ],
+      "recommendation": "Top toolbar + right panel",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Top toolbar + right style panel; bottom sheet on narrow",
+      "asked": "2026-10-27T08:55:06+00:00",
+      "answered": "2026-10-27T08:55:06+00:00"
+    },
+    {
+      "id": "D-013",
+      "question": "Design tool",
+      "options": [
+        "Claude Design canvas",
+        "Code-first HTML mockup"
+      ],
+      "recommendation": "Claude Design canvas",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Claude Design canvas, sibling conventions",
+      "asked": "2026-10-27T08:55:06+00:00",
+      "answered": "2026-10-27T08:55:06+00:00"
+    },
+    {
+      "id": "D-014",
+      "question": "Layout widths: wide/compact/narrow thresholds for Toolbar and Status bar (D1 R3-1)",
+      "options": [
+        "three steps",
+        "two steps at 1000",
+        "overflow into More"
+      ],
+      "recommendation": "three steps",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Three steps by the tool's own width: wide >= 1000 px; compact 800-999 px (one row, Open image and Download icon-only, status bar hides image size); narrow < 800 px (two-row toolbar, bottom sheet). D1 closes after one extra UI check on Toolbar and Status bar (owner consent past round limit).",
+      "asked": "2026-11-02T02:38:47+00:00",
+      "answered": "2026-11-02T02:38:52+00:00"
+    },
+    {
+      "id": "D-015",
+      "question": "D1 component boards review",
+      "options": [
+        "approve",
+        "feedback"
+      ],
+      "recommendation": "approve",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Approved by owner (canvas v37)",
+      "asked": "2026-11-02T02:48:54+00:00",
+      "answered": "2026-11-02T02:48:54+00:00"
+    },
+    {
+      "id": "D-016",
+      "question": "D2 FLOW-01 boards review",
+      "options": [
+        "approve",
+        "feedback"
+      ],
+      "recommendation": "approve",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "Approved by owner (canvas v41), incl. draft spec additions",
+      "asked": "2026-11-02T03:09:13+00:00",
+      "answered": "2026-11-02T03:09:13+00:00"
+    },
+    {
+      "id": "D-017",
+      "question": "Status bar and canvas summary size once padding or a crop exists",
+      "options": [
+        "export frame size",
+        "original image size"
+      ],
+      "recommendation": "export frame size",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "export frame size",
+      "asked": "2026-11-02T03:22:05+00:00",
+      "answered": "2026-11-02T03:22:57+00:00"
+    },
+    {
+      "id": "D-018",
+      "question": "Approve design D3 (desktop screen states)",
+      "options": [
+        "approve",
+        "changes"
+      ],
+      "recommendation": "approve",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "approve",
+      "asked": "2026-11-02T03:22:57+00:00",
+      "answered": "2026-11-02T03:23:00+00:00"
+    },
+    {
+      "id": "D-019",
+      "question": "Narrow style panel: how the bottom sheet opens",
+      "options": [
+        "summary bar",
+        "hidden until asked"
+      ],
+      "recommendation": "summary bar",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "summary bar",
+      "asked": "2026-11-02T03:24:36+00:00",
+      "answered": "2026-11-02T03:31:03+00:00"
+    },
+    {
+      "id": "D-020",
+      "question": "Padding with a crop (FLOW-02 conflict)",
+      "options": [
+        "padding wraps the frame",
+        "keep rules, edit FLOW-02"
+      ],
+      "recommendation": "padding wraps the frame",
+      "kind": "product",
+      "phase": "design",
+      "status": "answered",
+      "answer": "padding wraps the frame",
+      "asked": "2026-11-02T03:26:37+00:00",
+      "answered": "2026-11-02T03:31:03+00:00"
+    },
+    {
+      "id": "D-021",
+      "question": "Approve designs at gate G2",
+      "options": [
+        "approve",
+        "changes"
+      ],
+      "recommendation": "approve",
+      "kind": "design",
+      "phase": "design",
+      "status": "answered",
+      "answer": "approve",
+      "asked": "2026-11-02T03:49:07+00:00",
+      "answered": "2026-11-02T03:49:07+00:00"
+    },
+    {
+      "id": "D-022",
+      "question": "Rendering engine",
+      "options": [
+        "own Canvas 2D",
+        "alternative"
+      ],
+      "recommendation": "own Canvas 2D",
+      "kind": "technical",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "own Canvas 2D",
+      "asked": "2026-11-02T03:52:11+00:00",
+      "answered": "2026-11-02T03:52:12+00:00"
+    },
+    {
+      "id": "D-023",
+      "question": "Blur and pixelate reference",
+      "options": [
+        "own exact algorithm",
+        "alternative"
+      ],
+      "recommendation": "own exact algorithm",
+      "kind": "technical",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "own exact algorithm",
+      "asked": "2026-11-02T03:52:12+00:00",
+      "answered": "2026-11-02T03:52:12+00:00"
+    },
+    {
+      "id": "D-024",
+      "question": "Undecodable huge image under 50 MB",
+      "options": [
+        "existing decode_failed message",
+        "alternative"
+      ],
+      "recommendation": "existing decode_failed message",
+      "kind": "technical",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "existing decode_failed message",
+      "asked": "2026-11-02T03:52:12+00:00",
+      "answered": "2026-11-02T03:52:12+00:00"
+    },
+    {
+      "id": "D-025",
+      "question": "Manrope latin-ext subset",
+      "options": [
+        "skip",
+        "alternative"
+      ],
+      "recommendation": "skip",
+      "kind": "technical",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "skip",
+      "asked": "2026-11-02T03:52:12+00:00",
+      "answered": "2026-11-02T03:52:12+00:00"
+    },
+    {
+      "id": "D-026",
+      "question": "Wrangler's sharp/libvips LGPL-3.0 (deploy-only)",
+      "options": [
+        "allow deploy-only",
+        "alternative"
+      ],
+      "recommendation": "allow deploy-only",
+      "kind": "legal",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "allow deploy-only",
+      "asked": "2026-11-02T04:06:40+00:00",
+      "answered": "2026-11-02T04:06:40+00:00"
+    },
+    {
+      "id": "D-027",
+      "question": "CI for this tool",
+      "options": [
+        "no CI, local checks (ADR-0014)",
+        "alternative"
+      ],
+      "recommendation": "no CI, local checks (ADR-0014)",
+      "kind": "technical",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "no CI, local checks (ADR-0014)",
+      "asked": "2026-11-02T04:06:40+00:00",
+      "answered": "2026-11-02T04:06:40+00:00"
+    },
+    {
+      "id": "D-028",
+      "question": "Embedded in WebKit the leave-page warning never shows (SP-host). Accept as known gap, or add a host-owned unexported flag message?",
+      "options": [
+        "accept",
+        "host flag"
+      ],
+      "recommendation": "accept",
+      "kind": "product",
+      "phase": "architecture",
+      "status": "answered",
+      "answer": "accept: documented known gap for M-1; revisit after launch",
+      "asked": "2026-11-02T08:15:54+00:00",
+      "answered": "2026-11-02T08:16:10+00:00"
     }
   ],
   "loops": {
@@ -264,6 +536,38 @@
       "started": "2026-10-27T04:46:14+00:00",
       "outcome": "converged after 2 rounds; A6 deferred to design, N5 to architecture",
       "ended": "2026-10-27T08:50:37+00:00"
+    },
+    "design-D1": {
+      "round": 3,
+      "max": 3,
+      "active": false,
+      "started": "2026-10-27T11:14:56+00:00",
+      "outcome": "converged after 3 rounds + 1 owner-approved verification; D-014 layout widths; canvas v37",
+      "ended": "2026-11-02T02:44:44+00:00"
+    },
+    "design-D2": {
+      "round": 3,
+      "max": 3,
+      "active": false,
+      "started": "2026-11-02T02:48:55+00:00",
+      "outcome": "converged in 3 rounds (round 3 a11y verification: 0/0/2, minors fixed); canvas v41",
+      "ended": "2026-11-02T03:02:28+00:00"
+    },
+    "design-D3": {
+      "round": 2,
+      "max": 3,
+      "active": false,
+      "started": "2026-11-02T03:09:14+00:00",
+      "outcome": "converged in 2 rounds; 0 blockers",
+      "ended": "2026-11-02T03:22:04+00:00"
+    },
+    "design-D4": {
+      "round": 2,
+      "max": 3,
+      "active": false,
+      "started": "2026-11-02T03:33:38+00:00",
+      "outcome": "converged in 2 rounds; 0 blockers",
+      "ended": "2026-11-02T03:43:16+00:00"
     }
   },
   "log": [
@@ -458,9 +762,549 @@
     {
       "at": "2026-10-27T08:52:47+00:00",
       "event": "gate product-spec passed: 18 features ready; 2 review rounds; D-001..D-010; UI tokens→design, reference blur→architecture"
+    },
+    {
+      "at": "2026-10-27T08:53:00+00:00",
+      "event": "G1 passed; specs ready (status fix committed after a shell glob mistake)"
+    },
+    {
+      "at": "2026-10-27T08:53:08+00:00",
+      "event": "phase design -> in_progress"
+    },
+    {
+      "at": "2026-10-27T08:53:08+00:00",
+      "event": "phase architecture -> in_progress"
+    },
+    {
+      "at": "2026-10-27T08:54:28+00:00",
+      "event": "design step: 2.1 style builder: discovery"
+    },
+    {
+      "at": "2026-10-27T08:54:28+00:00",
+      "event": "Architecture proposal running in background agent"
+    },
+    {
+      "at": "2026-10-27T08:55:06+00:00",
+      "event": "decision D-011 opened: Style direction"
+    },
+    {
+      "at": "2026-10-27T08:55:06+00:00",
+      "event": "decision D-012 opened: Layout"
+    },
+    {
+      "at": "2026-10-27T08:55:06+00:00",
+      "event": "decision D-013 opened: Design tool"
+    },
+    {
+      "at": "2026-10-27T08:55:06+00:00",
+      "event": "decision D-011 answered: Same Workbench style; portal tokens reused exactly; add image-editor roles only"
+    },
+    {
+      "at": "2026-10-27T08:55:06+00:00",
+      "event": "decision D-012 answered: Top toolbar + right style panel; bottom sheet on narrow"
+    },
+    {
+      "at": "2026-10-27T08:55:06+00:00",
+      "event": "decision D-013 answered: Claude Design canvas, sibling conventions"
+    },
+    {
+      "at": "2026-10-27T08:55:06+00:00",
+      "event": "set design_tool"
+    },
+    {
+      "at": "2026-10-27T11:03:24+00:00",
+      "event": "design step: 2.4 design loop D1: creating canvas"
+    },
+    {
+      "at": "2026-10-27T11:04:10+00:00",
+      "event": "set design_canvas_url"
+    },
+    {
+      "at": "2026-10-27T11:10:41+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 2 Design [in_progress] — 2.4 design loop D1: creating canvas · 2/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-10-27T11:14:56+00:00",
+      "event": "design step: 2.4 design loop D1: audit round 1"
+    },
+    {
+      "at": "2026-10-27T11:14:56+00:00",
+      "event": "loop design-D1 started (max 3)"
+    },
+    {
+      "at": "2026-10-27T11:14:56+00:00",
+      "event": "D1: all 11 boards published (canvas v12)"
+    },
+    {
+      "at": "2026-10-27T11:36:57+00:00",
+      "event": "loop design-D1 round 2"
+    },
+    {
+      "at": "2026-10-27T11:36:57+00:00",
+      "event": "design step: 2.4 design loop D1: audit round 2"
+    },
+    {
+      "at": "2026-10-27T11:36:57+00:00",
+      "event": "D1 round 1: 2 blockers / 29 major / 45 minor fixed on all 10 CMP boards (canvas v22); 2 copy keys added (draft until G2)"
+    },
+    {
+      "at": "2026-10-27T13:06:52+00:00",
+      "event": "loop design-D1 round 3"
+    },
+    {
+      "at": "2026-10-27T13:06:52+00:00",
+      "event": "design step: 2.4 design loop D1: audit round 3"
+    },
+    {
+      "at": "2026-10-27T13:06:52+00:00",
+      "event": "D1 round 2 fixed (canvas v29); spec changes RULE-19 scope, CMP-Toolbar narrow, CMP-Notice pause, 8 copy keys"
+    },
+    {
+      "at": "2026-11-02T02:29:43+00:00",
+      "event": "design step: 2.4 design loop D1: audit + UI critique round 3 running"
+    },
+    {
+      "at": "2026-11-02T02:29:43+00:00",
+      "event": "D1 round 3: boards pulled to design/canvas/project; design-auditor + ui-critic launched"
+    },
+    {
+      "at": "2026-11-02T02:36:00+00:00",
+      "event": "design step: 2.4 design loop D1: round 3 fixes applied locally; waiting on breakpoint decision (R3-1)"
+    },
+    {
+      "at": "2026-11-02T02:36:02+00:00",
+      "event": "D1 round 3: audit 0/0/3, UI 0/2/8, a11y 0/0/5; all minors + R3-2 fixed in design/canvas/project; copy scope_note + click_to_paste changed (lint 0/0); R3-1 breakpoint needs owner decision"
+    },
+    {
+      "at": "2026-11-02T02:38:47+00:00",
+      "event": "decision D-014 opened: Layout widths: wide/compact/narrow thresholds for Toolbar and Status bar (D1 R3-1)"
+    },
+    {
+      "at": "2026-11-02T02:38:52+00:00",
+      "event": "decision D-014 answered: Three steps by the tool's own width: wide >= 1000 px; compact 800-999 px (one row, Open image and Download icon-only, status bar hides image size); narrow < 800 px (two-row toolbar, bottom sheet). D1 closes after one extra UI check on Toolbar and Status bar (owner consent past round limit)."
+    },
+    {
+      "at": "2026-11-02T02:39:52+00:00",
+      "event": "design step: 2.4 design loop D1: verification check on Toolbar/StatusBar (owner-approved)"
+    },
+    {
+      "at": "2026-11-02T02:44:44+00:00",
+      "event": "loop design-D1 ended: converged after 3 rounds + 1 owner-approved verification; D-014 layout widths; canvas v37"
+    },
+    {
+      "at": "2026-11-02T02:44:44+00:00",
+      "event": "design step: 2.4 design loop D1 done; 2.4.5 owner review of D1 before D2"
+    },
+    {
+      "at": "2026-11-02T02:44:44+00:00",
+      "event": "D1 closed: canvas v37; spec changes D-014 widths, count fallback, tool-strip gap, 2 copy strings (draft until G2, lint 0/0)"
+    },
+    {
+      "at": "2026-11-02T02:48:54+00:00",
+      "event": "decision D-015 opened: D1 component boards review"
+    },
+    {
+      "at": "2026-11-02T02:48:54+00:00",
+      "event": "decision D-015 answered: Approved by owner (canvas v37)"
+    },
+    {
+      "at": "2026-11-02T02:48:54+00:00",
+      "event": "D1 approved by owner"
+    },
+    {
+      "at": "2026-11-02T02:48:55+00:00",
+      "event": "design step: 2.4 design loop D2 (FLOW-01): make"
+    },
+    {
+      "at": "2026-11-02T02:48:55+00:00",
+      "event": "loop design-D2 started (max 3)"
+    },
+    {
+      "at": "2026-11-02T02:52:46+00:00",
+      "event": "design step: 2.4 design loop D2: round 1 review (6 boards made)"
+    },
+    {
+      "at": "2026-11-02T02:52:46+00:00",
+      "event": "D2 made: Main + FLOW-01 steps 1-5 via design/canvas/gen_d2.py; spec adds initial select tool, notice placement"
+    },
+    {
+      "at": "2026-11-02T02:59:00+00:00",
+      "event": "D2 round 1: audit 1/3/5, UI 0/2/4, a11y 2/4/4 — all fixed or recorded; spec adds loaded copy, canvas listbox, editor focus"
+    },
+    {
+      "at": "2026-11-02T02:59:20+00:00",
+      "event": "loop design-D2 round 2"
+    },
+    {
+      "at": "2026-11-02T02:59:21+00:00",
+      "event": "design step: 2.4 design loop D2: round 2 re-review"
+    },
+    {
+      "at": "2026-11-02T03:01:20+00:00",
+      "event": "D2 round 2: audit 0/0/1, a11y 1/1/4 — all fixed; copy annotations_list/hint; CMP-Notice live-region wording"
+    },
+    {
+      "at": "2026-11-02T03:01:32+00:00",
+      "event": "loop design-D2 round 3"
+    },
+    {
+      "at": "2026-11-02T03:01:33+00:00",
+      "event": "design step: 2.4 design loop D2: round 3 verification (a11y)"
+    },
+    {
+      "at": "2026-11-02T03:02:28+00:00",
+      "event": "loop design-D2 ended: converged in 3 rounds (round 3 a11y verification: 0/0/2, minors fixed); canvas v41"
+    },
+    {
+      "at": "2026-11-02T03:02:28+00:00",
+      "event": "design step: 2.4 design loop D2 done; owner review of D2 before D3"
+    },
+    {
+      "at": "2026-11-02T03:02:28+00:00",
+      "event": "D2 converged; minors fixed (region focus ring, no tab stop while editing)"
+    },
+    {
+      "at": "2026-11-02T03:09:13+00:00",
+      "event": "decision D-016 opened: D2 FLOW-01 boards review"
+    },
+    {
+      "at": "2026-11-02T03:09:13+00:00",
+      "event": "decision D-016 answered: Approved by owner (canvas v41), incl. draft spec additions"
+    },
+    {
+      "at": "2026-11-02T03:09:13+00:00",
+      "event": "D2 approved by owner"
+    },
+    {
+      "at": "2026-11-02T03:09:14+00:00",
+      "event": "design step: 2.4 design loop D3 (screen states, embedded): make"
+    },
+    {
+      "at": "2026-11-02T03:09:14+00:00",
+      "event": "loop design-D3 started (max 3)"
+    },
+    {
+      "at": "2026-11-02T03:12:07+00:00",
+      "event": "design step: 2.4 design loop D3: round 1 review (10 boards made)"
+    },
+    {
+      "at": "2026-11-02T03:12:07+00:00",
+      "event": "D3 made: 10 SCR-Annotator state boards via design/canvas/gen_d3.py; default/editing-text = Main/FLOW-01 step 3"
+    },
+    {
+      "at": "2026-11-02T03:12:50+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 2 Design [in_progress] — 2.4 design loop D3: round 1 review (10 boards made) · 2/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-02T03:18:37+00:00",
+      "event": "design step: 2.4 design loop D3: round 1 fixed, publishing"
+    },
+    {
+      "at": "2026-11-02T03:18:37+00:00",
+      "event": "D3 round 1: 0 blockers, 7 majors fixed; status bar size = frame size (pending owner confirm)"
+    },
+    {
+      "at": "2026-11-02T03:19:13+00:00",
+      "event": "loop design-D3 round 2"
+    },
+    {
+      "at": "2026-11-02T03:19:13+00:00",
+      "event": "design step: 2.4 design loop D3: round 2 re-review"
+    },
+    {
+      "at": "2026-11-02T03:22:04+00:00",
+      "event": "loop design-D3 ended: converged in 2 rounds; 0 blockers"
+    },
+    {
+      "at": "2026-11-02T03:22:05+00:00",
+      "event": "decision D-017 opened: Status bar and canvas summary size once padding or a crop exists"
+    },
+    {
+      "at": "2026-11-02T03:22:05+00:00",
+      "event": "design step: 2.4 design D3 converged; awaiting owner review"
+    },
+    {
+      "at": "2026-11-02T03:22:57+00:00",
+      "event": "decision D-017 answered: export frame size"
+    },
+    {
+      "at": "2026-11-02T03:22:57+00:00",
+      "event": "decision D-018 opened: Approve design D3 (desktop screen states)"
+    },
+    {
+      "at": "2026-11-02T03:23:00+00:00",
+      "event": "decision D-018 answered: approve"
+    },
+    {
+      "at": "2026-11-02T03:23:01+00:00",
+      "event": "design step: 2.4 design loop D4: planning narrow 390 boards + FLOW-02"
+    },
+    {
+      "at": "2026-11-02T03:24:36+00:00",
+      "event": "decision D-019 opened: Narrow style panel: how the bottom sheet opens"
+    },
+    {
+      "at": "2026-11-02T03:26:37+00:00",
+      "event": "decision D-020 opened: Padding with a crop (FLOW-02 conflict)"
+    },
+    {
+      "at": "2026-11-02T03:31:03+00:00",
+      "event": "decision D-019 answered: summary bar"
+    },
+    {
+      "at": "2026-11-02T03:31:03+00:00",
+      "event": "decision D-020 answered: padding wraps the frame"
+    },
+    {
+      "at": "2026-11-02T03:33:38+00:00",
+      "event": "loop design-D4 started (max 3)"
+    },
+    {
+      "at": "2026-11-02T03:33:38+00:00",
+      "event": "design step: 2.4 design loop D4: round 1 review (9 boards made)"
+    },
+    {
+      "at": "2026-11-02T03:33:38+00:00",
+      "event": "D4: D-019 summary-bar sheet; D-020 padding wraps the frame (spec change reviewed, blocker fixed)"
+    },
+    {
+      "at": "2026-11-02T03:40:10+00:00",
+      "event": "design step: 2.4 design loop D4: round 1 fixed, publishing"
+    },
+    {
+      "at": "2026-11-02T03:40:30+00:00",
+      "event": "loop design-D4 round 2"
+    },
+    {
+      "at": "2026-11-02T03:40:30+00:00",
+      "event": "design step: 2.4 design loop D4: round 2 re-check"
+    },
+    {
+      "at": "2026-11-02T03:43:16+00:00",
+      "event": "loop design-D4 ended: converged in 2 rounds; 0 blockers"
+    },
+    {
+      "at": "2026-11-02T03:43:16+00:00",
+      "event": "design step: 2.4 design D4 converged; G2 checks"
+    },
+    {
+      "at": "2026-11-02T03:49:07+00:00",
+      "event": "decision D-021 opened: Approve designs at gate G2"
+    },
+    {
+      "at": "2026-11-02T03:49:07+00:00",
+      "event": "decision D-021 answered: approve"
+    },
+    {
+      "at": "2026-11-02T03:49:07+00:00",
+      "event": "gate design passed"
+    },
+    {
+      "at": "2026-11-02T03:49:07+00:00",
+      "event": "G2 passed: designs approved (D-021); phase-2 draft spec changes accepted"
+    },
+    {
+      "at": "2026-11-02T03:52:06+00:00",
+      "event": "set stack"
+    },
+    {
+      "at": "2026-11-02T03:52:06+00:00",
+      "event": "architecture step: 3.1 architecture: writing ADRs, modules, registry (stack approved D-022..D-025)"
+    },
+    {
+      "at": "2026-11-02T03:52:11+00:00",
+      "event": "decision D-022 opened: Rendering engine"
+    },
+    {
+      "at": "2026-11-02T03:52:12+00:00",
+      "event": "decision D-022 answered: own Canvas 2D"
+    },
+    {
+      "at": "2026-11-02T03:52:12+00:00",
+      "event": "decision D-023 opened: Blur and pixelate reference"
+    },
+    {
+      "at": "2026-11-02T03:52:12+00:00",
+      "event": "decision D-023 answered: own exact algorithm"
+    },
+    {
+      "at": "2026-11-02T03:52:12+00:00",
+      "event": "decision D-024 opened: Undecodable huge image under 50 MB"
+    },
+    {
+      "at": "2026-11-02T03:52:12+00:00",
+      "event": "decision D-024 answered: existing decode_failed message"
+    },
+    {
+      "at": "2026-11-02T03:52:12+00:00",
+      "event": "decision D-025 opened: Manrope latin-ext subset"
+    },
+    {
+      "at": "2026-11-02T03:52:12+00:00",
+      "event": "decision D-025 answered: skip"
+    },
+    {
+      "at": "2026-11-02T04:03:49+00:00",
+      "event": "architecture step: 3.1 technical specs written (ADR-0001..0015, MOD x11, registry); licence audit running"
+    },
+    {
+      "at": "2026-11-02T04:03:49+00:00",
+      "event": "40-technical written; RULE-10 clarified (blur box outside frame covers earlier annotations)"
+    },
+    {
+      "at": "2026-11-02T04:06:40+00:00",
+      "event": "decision D-026 opened: Wrangler's sharp/libvips LGPL-3.0 (deploy-only)"
+    },
+    {
+      "at": "2026-11-02T04:06:40+00:00",
+      "event": "decision D-026 answered: allow deploy-only"
+    },
+    {
+      "at": "2026-11-02T04:06:40+00:00",
+      "event": "decision D-027 opened: CI for this tool"
+    },
+    {
+      "at": "2026-11-02T04:06:40+00:00",
+      "event": "decision D-027 answered: no CI, local checks (ADR-0014)"
+    },
+    {
+      "at": "2026-11-02T04:06:56+00:00",
+      "event": "architecture step: 3.2 spikes: next (licences approved except DEP-19 pending lockfile)"
+    },
+    {
+      "at": "2026-11-02T04:06:56+00:00",
+      "event": "licence audit done; D-026 deploy-only LGPL allowed; D-027 no CI"
+    },
+    {
+      "at": "2026-11-02T04:07:37+00:00",
+      "event": "architecture step: 3.2 spikes: SP-engine and SP-blur running in worktrees"
+    },
+    {
+      "at": "2026-11-02T04:07:37+00:00",
+      "event": "spikes SP-engine, SP-blur started (worktrees)"
+    },
+    {
+      "at": "2026-11-02T07:27:35+00:00",
+      "event": "SP-engine closed: adapt (ADR-0016 image layer); own engine confirmed, 5 KB"
+    },
+    {
+      "at": "2026-11-02T07:27:37+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 3 Architecture & spikes [in_progress] — 3.2 spikes: SP-engine and SP-blur running in worktrees · 3/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-02T07:28:45+00:00",
+      "event": "architecture step: 3.2 spikes: SP-engine closed (ADR-0016); SP-blur running"
+    },
+    {
+      "at": "2026-11-02T07:29:10+00:00",
+      "event": "SP-png-export and SP-decode framed and started"
+    },
+    {
+      "at": "2026-11-02T07:29:29+00:00",
+      "event": "architecture step: 3.2 spikes: engine closed (ADR-0016); blur, png-export, decode running"
+    },
+    {
+      "at": "2026-11-02T07:38:43+00:00",
+      "event": "SP-blur closed: adapt (ADR-0017); SP-decode closed: adopt (ADR-0018)"
+    },
+    {
+      "at": "2026-11-02T07:38:43+00:00",
+      "event": "architecture step: 3.2 spikes: engine, blur, decode closed; png-export running"
+    },
+    {
+      "at": "2026-11-02T07:39:11+00:00",
+      "event": "architecture step: 3.2 spikes: engine, blur, decode closed; png-export, text running; large-image, host next"
+    },
+    {
+      "at": "2026-11-02T07:41:09+00:00",
+      "event": "SP-png-export closed: adapt (ADR-0019)"
+    },
+    {
+      "at": "2026-11-02T07:41:09+00:00",
+      "event": "architecture step: 3.2 spikes: engine, blur, decode, png-export closed; text running; large-image, host next"
+    },
+    {
+      "at": "2026-11-02T07:41:30+00:00",
+      "event": "architecture step: 3.2 spikes: engine, blur, decode, png-export closed; text, large-image running; host next"
+    },
+    {
+      "at": "2026-11-02T07:57:46+00:00",
+      "event": "SP-text closed: adapt (ADR-0020); RULE-08 NFC clarification"
+    },
+    {
+      "at": "2026-11-02T07:57:46+00:00",
+      "event": "architecture step: 3.2 spikes: 5 closed; large-image running; host next"
+    },
+    {
+      "at": "2026-11-02T07:58:17+00:00",
+      "event": "architecture step: 3.2 spikes: 5 closed; large-image and host running"
+    },
+    {
+      "at": "2026-11-02T08:15:54+00:00",
+      "event": "decision D-028 opened: Embedded in WebKit the leave-page warning never shows (SP-host). Accept as known gap, or add a host-owned unexported flag message?"
+    },
+    {
+      "at": "2026-11-02T08:16:10+00:00",
+      "event": "decision D-028 answered: accept: documented known gap for M-1; revisit after launch"
+    },
+    {
+      "at": "2026-11-02T08:17:02+00:00",
+      "event": "SP-host closed: adapt (ADR-0021); D-028 accept WebKit leave-page gap"
+    },
+    {
+      "at": "2026-11-02T08:17:03+00:00",
+      "event": "architecture step: 3.2 spikes: 6 closed; large-image running"
+    },
+    {
+      "at": "2026-11-02T08:23:29+00:00",
+      "event": "SP-large-image closed: adapt (ADR-0022). Spike spec review: 8 major/8 minor fixed"
+    },
+    {
+      "at": "2026-11-02T08:23:30+00:00",
+      "event": "architecture step: 3.2 spikes: all 7 closed; review round 2 of spike spec changes"
+    },
+    {
+      "at": "2026-11-02T08:26:58+00:00",
+      "event": "architecture step: 3.2 spikes closed; spec review round 3/3 of spike changes running; next 3.3 foundations"
+    },
+    {
+      "at": "2026-11-02T08:28:25+00:00",
+      "event": "Spike spec review closed after 3 rounds; all findings fixed"
+    },
+    {
+      "at": "2026-11-02T08:28:25+00:00",
+      "event": "architecture step: 3.3 foundations: scaffold, local dev, codegen, test harness, local checks"
+    },
+    {
+      "at": "2026-11-02T08:29:16+00:00",
+      "event": "3.3 foundations started (scaffold agent, adapted from DAFV)"
+    },
+    {
+      "at": "2026-11-02T08:52:20+00:00",
+      "event": "3.3 foundations done: pnpm check:full 11/11 green, fresh-copy setup verified, 96.9 KB of 210 KB budget"
+    },
+    {
+      "at": "2026-11-02T08:52:20+00:00",
+      "event": "architecture step: Gate G3: awaiting owner approval"
+    },
+    {
+      "at": "2026-11-02T08:53:32+00:00",
+      "event": "gate architecture passed"
+    },
+    {
+      "at": "2026-11-02T08:53:33+00:00",
+      "event": "G3 approved by owner. Spike worktrees kept for deliberate promotion in phase 4 (engine, blur, png-export, decode, text, large-image, host)"
+    },
+    {
+      "at": "2026-11-02T08:54:05+00:00",
+      "event": "phase build -> in_progress"
+    },
+    {
+      "at": "2026-11-02T08:54:06+00:00",
+      "event": "build step: 4 plan written; awaiting owner OK + commit policy"
     }
   ],
-  "updated": "2026-10-27T08:52:47+00:00",
+  "updated": "2026-11-02T08:54:06+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
@@ -507,5 +1351,6 @@
       "id": "SP-blur",
       "q": "Blur/pixelate performance and Safari ctx.filter support (M-3+)"
     }
-  ]
+  ],
+  "design_canvas_url": "https://claude.ai/artifact/7u179fYh5YNgUtYkEyRJmu"
 }

@@ -67,10 +67,14 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-color.purple** | Purple | Tím | |
 | **COPY-color.black** | Black | Đen | |
 | **COPY-color.white** | White | Trắng | |
+| **COPY-canvas.title** | Canvas | Khung ảnh | Subject of the narrow summary bar when canvas settings show |
+| **COPY-style.sheet_toggle** | Style options | Tùy chọn kiểu dáng | Start of the narrow summary bar's accessible name: "{sheet_toggle}: {sheet_summary}" |
+| **COPY-style.sheet_summary** | {subject} · {detail} | {subject} · {detail} | Narrow summary bar; subject: the tool, the selected kind, COPY-a11y.selected_count, COPY-canvas.title or COPY-tool.crop; detail: COPY-style.size_s/m/l; for the canvas, COPY-canvas.padding, a space, then COPY-canvas.padding_none or COPY-style.size_s/m/l (e.g. "Padding None"); or COPY-crop.size |
 | **COPY-canvas.padding** | Padding | Khoảng đệm | |
 | **COPY-canvas.padding_none** | None | Không | |
 | **COPY-canvas.background** | Background | Nền | |
 | **COPY-canvas.transparent** | Transparent | Trong suốt | |
+| **COPY-canvas.padding_unavailable** | Larger padding would make the image too big to export. | Khoảng đệm lớn hơn sẽ khiến ảnh quá lớn để xuất. | Shown when some padding sizes are unavailable (RULE-14) |
 | **COPY-crop.size** | {width} × {height} px | {width} × {height} px | |
 
 ## Redaction
@@ -82,6 +86,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-redact.pixelate** | Pixelate | Làm vỡ điểm ảnh | |
 | **COPY-redact.not_secure** | Not secure: blurred or pixelated text can sometimes be recovered. | Không an toàn: chữ bị làm mờ hoặc vỡ điểm ảnh đôi khi có thể khôi phục được. | |
 | **COPY-redact.use_solid** | Use solid | Dùng khối đặc | Switches the selection, or else the tool's current kind, to solid |
+| **COPY-redact.not_secure_short** | Not secure | Không an toàn | Short tag on the blur and pixelate choices (RULE-10) |
 
 ## Loading
 | ID | en-US | vi-VN | Notes |
@@ -89,7 +94,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-load.empty_title** | Paste, drop or open an image | Dán, thả hoặc mở một ảnh | |
 | **COPY-load.empty_hint** | Press {paste_key} to paste a screenshot, drop an image file here, or choose Open image. | Nhấn {paste_key} để dán ảnh chụp màn hình, thả tệp ảnh vào đây, hoặc chọn Mở ảnh. | {paste_key}: Ctrl+V or ⌘V |
 | **COPY-load.drop_here** | Drop to open | Thả để mở | |
-| **COPY-load.click_to_paste** | Click here, then press {paste_key} to paste. | Nhấp vào đây, rồi nhấn {paste_key} để dán. | Shown when embedded and the tool has no focus |
+| **COPY-load.click_to_paste** | Click here, then press {paste_key} to paste, or choose Open image. | Nhấp vào đây, rồi nhấn {paste_key} để dán, hoặc chọn Mở ảnh. | Shown when embedded and the tool has no focus |
 | **COPY-load.loading** | Opening image… | Đang mở ảnh… | |
 | **COPY-load.no_image_in_clipboard** | The clipboard has no image. | Bộ nhớ tạm không có ảnh. | |
 | **COPY-load.first_only** | Opened the first image only. | Chỉ mở ảnh đầu tiên. | |
@@ -145,14 +150,24 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 |---|---|---|---|
 | **COPY-app.title** | Image Annotator | Image Annotator | Product name and page title; same in every language |
 | **COPY-a11y.canvas** | Image canvas | Vùng ảnh | |
+| **COPY-a11y.canvas_summary** | one: {width} × {height} px canvas, {count} annotation · other: {width} × {height} px canvas, {count} annotations | Khung ảnh {width} × {height} px, {count} chú thích | Description of the canvas region |
 | **COPY-a11y.annotation** | {kind} at {x}, {y} | {kind} tại {x}, {y} | {kind}: the tool name, or the redaction kind name |
+| **COPY-a11y.step_annotation** | Step {number} at {x}, {y} | Bước {number} tại {x}, {y} | Used instead of COPY-a11y.annotation for steps (RULE-07) |
+| **COPY-a11y.text_annotation** | Text “{text}” at {x}, {y} | Chữ “{text}” tại {x}, {y} | Used instead of COPY-a11y.annotation for text annotations |
 | **COPY-a11y.tool_active** | {tool} tool | Công cụ {tool} | |
+| **COPY-a11y.loaded** | Image opened, {width} × {height} px | Đã mở ảnh, {width} × {height} px | Announced when an image loads |
+| **COPY-a11y.annotations_list** | Annotations | Chú thích | Name of the list of annotations inside the canvas |
+| **COPY-a11y.annotations_hint** | Tab moves to the next annotation; arrow keys move the selected one. | Tab để chuyển sang chú thích tiếp theo; phím mũi tên di chuyển chú thích đang chọn. | Description of the annotations list |
 | **COPY-a11y.placed** | {kind} added | Đã thêm {kind} | |
 | **COPY-a11y.undone** | Undone | Đã hoàn tác | |
 | **COPY-a11y.redone** | Redone | Đã làm lại | |
 | **COPY-a11y.deleted_count** | one: {count} annotation deleted · other: {count} annotations deleted | Đã xoá {count} chú thích | |
 | **COPY-a11y.duplicated_count** | one: {count} annotation duplicated · other: {count} annotations duplicated | Đã nhân bản {count} chú thích | |
 | **COPY-a11y.selected_count** | one: {count} annotation selected · other: {count} annotations selected | Đã chọn {count} chú thích | |
+| **COPY-a11y.toolbar** | Tools and actions | Công cụ và thao tác | Name of the toolbar |
+| **COPY-a11y.style_panel** | Style | Kiểu dáng | Name of the style panel |
+| **COPY-a11y.zoom_menu** | Zoom: {percent} % | Thu phóng: {percent} % | Name of the narrow zoom button |
+| **COPY-a11y.new_tab** | (opens in a new tab) | (mở trong thẻ mới) | Appended to links that open a new tab |
 
 ## Status & privacy
 | ID | en-US | vi-VN | Notes |
@@ -164,6 +179,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-privacy.details** | Your images are opened and edited only in this browser. Nothing is uploaded, stored or tracked, and the tool blocks all network requests after it loads. Exported images contain no metadata from the original. Blur and pixelate can sometimes be reversed; use solid redaction for secrets. | Ảnh của bạn chỉ được mở và chỉnh sửa trong trình duyệt này. Không có gì được tải lên, lưu lại hay theo dõi, và công cụ chặn mọi yêu cầu mạng sau khi tải xong. Ảnh xuất ra không chứa siêu dữ liệu của ảnh gốc. Làm mờ và vỡ điểm ảnh đôi khi có thể đảo ngược; hãy dùng khối đặc cho thông tin bí mật. | |
 | **COPY-privacy.source_label** | Source code on GitHub | Mã nguồn trên GitHub | |
 | **COPY-privacy.notices** | Open-source notices | Thông báo mã nguồn mở | |
+| **COPY-privacy.title** | Privacy | Quyền riêng tư | Name of the privacy details |
 
 ## Shortcuts help
 | ID | en-US | vi-VN | Notes |
@@ -178,6 +194,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-shortcuts.load** | Open | Mở | |
 | **COPY-shortcuts.help** | Help | Trợ giúp | |
 | **COPY-shortcuts.pointer** | Pointer | Con trỏ | |
+| **COPY-shortcuts.scope_note** | Single-key and editing shortcuts work while the image has focus. | Phím tắt một phím và phím chỉnh sửa hoạt động khi vùng ảnh đang được chọn. | RULE-19 scope |
 | **COPY-shortcut.place** | Place an annotation | Đặt chú thích | |
 | **COPY-shortcut.next** | Next / previous annotation | Chú thích tiếp theo / trước | |
 | **COPY-shortcut.select_all** | Select all | Chọn tất cả | |

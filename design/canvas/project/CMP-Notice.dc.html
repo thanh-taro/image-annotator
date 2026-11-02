@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notice variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.tk-dark{--surface:#18121F;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--success:#5BD6A0;--danger:#FF8595;--dangerBg:#3A1622}
+.tk-light{--surface:#FFFFFF;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--success:#13744C;--danger:#C0243B;--dangerBg:#FCE8EC}
+.n{width:680px;max-width:100%;min-height:44px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;color:var(--fg);font:500 13px/1.45 Manrope,sans-serif}
+.n.err{background:var(--dangerBg);border-color:var(--danger)}
+.n p{margin:0;flex:1}
+.ic{flex:none}
+.btn{height:28px;flex:none;display:inline-flex;align-items:center;padding:0 12px;border:1px solid var(--lineStrong);border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif}
+.err .btn{border-color:var(--danger)}
+.x{width:28px;height:28px;flex:none;border:0;background:transparent;color:var(--muted);border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite}
+.ring{display:none;stroke-dasharray:2 4}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}.spin .arc{display:none}.spin .ring{display:inline}}
+.n.wrap{flex-wrap:wrap}
+.n.wrap p{flex:1 1 0;min-width:0}
+.n.wrap .act{flex-basis:100%;display:flex;padding:0 0 0 28px}
+</style>
+</helmet>
+<div class="board" style="width:1600px;height:640px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;gap:40px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="display:flex;flex-direction:column;gap:16px;width:680px;position:relative">
+<div class="sr" role="status" aria-live="polite" data-copy="COPY-export.downloaded_redactions">Downloaded checkout-annotated.png, with 2 redactions applied.</div>
+<div class="sr" role="alert" aria-live="assertive"></div>
+<div><div class="lab">CMP-Notice / success (auto-hides after 4 s) / {{t.name}}</div>
+<div class="n"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--success)"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+<p data-copy="COPY-export.downloaded_redactions">Downloaded checkout-annotated.png, with 2 redactions applied.</p>
+<button class="x" aria-label="Close" data-copy="COPY-action.close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
+<div><div class="lab">CMP-Notice / success, singular count / {{t.name}}</div>
+<div class="n"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--success)"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>
+<p data-copy="COPY-export.copied_redactions">Copied, with 1 redaction applied.</p>
+<button class="x" aria-label="Close" data-copy="COPY-action.close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
+<div><div class="lab">CMP-Notice / error, with action / {{t.name}}</div>
+<div class="n err"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+<p data-copy="COPY-error.clipboard">The browser blocked copying the image. Download it instead.</p>
+<button class="btn" data-copy="COPY-action.download">Download</button>
+<button class="x" aria-label="Close" data-copy="COPY-action.close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
+<div><div class="lab">CMP-Notice / progress: exporting (static when reduced motion) / {{t.name}}</div>
+<div class="n"><svg class="ic spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--accent)"><path class="arc" d="M12 3a9 9 0 019 9"/><circle class="ring" cx="12" cy="12" r="9"/></svg>
+<p data-copy="COPY-export.preparing">Preparing image…</p></div></div>
+<div><div class="lab">CMP-Notice / progress: loading / {{t.name}}</div>
+<div class="n"><svg class="ic spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--accent)"><path class="arc" d="M12 3a9 9 0 019 9"/><circle class="ring" cx="12" cy="12" r="9"/></svg>
+<p data-copy="COPY-load.loading">Opening image…</p></div></div>
+<div><div class="lab">CMP-Notice / error, narrow 390 (action on its own row, aligned with the text) / {{t.name}}</div>
+<div class="n err wrap" style="width:358px"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+<p data-copy="COPY-error.decode_failed">This image couldn't be opened. The file may be damaged.</p>
+<button class="x" aria-label="Close" data-copy="COPY-action.close" style="width:44px;height:44px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+<div class="act"><button class="btn" style="height:44px" data-copy="COPY-action.open">Open image</button></div></div></div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":640}}'>
+class Component extends DCLogic {
+renderVals() {
+return { themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }] };
+}
+}
+</script>
+</body>
+</html>

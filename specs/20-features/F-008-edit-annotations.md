@@ -6,7 +6,7 @@ milestone: M-1
 priority: P0
 personas: [PER-01]
 entities: [ENT-Annotation, ENT-Style, ENT-Session]
-rules: [RULE-04, RULE-06, RULE-07, RULE-08, RULE-11, RULE-19]
+rules: [RULE-04, RULE-05, RULE-06, RULE-07, RULE-08, RULE-11, RULE-19]
 screens: [SCR-Annotator]
 components: [CMP-Toolbar, CMP-Canvas, CMP-StylePanel]
 nfr: [NFR-02, NFR-06]
@@ -52,6 +52,7 @@ not a redo (PRN-04).
 - **AC14** Given a selected step, when the user looks at the position and size fields, then X and Y are shown and width and height are not. (R8)
 - **AC15** Given a selected 100 × 40 highlight, when the user sets its width to 200, then its points are scaled so its bounding box is 200 × 40 with the same top-left corner. (R8)
 - **AC16** Given focus in the width field with a rectangle selected, when the user presses Backspace, Left arrow and Enter, then the field's text is edited and applied, and the rectangle is neither deleted nor moved before the value applies. (R8)
+- **AC17** Given the select tool and a rectangle at (100, 100) at 100 % zoom, when the user presses on it, moves the pointer 3 screen px and releases, then the rectangle is selected, still at (100, 100), and no undo step was added (one Undo removes the rectangle); when they press again and move 10 screen px right, then the rectangle ends at (110, 100). (R1, R2, R7)
 
 ## UX notes
 COPY-tool.select in CMP-Toolbar. Selection actions in CMP-StylePanel: COPY-action.delete,

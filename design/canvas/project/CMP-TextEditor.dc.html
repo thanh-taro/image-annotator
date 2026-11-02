@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Text editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.tk-dark{--workArea:#0B0812;--selectionOutline:#A47BFF}
+.tk-light{--workArea:#ECE8F4;--selectionOutline:#6837E0}
+.cell{width:400px;height:180px;background:var(--workArea);display:flex;align-items:center;justify-content:center}
+.img{width:340px;height:140px;background:#F6F7F9;position:relative}
+.ed{position:absolute;left:24px;top:24px;min-width:120px;padding:4px;border:2px dashed var(--selectionOutline);box-shadow:0 0 0 1px var(--workArea);font:600 20px/1.25 Manrope,sans-serif;white-space:pre-line}
+.caret{display:inline-block;width:2px;height:24px;background:currentColor;vertical-align:-5px;margin-left:1px}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+</style>
+</helmet>
+<div class="board" style="width:1320px;height:520px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;flex-direction:column;gap:40px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="display:flex;gap:20px">
+<div><div class="lab">CMP-TextEditor / editing, multi-line / {{t.name}}</div>
+<div class="cell"><div class="img" data-sample="screenshot">
+<div class="ed" role="textbox" aria-multiline="true" aria-label="Text" data-copy="COPY-tool.text" style="color:#D62828;text-shadow:{{outline}}"><span data-sample="text-annotation">Wrong total
+should be $118.40</span><span class="caret" aria-hidden="true"></span></div>
+</div></div></div>
+<div><div class="lab">CMP-TextEditor / editing, vi-VN text / {{t.name}}</div>
+<div class="cell"><div class="img" data-sample="screenshot">
+<div class="ed" role="textbox" aria-multiline="true" aria-label="Text" data-copy="COPY-tool.text" style="color:#0B63E5;text-shadow:{{outline}}"><span data-sample="text-annotation" lang="vi">Đường dẫn lỗi</span><span class="caret" aria-hidden="true"></span></div>
+</div></div></div>
+<div><div class="lab">CMP-TextEditor / editing, empty (placeholder at 50 % in current colour, exposed only as aria-placeholder, hidden on first key) / {{t.name}}</div>
+<div class="cell"><div class="img" data-sample="screenshot">
+<div class="ed" role="textbox" aria-multiline="true" aria-label="Text" aria-placeholder="Type here" data-copy="COPY-tool.text" style="color:#D62828;text-shadow:{{outline}}"><span class="caret" aria-hidden="true" style="margin:0 2px 0 0"></span><span aria-hidden="true" style="opacity:.5" data-copy="COPY-text.placeholder">Type here</span></div>
+</div></div></div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":520}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+outline: '-1px -1px 0 #FFFFFF,1px -1px 0 #FFFFFF,-1px 1px 0 #FFFFFF,1px 1px 0 #FFFFFF',
+themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }]
+};
+}
+}
+</script>
+</body>
+</html>

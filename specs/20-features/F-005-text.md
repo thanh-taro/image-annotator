@@ -46,6 +46,7 @@ A short label ("Wrong total", "Click here") turns a mark into an explanation (PR
 - **AC12** Given the user created a text "Bug", when they undo once, then the text is gone; when they edit an existing text to empty and undo, then the text is back. (R6)
 - **AC13** Given the text tool and canvas focus, when the user presses Enter, then a text starts at the centre of the view in editing. (R1)
 - **AC14** Given the user types "Đường dẫn lỗi" and downloads, when the export is opened, then every letter and diacritic is drawn in the tool's own typeface. (R5)
+- **AC15** Given a text being edited, when the user pastes "Đường" in decomposed form (separate accent marks: Đ, u, U+031B, o, U+031B, U+0300, n, g), then the text holds "Đường" as 5 characters, and in the export every letter is drawn in the tool's own typeface; given a text holding 1,999 characters, when the user pastes e + U+0302 + U+0301, then "ế" is kept and the text holds 2,000 characters. (R5)
 
 ## UX notes
 COPY-tool.text in CMP-Toolbar; editing happens in CMP-TextEditor over CMP-Canvas, with
@@ -53,6 +54,7 @@ COPY-text.placeholder while empty.
 
 ## Edge cases
 - Pasting text while editing → inserted as plain text, cut at 2,000 characters.
+- Dropping text onto a text being edited → inserted as plain text, as a paste.
 - Text extending past the canvas edge → kept; the part outside the frame is not exported.
 
 ## Open questions

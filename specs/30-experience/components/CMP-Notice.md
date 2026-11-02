@@ -21,7 +21,8 @@ Message text; optional action (e.g. COPY-action.download after COPY-error.clipbo
 
 ## Behavior
 At most one notice at a time; a new one replaces the old. A language switch re-renders the
-visible notice in the new language.
+visible notice in the new language. The success timer pauses while the pointer or focus is on
+the notice.
 
 ## Accessibility
-Announced via a live region (polite for success/progress, assertive for errors).
+Announced by writing its text into the canvas's persistent live regions (polite for success/progress, assertive for errors); a progress message is cleared from the polite region when the work ends, before any success or error is written; the notice itself has no live role and never takes focus. Its close button is reachable by keyboard, and Esc closes the notice while focus is on it.

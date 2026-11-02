@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Empty state variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.tk-dark{--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--workArea:#0B0812}
+.tk-light{--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--workArea:#ECE8F4}
+.cell{width:550px;height:380px;background:var(--workArea);display:flex;align-items:center;justify-content:center;color:var(--fg)}
+.drop{width:470px;height:300px;border:2px dashed var(--muted);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;box-sizing:border-box}
+.ttl{font:700 17px Manrope,sans-serif;margin:0}
+.hint{font:500 14px/1.55 Manrope,sans-serif;color:var(--muted);margin:0;max-width:360px}
+kbd{font:500 12px 'JetBrains Mono',monospace;padding:0 4px;border:1px solid var(--lineStrong);border-bottom-width:2px;border-radius:7px;color:var(--fg);background:var(--surface)}
+.btn{height:32px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--lineStrong);border-radius:7px;background:var(--surface);color:var(--fg);font:600 13px Manrope,sans-serif}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.focus{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</helmet>
+<div style="width:3260px;height:500px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;gap:40px" class="board">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="display:flex;gap:40px">
+<div><div class="lab">CMP-EmptyState / default (focus on Open image) / {{t.name}}</div>
+<div class="cell" role="region" aria-label="Image canvas" data-copy="COPY-a11y.canvas"><div class="drop">
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--muted)"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
+<h2 class="ttl" data-copy="COPY-load.empty_title">Paste, drop or open an image</h2>
+<p class="hint" data-copy="COPY-load.empty_hint">Press <kbd>Ctrl+V</kbd> to paste a screenshot, drop an image file here, or choose Open image.</p>
+<button class="btn focus" data-copy="COPY-action.open">Open image</button>
+</div></div></div>
+<div><div class="lab">CMP-EmptyState / unfocused (embedded) / {{t.name}}</div>
+<div class="cell" role="region" aria-label="Image canvas" data-copy="COPY-a11y.canvas"><div class="drop">
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 3l10 9-5 1 3 6-2 1-3-6-3 3z"/></svg>
+<h2 class="ttl" data-copy="COPY-load.empty_title">Paste, drop or open an image</h2>
+<p class="hint" data-copy="COPY-load.click_to_paste">Click here, then press <kbd>Ctrl+V</kbd> to paste, or choose Open image.</p>
+<button class="btn" data-copy="COPY-action.open">Open image</button>
+</div></div></div>
+<div><div class="lab">CMP-EmptyState / macOS, narrow 390 / {{t.name}}</div>
+<div class="cell" role="region" aria-label="Image canvas" data-copy="COPY-a11y.canvas" style="width:390px"><div class="drop" style="width:358px">
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--muted)"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>
+<h2 class="ttl" data-copy="COPY-load.empty_title">Paste, drop or open an image</h2>
+<p class="hint" data-copy="COPY-load.empty_hint">Press <kbd>⌘V</kbd> to paste a screenshot, drop an image file here, or choose Open image.</p>
+<button class="btn" style="height:44px" data-copy="COPY-action.open">Open image</button>
+</div></div></div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3260,"height":500}}'>
+class Component extends DCLogic {
+renderVals() {
+return { themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }] };
+}
+}
+</script>
+</body>
+</html>

@@ -2,8 +2,8 @@
 
 M-1 stores nothing between sessions (PRN-01); every entity lives only in memory.
 Coordinates and sizes are in **image pixels** (1 unit = 1 pixel of the image at full
-resolution), with the origin at the image's top-left corner. Coordinates inside the padding
-are negative or beyond the image's size; they are never clamped to the image. The view
+resolution), with the origin at the image's top-left corner. Annotation coordinates may lie
+outside the frame or the image (for example in the padding); they are never clamped. The view
 (INV-05) never changes them.
 
 ### ENT-Session — Session
@@ -12,8 +12,8 @@ closes.
 - `image` — the ENT-Image, or none (empty state).
 - `annotations` — ordered list of ENT-Annotation; later items are drawn on top (except as
   RULE-10 says for redactions).
-- `frame` — the ENT-Frame (what is exported).
-- `padding` — the ENT-Padding around the image.
+- `frame` — the ENT-Frame (the part of the image that is exported; RULE-15 exports the canvas).
+- `padding` — the ENT-Padding around the frame.
 - `history` — undoable changes (RULE-11).
 - `unexported` — see RULE-18.
 
@@ -47,9 +47,9 @@ session: it starts at the defaults when the page opens and is kept when a new im
 - `strength` — `S`, `M` or `L` (blur and pixelate redactions only, RULE-10).
 
 ### ENT-Frame — Frame
-The part of the canvas that is exported.
-- `x`, `y`, `width`, `height` — whole image pixels, within the canvas (RULE-13); `x`, `y` are
-  negative when the frame starts in the padding. Default: the whole canvas.
+The part of the image that is exported; the padding goes around it (RULE-14).
+- `x`, `y`, `width`, `height` — whole image pixels, within the image (RULE-13). Default: the
+  whole image.
 
 ### ENT-Padding — Padding
 - `size` — `none`, `S`, `M` or `L` (RULE-14).
@@ -64,8 +64,10 @@ The part of the canvas that is exported.
   value derived from the original image: it has the redaction's colour, fully opaque, except
   where a shape, stroke, highlight, text or step later in drawing order is drawn over it, and
   that is drawn over the redaction colour. Blur and pixelate never show or sample pixels under
-  a solid redaction (RULE-10). The exported file holds exactly one flattened picture: no extra
-  frames, layers, thumbnails, or data blocks (PRN-02).
+  a solid redaction (RULE-10). The file the tool produces (the download, and the image it hands to
+  the clipboard) holds exactly one flattened picture: no extra frames, layers, thumbnails, or data
+  blocks (PRN-02). A browser may re-encode a clipboard copy and add colour-space or size tags; these
+  carry nothing from the source (INV-03).
 - **INV-03** — An exported image contains no metadata from the source file (location, camera,
   dates, comments, colour profiles or thumbnails). Pixels are converted to sRGB when the image
   is loaded, so dropping the colour profile does not change how colours look.

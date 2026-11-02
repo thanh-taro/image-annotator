@@ -1,0 +1,342 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-27T11:04:10Z"
+  },
+  "title": "Image Annotator Designs",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / default / embedded"
+    },
+    "CMP-Toolbar.dc.html": {
+      "x": 0,
+      "y": 1243,
+      "w": 2480,
+      "h": 920,
+      "title": "CMP-Toolbar"
+    },
+    "CMP-StylePanel.dc.html": {
+      "x": 0,
+      "y": 2283,
+      "w": 3904,
+      "h": 1460,
+      "title": "CMP-StylePanel"
+    },
+    "CMP-Canvas.dc.html": {
+      "x": 0,
+      "y": 3863,
+      "w": 2800,
+      "h": 980,
+      "title": "CMP-Canvas"
+    },
+    "CMP-EmptyState.dc.html": {
+      "x": 0,
+      "y": 4943,
+      "w": 3260,
+      "h": 500,
+      "title": "CMP-EmptyState"
+    },
+    "CMP-StatusBar.dc.html": {
+      "x": 0,
+      "y": 5563,
+      "w": 2480,
+      "h": 800,
+      "title": "CMP-StatusBar"
+    },
+    "CMP-TextEditor.dc.html": {
+      "x": 0,
+      "y": 6483,
+      "w": 1320,
+      "h": 520,
+      "title": "CMP-TextEditor"
+    },
+    "CMP-DropOverlay.dc.html": {
+      "x": 1400,
+      "y": 6483,
+      "w": 1240,
+      "h": 460,
+      "title": "CMP-DropOverlay"
+    },
+    "CMP-Notice.dc.html": {
+      "x": 0,
+      "y": 7123,
+      "w": 1600,
+      "h": 640,
+      "title": "CMP-Notice"
+    },
+    "CMP-ConfirmDialog.dc.html": {
+      "x": 1680,
+      "y": 7123,
+      "w": 1400,
+      "h": 940,
+      "title": "CMP-ConfirmDialog"
+    },
+    "CMP-ShortcutHelp.dc.html": {
+      "x": 0,
+      "y": 8183,
+      "w": 1798,
+      "h": 1360,
+      "title": "CMP-ShortcutHelp"
+    },
+    "FLOW-01_step1.dc.html": {
+      "x": 0,
+      "y": 9906,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-01 / step 1: pasted"
+    },
+    "FLOW-01_step2.dc.html": {
+      "x": 0,
+      "y": 10906,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-01 / step 2: arrow + rectangle"
+    },
+    "FLOW-01_step3.dc.html": {
+      "x": 0,
+      "y": 11906,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-01 / step 3: text label"
+    },
+    "FLOW-01_step4.dc.html": {
+      "x": 0,
+      "y": 12906,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-01 / step 4: solid redaction"
+    },
+    "FLOW-01_step5.dc.html": {
+      "x": 0,
+      "y": 13906,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-01 / step 5: copied"
+    },
+    "SCR-Annotator_empty_embedded.dc.html": {
+      "x": 0,
+      "y": 15149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / empty / embedded"
+    },
+    "SCR-Annotator_canvas-settings_embedded.dc.html": {
+      "x": 2600,
+      "y": 15149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / canvas-settings / embedded"
+    },
+    "SCR-Annotator_selecting_embedded.dc.html": {
+      "x": 0,
+      "y": 16149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / selecting / embedded"
+    },
+    "SCR-Annotator_cropping_embedded.dc.html": {
+      "x": 2600,
+      "y": 16149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / cropping / embedded"
+    },
+    "SCR-Annotator_dragging-file_embedded.dc.html": {
+      "x": 0,
+      "y": 17149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / dragging-file / embedded"
+    },
+    "SCR-Annotator_loading_embedded.dc.html": {
+      "x": 2600,
+      "y": 17149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / loading / embedded"
+    },
+    "SCR-Annotator_exporting_embedded.dc.html": {
+      "x": 0,
+      "y": 18149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / exporting / embedded"
+    },
+    "SCR-Annotator_error_embedded.dc.html": {
+      "x": 2600,
+      "y": 18149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / error / embedded"
+    },
+    "SCR-Annotator_shortcut-help_embedded.dc.html": {
+      "x": 0,
+      "y": 19149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / shortcut-help / embedded"
+    },
+    "SCR-Annotator_confirm-replace_embedded.dc.html": {
+      "x": 2600,
+      "y": 19149,
+      "w": 2520,
+      "h": 880,
+      "title": "SCR-Annotator / confirm-replace / embedded"
+    },
+    "SCR-Annotator_empty_narrow.dc.html": {
+      "x": 0,
+      "y": 20392,
+      "w": 900,
+      "h": 920,
+      "title": "SCR-Annotator / empty / narrow 390"
+    },
+    "SCR-Annotator_default_narrow.dc.html": {
+      "x": 980,
+      "y": 20392,
+      "w": 900,
+      "h": 920,
+      "title": "SCR-Annotator / default / narrow 390"
+    },
+    "SCR-Annotator_selecting_narrow.dc.html": {
+      "x": 2940,
+      "y": 20392,
+      "w": 900,
+      "h": 920,
+      "title": "SCR-Annotator / selecting / narrow 390"
+    },
+    "SCR-Annotator_cropping_narrow.dc.html": {
+      "x": 3920,
+      "y": 20392,
+      "w": 900,
+      "h": 920,
+      "title": "SCR-Annotator / cropping / narrow 390"
+    },
+    "FLOW-02_step1.dc.html": {
+      "x": 0,
+      "y": 21432,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-02 / steps 1–2: steps placed"
+    },
+    "FLOW-02_step2.dc.html": {
+      "x": 2600,
+      "y": 21432,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-02 / step 3: highlight"
+    },
+    "FLOW-02_step3.dc.html": {
+      "x": 0,
+      "y": 22432,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-02 / step 4: crop"
+    },
+    "FLOW-02_step4.dc.html": {
+      "x": 2600,
+      "y": 22432,
+      "w": 2520,
+      "h": 880,
+      "title": "FLOW-02 / steps 5–6: padded + downloaded"
+    },
+    "SCR-Annotator_canvas-settings_narrow.dc.html": {
+      "x": 1960,
+      "y": 20392,
+      "w": 900,
+      "h": 920,
+      "title": "SCR-Annotator / canvas-settings / narrow 390"
+    },
+    "SCR-Annotator_default_narrow-vi.dc.html": {
+      "x": 4900,
+      "y": 20392,
+      "w": 900,
+      "h": 920,
+      "title": "SCR-Annotator / default / narrow-vi 390"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "CMP-Toolbar.dc.html",
+    "CMP-StylePanel.dc.html",
+    "CMP-Canvas.dc.html",
+    "CMP-EmptyState.dc.html",
+    "CMP-StatusBar.dc.html",
+    "CMP-TextEditor.dc.html",
+    "CMP-DropOverlay.dc.html",
+    "CMP-Notice.dc.html",
+    "CMP-ConfirmDialog.dc.html",
+    "CMP-ShortcutHelp.dc.html",
+    "FLOW-01_step1.dc.html",
+    "FLOW-01_step2.dc.html",
+    "FLOW-01_step3.dc.html",
+    "FLOW-01_step4.dc.html",
+    "FLOW-01_step5.dc.html",
+    "SCR-Annotator_empty_embedded.dc.html",
+    "SCR-Annotator_canvas-settings_embedded.dc.html",
+    "SCR-Annotator_selecting_embedded.dc.html",
+    "SCR-Annotator_cropping_embedded.dc.html",
+    "SCR-Annotator_dragging-file_embedded.dc.html",
+    "SCR-Annotator_loading_embedded.dc.html",
+    "SCR-Annotator_exporting_embedded.dc.html",
+    "SCR-Annotator_error_embedded.dc.html",
+    "SCR-Annotator_shortcut-help_embedded.dc.html",
+    "SCR-Annotator_confirm-replace_embedded.dc.html",
+    "SCR-Annotator_empty_narrow.dc.html",
+    "SCR-Annotator_default_narrow.dc.html",
+    "SCR-Annotator_canvas-settings_narrow.dc.html",
+    "SCR-Annotator_selecting_narrow.dc.html",
+    "SCR-Annotator_cropping_narrow.dc.html",
+    "SCR-Annotator_default_narrow-vi.dc.html",
+    "FLOW-02_step1.dc.html",
+    "FLOW-02_step2.dc.html",
+    "FLOW-02_step3.dc.html",
+    "FLOW-02_step4.dc.html"
+  ],
+  "notes": {
+    "hero": {
+      "x": 0,
+      "y": -300,
+      "text": "Image Annotator · Workbench",
+      "kind": "title1",
+      "maxW": 2480
+    },
+    "d1": {
+      "x": 0,
+      "y": 1000,
+      "text": "D1 · Components",
+      "kind": "title1",
+      "maxW": 2480
+    },
+    "d2": {
+      "x": 0,
+      "y": 9663,
+      "text": "D2 · Primary flow (FLOW-01)",
+      "kind": "title1",
+      "maxW": 2520
+    },
+    "d3": {
+      "x": 0,
+      "y": 14906,
+      "text": "D3 · Screen states, embedded",
+      "kind": "title1",
+      "maxW": 5120
+    },
+    "d4": {
+      "x": 0,
+      "y": 20149,
+      "text": "D4 · Narrow 390 and FLOW-02",
+      "kind": "title1",
+      "maxW": 5120
+    }
+  },
+  "designSystems": []
+}

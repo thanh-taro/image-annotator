@@ -28,7 +28,7 @@ in a file, ready to paste into a ticket or chat (PRN-03), with nothing hidden le
 ## Requirements
 - **R1** The user can copy the result to the clipboard as a PNG image, pasteable into other apps.
 - **R2** The user can download the result as a PNG file named per RULE-15.
-- **R3** The exported image is flattened: image, padding, annotations and effects in one picture, exactly the frame, at full resolution (RULE-15), with no metadata (INV-03) and nothing a redaction hides (INV-02).
+- **R3** The exported image is flattened: image, padding, annotations and effects in one picture, exactly the canvas (the frame plus its padding, RULE-15), at full resolution (RULE-15), with no metadata (INV-03) and nothing a redaction hides (INV-02).
 - **R4** After a successful copy or download (RULE-15), the user is told it worked and, when there are any, how many redactions it contains (RULE-20); the session no longer counts as having unexported changes (RULE-18).
 - **R5** If the clipboard refuses the image, the user is told and offered the download instead.
 - **R6** Export never sends anything over the network (NFR-01) and leaves the session editable.
@@ -57,7 +57,8 @@ COPY-export.downloaded, COPY-export.downloaded_redactions. While an export takes
 0.5 s, COPY-export.preparing shows.
 
 ## Edge cases
-- Embedded and the host hasn't granted clipboard writing (RULE-16) → R5 applies.
+- Embedded and the host hasn't granted clipboard writing (RULE-16), in browsers that enforce the grant (ADR-0021) → R5 applies.
+- Some browsers re-encode a clipboard copy and add colour-space or size tags; these carry nothing from the source (INV-02, INV-03, ADR-0021). The downloaded file is exactly what the tool produced.
 - Embedded and the host hasn't allowed downloads (RULE-16) → the browser blocks the file
   silently and the tool can't tell; this is why the host contract requires the grant.
 - Export while a text is being edited → editing ends first and the text is included.

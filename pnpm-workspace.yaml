@@ -1,0 +1,28 @@
+# pnpm 11 settings (ADR-0001 supply chain, ADR-0003 tooling). Mirrors the suite (copied from DAFV).
+# New releases wait 3 days before they can be resolved (value in minutes).
+minimumReleaseAge: 4320
+# Fail the install when a package version has weaker publish trust (provenance / trusted
+# publisher) than an earlier version of the same package (account-takeover signature).
+trustPolicy: no-downgrade
+# Reviewed exceptions (exact versions only): semver 5.7.2 and 6.3.1 are the 2023-07 ReDoS
+# backports (CVE-2022-25883) published by the npm/semver maintainers from a release line without
+# provenance, after 7.5.2 gained it; reached only via build/dev tools (Babel, lighthouse).
+trustPolicyExclude:
+  - semver@5.7.2 || 6.3.1
+# Transitive dependencies may resolve only from the registry, never git or tarball URLs.
+# pnpm 11 default; set explicitly so a default change cannot weaken it.
+blockExoticSubdeps: true
+# Dependency lifecycle scripts stay blocked (no runtime dependency needs one), and an install
+# fails rather than silently skipping a newly added dependency's build script.
+# pnpm 11 default; set explicitly so a default change cannot weaken it.
+strictDepBuilds: true
+# wrangler (DEP-24, deploy only): its esbuild and workerd install scripts only verify/optimise
+# the platform binary, which arrives as an optional dependency; the deploy does not need them.
+allowBuilds:
+  esbuild: false
+  workerd: false
+# miniflare (inside wrangler) depends on sharp for the local-dev Images binding only. Its prebuilt
+# libvips is LGPL-3.0: ADR-0001 tolerates it as deploy-only tooling (D-026), but a static-assets
+# deploy never loads it, so it is removed (`-`) as in the sibling tools and never enters the tree.
+overrides:
+  sharp: '-'

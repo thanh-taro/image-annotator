@@ -30,7 +30,7 @@ Feel like a native part of the portal when embedded, and work fully on its own (
 - **R4** Only allowed host origins (RULE-16) can embed the tool; settings messages from any other origin are ignored.
 - **R5** The only message the tool sends to the host is the ready signal; it never contains image or annotation content (INV-04, RULE-16).
 - **R6** The tool works completely when opened standalone.
-- **R7** When embedded, the tool relies on the host frame's grants (RULE-16): downloads, clipboard writing and leave-page dialogs, and the host moving focus into the tool after the ready signal; opening new tabs is optional. Without the clipboard grant F-012.R5 applies; without focus F-001.R9 applies; without the download or leave-page grants the browser blocks them silently and the tool can't detect it, which is why the host contract requires them.
+- **R7** When embedded, the tool relies on the host frame's grants (RULE-16): downloads, clipboard writing and leave-page dialogs, and the host moving focus into the tool after the ready signal; opening new tabs is optional. Without the clipboard grant F-012.R5 applies; without focus F-001.R9 applies; without the download or leave-page grants the browser blocks them silently and the tool can't detect it, which is why the host contract requires them. Some browsers never show the leave-page warning from an embedded tool (F-014 edge case, D-028), and some allow clipboard writing without the grant (AC10); ADR-0021 lists which.
 
 ## Acceptance criteria
 - **AC1** Given the host opens the tool with theme dark in its address, when the tool first displays, then it shows the dark theme with nothing shown first in the light theme. (R1)
@@ -42,7 +42,7 @@ Feel like a native part of the portal when embedded, and work fully on its own (
 - **AC7** Given the tool is opened standalone, when the user uses every M-1 feature, then each works as specified. (R6)
 - **AC8** Given a page whose origin is not in the allowed list, when it tries to embed the tool, then the browser refuses to display the tool inside it. (R4)
 - **AC9** Given the tool embedded in a host frame with all grants, when the user downloads and copies, then the file is saved and the clipboard holds the image. (R7)
-- **AC10** Given the tool embedded in a host frame without the clipboard grant, when the user copies, then COPY-error.clipboard is shown with COPY-action.download. (R7)
+- **AC10** Given the tool embedded in a host frame without the clipboard grant, in a browser that enforces that grant (ADR-0021), when the user copies, then COPY-error.clipboard is shown with COPY-action.download. (R7)
 
 ## UX notes
 No theme control when embedded; the host owns it. SCR-Annotator shows no title of its own when
@@ -52,5 +52,6 @@ embedded (the host shows it).
 - Host sends an unknown theme value → keep the current theme.
 - Host never sends a theme → follow the device preference.
 - The theme never changes annotation colours or the export (INV-05).
+- The host hasn't moved focus into the tool → a paste goes to the host page, not the tool, until focus moves into the tool (a click, or Tab from the host; F-001.R9).
 
 ## Open questions

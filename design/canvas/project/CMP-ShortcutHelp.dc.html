@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shortcut help</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.tk-dark{--surface:#18121F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF}
+.tk-light{--surface:#FFFFFF;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0}
+.dlg{width:640px;max-width:100%;height:600px;max-height:calc(100vh - 32px);box-sizing:border-box;padding:16px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;color:var(--fg);display:flex;flex-direction:column}
+.hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex:none}
+.hd h2{margin:0;font:700 17px Manrope,sans-serif}
+.body{flex:1;overflow-y:auto;min-height:0}
+.cols{columns:2;column-gap:24px}
+.one{columns:1}
+.grp{break-inside:avoid;margin:0 0 12px}
+.grp h3{margin:0 0 4px;font:600 12px Manrope,sans-serif;color:var(--muted)}
+.note{margin:0 0 12px;font:500 12px/1.55 Manrope,sans-serif;color:var(--muted);flex:none}
+.body.focus{outline:2px solid var(--accent);outline-offset:2px}
+.grp ul{list-style:none;margin:0;padding:0}
+.r{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:24px;border-bottom:1px solid var(--line);font:500 12px Manrope,sans-serif}
+kbd{font:500 12px 'JetBrains Mono',monospace;padding:0 4px;border:1px solid var(--lineStrong);border-bottom-width:2px;border-radius:7px;white-space:nowrap}
+.x{width:32px;height:32px;border:0;background:transparent;color:var(--muted);border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.focus{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+</style>
+</helmet>
+<div class="board" style="width:1798px;height:1360px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;flex-direction:column;gap:40px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="display:flex;gap:24px;position:relative">
+<div><div class="lab">CMP-ShortcutHelp / open, Windows/Linux keys (focus on Close) / {{t.name}}</div>
+<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="sh-{{t.name}}">
+<div class="hd"><h2 id="sh-{{t.name}}" data-copy="COPY-shortcuts.title">Keyboard shortcuts</h2><button class="x focus" aria-label="Close" data-copy="COPY-action.close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<p class="note" data-copy="COPY-shortcuts.scope_note">Single-key and editing shortcuts work while the image has focus.</p>
+<div class="body" role="region" tabindex="0" aria-label="Keyboard shortcuts" data-copy="COPY-shortcuts.title"><div class="cols">
+<sc-for list="{{win}}" as="g" hint-placeholder-count="9">
+<section class="grp"><h3 data-copy="{{g.id}}">{{g.name}}</h3><ul>
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4">
+<li class="r"><span data-copy="{{r.id}}">{{r.label}}</span><kbd aria-hidden="true">{{r.keys}}</kbd><span class="sr">{{r.spoken}}</span></li>
+</sc-for>
+</ul></section>
+</sc-for>
+</div></div>
+</div></div>
+<div><div class="lab">CMP-ShortcutHelp / open, macOS keys (focus on list) / {{t.name}}</div>
+<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="shm-{{t.name}}">
+<div class="hd"><h2 id="shm-{{t.name}}" data-copy="COPY-shortcuts.title">Keyboard shortcuts</h2><button class="x" aria-label="Close" data-copy="COPY-action.close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<p class="note" data-copy="COPY-shortcuts.scope_note">Single-key and editing shortcuts work while the image has focus.</p>
+<div class="body focus" role="region" tabindex="0" aria-label="Keyboard shortcuts" data-copy="COPY-shortcuts.title"><div class="cols">
+<sc-for list="{{mac}}" as="g" hint-placeholder-count="9">
+<section class="grp"><h3 data-copy="{{g.id}}">{{g.name}}</h3><ul>
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4">
+<li class="r"><span data-copy="{{r.id}}">{{r.label}}</span><kbd aria-hidden="true">{{r.keys}}</kbd><span class="sr">{{r.spoken}}</span></li>
+</sc-for>
+</ul></section>
+</sc-for>
+</div></div>
+</div></div>
+<div><div class="lab">CMP-ShortcutHelp / open, narrow 390 (16 px gutters: max-width calc(100% - space.8); list scrolls) / {{t.name}}</div>
+<div class="dlg" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" data-copy="COPY-shortcuts.title" style="width:358px">
+<div class="hd"><h2 data-copy="COPY-shortcuts.title">Keyboard shortcuts</h2><button class="x" style="width:44px;height:44px" aria-label="Close" data-copy="COPY-action.close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<p class="note" data-copy="COPY-shortcuts.scope_note">Single-key and editing shortcuts work while the image has focus.</p>
+<div class="body" role="region" tabindex="0" aria-label="Keyboard shortcuts" data-copy="COPY-shortcuts.title"><div class="one">
+<sc-for list="{{win}}" as="g" hint-placeholder-count="9">
+<section class="grp"><h3 data-copy="{{g.id}}">{{g.name}}</h3><ul>
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4">
+<li class="r"><span data-copy="{{r.id}}">{{r.label}}</span><kbd aria-hidden="true">{{r.keys}}</kbd><span class="sr">{{r.spoken}}</span></li>
+</sc-for>
+</ul></section>
+</sc-for>
+</div></div>
+</div></div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1798,"height":1360}}'>
+class Component extends DCLogic {
+renderVals() {
+function build(mac) {
+var M = mac ? '⌘' : 'Ctrl+', Ms = mac ? 'Command ' : 'Control ';
+var A = mac ? '⌥' : 'Alt+', Aw = mac ? '⌥ ' : 'Alt+', Mw = mac ? '⌘ ' : 'Ctrl+', As = mac ? 'Option ' : 'Alt ';
+var S = mac ? '⇧' : 'Shift+';
+function row(id, label, keys, spoken) { return { id: id, label: label, keys: keys, spoken: spoken || keys }; }
+return [
+{ id: 'COPY-shortcuts.tools', name: 'Tools', rows: [
+row('COPY-tool.select','Select','V'), row('COPY-tool.rectangle','Rectangle','R'), row('COPY-tool.ellipse','Ellipse','O'),
+row('COPY-tool.arrow','Arrow','A'), row('COPY-tool.line','Line','L'), row('COPY-tool.pen','Pen','P'),
+row('COPY-tool.highlight','Highlight','H'), row('COPY-tool.text','Text','T'), row('COPY-tool.step','Step','N'),
+row('COPY-tool.redact','Redact','X'), row('COPY-tool.crop','Crop','C') ] },
+{ id: 'COPY-shortcuts.canvas', name: 'Canvas', rows: [
+row('COPY-shortcut.place','Place an annotation','Enter'), row('COPY-shortcut.edit_text','Edit selected text','Enter'),
+row('COPY-shortcut.next','Next / previous annotation','Tab / ' + S + 'Tab','Tab, or Shift Tab') ] },
+{ id: 'COPY-shortcuts.edit', name: 'Edit', rows: [
+row('COPY-action.delete','Delete','Delete / Backspace','Delete, or Backspace'), row('COPY-action.duplicate','Duplicate',M + 'D',Ms + 'D'),
+row('COPY-shortcut.select_all','Select all',M + 'A',Ms + 'A'), row('COPY-action.bring_forward','Bring forward',']','right bracket'),
+row('COPY-action.send_backward','Send backward','[','left bracket'), row('COPY-shortcut.move','Move selection','← ↑ → ↓','arrow keys; with Shift, 10 pixels'),
+row('COPY-shortcut.resize','Resize selection',Aw + 'arrows',As + 'plus arrow keys'), row('COPY-shortcut.cancel','Cancel, finish editing, deselect','Esc','Escape') ] },
+{ id: 'COPY-shortcuts.history', name: 'History', rows: [
+row('COPY-action.undo','Undo',M + 'Z',Ms + 'Z'),
+row('COPY-action.redo','Redo',mac ? '⌘⇧Z' : 'Ctrl+Shift+Z / Ctrl+Y',mac ? 'Command Shift Z' : 'Control Shift Z, or Control Y') ] },
+{ id: 'COPY-shortcuts.view', name: 'View', rows: [
+row('COPY-action.zoom_in','Zoom in',M + '=',Ms + 'equals'), row('COPY-action.zoom_out','Zoom out',M + '-',Ms + 'minus'),
+row('COPY-action.zoom_fit','Fit to view',S + '1','Shift 1'), row('COPY-action.zoom_actual','Actual size',S + '0','Shift 0'),
+row('COPY-shortcut.pan','Pan the view','Space+drag','Space plus drag'), row('COPY-shortcut.zoom_pointer','Zoom at pointer',Mw + 'wheel',Ms + 'plus wheel') ] },
+{ id: 'COPY-shortcuts.pointer', name: 'Pointer', rows: [ row('COPY-shortcut.move_while_drawing','Move while drawing',Aw + 'drag',As + 'plus drag') ] },
+{ id: 'COPY-shortcuts.load', name: 'Open', rows: [ row('COPY-shortcut.paste','Paste an image',M + 'V',Ms + 'V'), row('COPY-action.open','Open image',M + 'O',Ms + 'O') ] },
+{ id: 'COPY-shortcuts.export', name: 'Export', rows: [ row('COPY-action.copy','Copy',M + 'C',Ms + 'C'), row('COPY-action.download','Download',M + 'S',Ms + 'S') ] },
+{ id: 'COPY-shortcuts.help', name: 'Help', rows: [ row('COPY-action.shortcuts','Keyboard shortcuts','?','question mark') ] }
+];
+}
+return { win: build(false), mac: build(true), themes: [
+{ name: 'dark', cls: 'tk-dark' },
+{ name: 'light', cls: 'tk-light' }
+] };
+}
+}
+</script>
+</body>
+</html>

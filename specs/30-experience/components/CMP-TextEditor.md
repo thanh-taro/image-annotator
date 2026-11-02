@@ -20,4 +20,4 @@ Editable text with caret; COPY-text.placeholder while empty.
 Grows with its content; ends on click outside or Esc (F-005).
 
 ## Accessibility
-A multi-line text field named COPY-tool.text.
+A multi-line text field named COPY-tool.text. It takes focus when editing starts and returns focus to the canvas, with the text selected, when editing ends.

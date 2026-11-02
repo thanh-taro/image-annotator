@@ -1,0 +1,20 @@
+# Build plan — M-1 (18 features)
+
+Shared modules (MOD-Document, MOD-Canvas, MOD-Render) are touched by almost every drawing feature, so parallel worktrees would collide. Features run **one at a time** except where their modules don't overlap (marked ∥). Each feature runs the full pipeline: context → tests per AC (fail first) → implement → `pnpm check:full` + screenshots vs designs → code review (+ security review where files, clipboard, host or network are touched) → coverage → commit.
+
+Spike code is promoted deliberately into the feature that needs it, in a commit that cites the ADR: engine (ADR-0004/0016/0022) in F-003, blur (ADR-0006/0017) in F-007, PNG strip (ADR-0019) in F-012, text overlay (ADR-0020) in F-005, decode (ADR-0018) in F-001.
+
+| Wave | Features | Why this order |
+|---|---|---|
+| 1 | **F-001** Load ∥ **F-015** Host + **F-018** Language ∥ **F-016** Privacy | No dependencies; IO vs Host/Copy vs a dialog: separate modules |
+| 2 | **F-002** Zoom and pan | The view every drawing tool needs |
+| 3 | **F-003** Shapes → **F-004** Strokes and highlights → **F-006** Steps → **F-005** Text | Engine, tool state machine and paint grow one kind at a time |
+| 4 | **F-007** Redact | Worker effects; needs the drawn kinds for "covers earlier annotations" |
+| 5 | **F-012** Copy and download | Exports everything drawn so far; INV-02/03 tests |
+| 6 | **F-008** Select and edit → **F-009** Undo and redo | Depend on all kinds |
+| 7 | **F-010** Crop → **F-011** Padding | Frame, then padding around it (D-020) |
+| 8 | **F-013** Keyboard ∥ **F-014** Warning ∥ **F-017** Offline | Finish-up; separate modules |
+
+Scale: about 18 builder agents, each followed by 1–2 review agents, so roughly 40–55 agent runs over many sessions. Each feature ends with a commit on a build branch.
+
+Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, or each gap listed as a manual check (Firefox, Safari Vietnamese typing, paste into apps, GPU Chromium drag fps, iPad limits).

@@ -20,4 +20,4 @@ Full-area overlay with COPY-load.drop_here.
 Appears when a file enters the tool, disappears on drop, leave or Esc.
 
 ## Accessibility
-Announced politely on appearance.
+Announced politely each time it appears; the message is cleared when it disappears.

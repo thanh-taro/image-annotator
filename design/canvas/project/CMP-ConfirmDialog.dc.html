@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Confirm dialog variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.tk-dark{--surface:#18121F;--surface2:#221A2F;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--danger:#FF8595;--scrim:#07050BB3;--workArea:#0B0812}
+.tk-light{--surface:#FFFFFF;--surface2:#F1EDFA;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--danger:#C0243B;--scrim:#16111F66;--workArea:#ECE8F4}
+.stage{width:640px;height:176px;background:var(--workArea);position:relative;display:flex;align-items:center;justify-content:center}
+.stage::before{content:"";position:absolute;inset:0;background:var(--scrim)}
+.dlg{position:relative;width:420px;max-width:calc(100% - 32px);box-sizing:border-box;padding:16px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;color:var(--fg)}
+.dlg h2{margin:0 0 8px;font:700 17px Manrope,sans-serif}
+.dlg p{margin:0 0 16px;font:500 13px/1.5 Manrope,sans-serif;color:var(--muted)}
+.row{display:flex;justify-content:flex-end;gap:8px}
+.btn{height:32px;display:inline-flex;align-items:center;padding:0 12px;border:1px solid var(--lineStrong);border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif}
+.btn.quiet{border-color:transparent}
+.btn.hov{background:var(--surface2)}
+.btn.focus{outline:2px solid var(--accent);outline-offset:2px}
+.btn.pri{border-color:var(--accent);color:var(--accent)}
+.btn.dng{border-color:var(--danger);color:var(--danger)}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+</style>
+</helmet>
+<div style="width:1400px;height:940px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;gap:40px" class="board">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="display:flex;flex-direction:column;gap:16px">
+<div><div class="lab">CMP-ConfirmDialog / replace (focus on Cancel) / {{t.name}}</div>
+<div class="stage"><div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="r-{{t.name}}" aria-describedby="rd-{{t.name}}">
+<h2 id="r-{{t.name}}" data-copy="COPY-confirm.replace_title">Replace this image?</h2>
+<p id="rd-{{t.name}}" data-copy="COPY-confirm.replace">Your changes haven't been copied or downloaded. They will be lost.</p>
+<div class="row"><button class="btn quiet focus" data-copy="COPY-action.cancel">Cancel</button><button class="btn dng" data-copy="COPY-action.replace">Replace</button></div>
+</div></div></div>
+<div><div class="lab">CMP-ConfirmDialog / clear (focus on Cancel) / {{t.name}}</div>
+<div class="stage"><div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="c-{{t.name}}" aria-describedby="cd-{{t.name}}">
+<h2 id="c-{{t.name}}" data-copy="COPY-confirm.clear_title">Start over?</h2>
+<p id="cd-{{t.name}}" data-copy="COPY-confirm.clear">Your changes haven't been copied or downloaded. They will be lost, and this can't be undone.</p>
+<div class="row"><button class="btn quiet focus" data-copy="COPY-action.cancel">Cancel</button><button class="btn dng" data-copy="COPY-action.clear">Start over</button></div>
+</div></div></div>
+<div><div class="lab">CMP-ConfirmDialog / scale-down (focus on Cancel) / {{t.name}}</div>
+<div class="stage"><div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="s-{{t.name}}" aria-describedby="sd-{{t.name}}">
+<h2 id="s-{{t.name}}" data-copy="COPY-load.scale_down_title">This image is very large</h2>
+<p id="sd-{{t.name}}" data-copy="COPY-load.scale_down">Open it scaled down to 5,441 × 3,083 px? The original file is not changed.</p>
+<div class="row"><button class="btn quiet focus" data-copy="COPY-action.cancel">Cancel</button><button class="btn pri" data-copy="COPY-load.scale_down_action">Open scaled down</button></div>
+</div></div></div>
+<div><div class="lab">CMP-ConfirmDialog / clear, narrow 390 (Cancel hovered) / {{t.name}}</div>
+<div class="stage" style="width:390px;height:220px"><div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="n-{{t.name}}" aria-describedby="nd-{{t.name}}">
+<h2 id="n-{{t.name}}" data-copy="COPY-confirm.clear_title">Start over?</h2>
+<p id="nd-{{t.name}}" data-copy="COPY-confirm.clear">Your changes haven't been copied or downloaded. They will be lost, and this can't be undone.</p>
+<div class="row"><button class="btn quiet hov" style="height:44px" data-copy="COPY-action.cancel">Cancel</button><button class="btn dng" style="height:44px" data-copy="COPY-action.clear">Start over</button></div>
+</div></div></div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+return { themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }] };
+}
+}
+</script>
+</body>
+</html>

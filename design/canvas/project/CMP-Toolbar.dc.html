@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Toolbar variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--accentHover:#B79BFF;--onAccent:#0F0B16;--selection:#2A1D47}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--accentHover:#5429C0;--onAccent:#FFFFFF;--selection:#F0EAFE}
+.tb{height:40px;display:flex;align-items:center;gap:4px;padding:0 8px;background:var(--surface);border:1px solid var(--line);box-sizing:border-box;color:var(--fg)}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px;flex:none}
+.ib{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:7px;background:transparent;color:var(--fg);padding:0}
+.ib.on{background:var(--selection);box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent)}
+.ib:disabled,.tbtn:disabled{color:var(--muted);background:transparent}
+.tbtn{height:32px;flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif}
+.primary{background:var(--accent);color:var(--onAccent)}
+.primary:disabled{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line)}
+.hov{background:var(--surface2)}
+.primary.hov{background:var(--accentHover)}
+.prs{background:var(--selection)}
+.pill{height:24px;flex:none;display:inline-flex;align-items:center;gap:4px;padding:0 8px;border-radius:999px;background:var(--surface2);color:var(--fg);font:600 12px Manrope,sans-serif}
+.focus{outline:2px solid var(--accent);outline-offset:2px}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+.nar{width:390px;position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);box-sizing:border-box;color:var(--fg)}
+.nar .r{height:48px;display:flex;align-items:center;gap:4px;padding:0 4px;flex:none}
+.nar .r + .r{border-top:1px solid var(--line)}
+.nar .ib{width:44px;height:44px}
+.nar .tbtn{height:44px}
+.scroll{overflow-x:auto;overflow-y:hidden;position:relative;scrollbar-width:none}
+.scroll .focus{outline-offset:-2px}
+.strip{display:flex;gap:4px;flex:none}
+.fade{position:absolute;right:0;bottom:0;width:24px;height:48px;background:linear-gradient(90deg,transparent,var(--surface) 85%);pointer-events:none;display:flex;align-items:center;justify-content:flex-end;color:var(--muted)}
+.menu{width:220px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;padding:4px;display:flex;flex-direction:column;color:var(--fg)}
+.menu .tbtn{justify-content:flex-start}
+.tip{position:absolute;white-space:nowrap;height:24px;display:flex;align-items:center;padding:0 8px;border-radius:7px;background:var(--surface);color:var(--fg);border:1px solid var(--lineStrong);font:600 12px Manrope,sans-serif;z-index:2}
+.st{display:grid;grid-template-columns:120px repeat(5,64px);gap:8px;align-items:center;font:500 12px Manrope,sans-serif;color:var(--boardLabel)}
+.st .c{display:flex;justify-content:center}
+</style>
+</helmet>
+<div class="board" style="width:2480px;height:920px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;gap:40px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="width:1180px;display:flex;flex-direction:column;gap:24px">
+<div>
+<div class="lab">CMP-Toolbar / no image (focus on Open image) / {{t.name}}</div>
+<div class="tb" role="toolbar" aria-label="Tools and actions" data-copy="COPY-a11y.toolbar">
+<button class="tbtn focus" data-copy="COPY-action.open" aria-keyshortcuts="Control+O"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>Open image</button>
+<div class="sep"></div>
+<sc-for list="{{tools}}" as="k" hint-placeholder-count="11"><button class="ib" disabled aria-pressed="false" aria-label="{{k.label}}" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"/></svg></button></sc-for>
+<div class="sep"></div>
+<button class="ib" disabled aria-label="Undo" aria-keyshortcuts="Control+Z" data-copy="COPY-action.undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{undo}}"/></svg></button>
+<button class="ib" disabled aria-label="Redo" aria-keyshortcuts="Control+Shift+Z Control+Y" data-copy="COPY-action.redo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{redo}}"/></svg></button>
+<div style="flex:1"></div>
+<button class="tbtn primary" disabled data-copy="COPY-action.copy" aria-keyshortcuts="Control+C"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg>Copy</button>
+<button class="tbtn" disabled data-copy="COPY-action.download" aria-keyshortcuts="Control+S"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Download</button>
+<button class="ib" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" data-copy="COPY-action.more"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
+</div>
+</div>
+<div>
+<div class="lab">CMP-Toolbar / default (arrow active, 3 redactions) / {{t.name}}</div>
+<div class="tb" role="toolbar" aria-label="Tools and actions" data-copy="COPY-a11y.toolbar">
+<button class="tbtn" data-copy="COPY-action.open" aria-keyshortcuts="Control+O"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg>Open image</button>
+<div class="sep"></div>
+<sc-for list="{{tools}}" as="k" hint-placeholder-count="11"><button class="{{k.cls}}" aria-pressed="{{k.on}}" aria-label="{{k.label}}" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"/></svg></button></sc-for>
+<div class="sep"></div>
+<button class="ib" aria-label="Undo" aria-keyshortcuts="Control+Z" data-copy="COPY-action.undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{undo}}"/></svg></button>
+<button class="ib" aria-label="Redo" aria-keyshortcuts="Control+Shift+Z Control+Y" data-copy="COPY-action.redo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{redo}}"/></svg></button>
+<div style="flex:1"></div>
+<span class="pill" data-copy="COPY-export.redaction_count">3 redactions</span>
+<button class="tbtn primary" data-copy="COPY-action.copy" aria-keyshortcuts="Control+C"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg>Copy</button>
+<button class="tbtn" data-copy="COPY-action.download" aria-keyshortcuts="Control+S"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Download</button>
+<button class="ib" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" data-copy="COPY-action.more"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
+</div>
+</div>
+<div>
+<div class="lab">CMP-Toolbar / compact 900 (800–999 px: Open image and Download as icons, D-014) / {{t.name}}</div>
+<div class="tb" style="width:900px" role="toolbar" aria-label="Tools and actions" data-copy="COPY-a11y.toolbar">
+<button class="ib" aria-label="Open image" data-copy="COPY-action.open" aria-keyshortcuts="Control+O"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></button>
+<div class="sep"></div>
+<sc-for list="{{tools}}" as="k" hint-placeholder-count="11"><button class="{{k.cls}}" aria-pressed="{{k.on}}" aria-label="{{k.label}}" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"/></svg></button></sc-for>
+<div class="sep"></div>
+<button class="ib" aria-label="Undo" aria-keyshortcuts="Control+Z" data-copy="COPY-action.undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{undo}}"/></svg></button>
+<button class="ib" aria-label="Redo" aria-keyshortcuts="Control+Shift+Z Control+Y" data-copy="COPY-action.redo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{redo}}"/></svg></button>
+<div style="flex:1"></div>
+<span class="pill" data-copy="COPY-export.redaction_count">3 redactions</span>
+<button class="tbtn primary" data-copy="COPY-action.copy" aria-keyshortcuts="Control+C"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg>Copy</button>
+<button class="ib" aria-label="Download" data-copy="COPY-action.download" aria-keyshortcuts="Control+S"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>
+<button class="ib" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" data-copy="COPY-action.more"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
+</div>
+</div>
+<div>
+<div class="lab">CMP-Toolbar / compact 800, 128 redactions (count fallback: number only; also fits vi-VN "Sao chép")  / {{t.name}}</div>
+<div class="tb" style="width:800px" role="toolbar" aria-label="Tools and actions" data-copy="COPY-a11y.toolbar">
+<button class="ib" aria-label="Open image" data-copy="COPY-action.open" aria-keyshortcuts="Control+O"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></button>
+<div class="sep"></div>
+<sc-for list="{{tools}}" as="k" hint-placeholder-count="11"><button class="{{k.cls}}" aria-pressed="{{k.on}}" aria-label="{{k.label}}" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"/></svg></button></sc-for>
+<div class="sep"></div>
+<button class="ib" aria-label="Undo" aria-keyshortcuts="Control+Z" data-copy="COPY-action.undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{undo}}"/></svg></button>
+<button class="ib" aria-label="Redo" aria-keyshortcuts="Control+Shift+Z Control+Y" data-copy="COPY-action.redo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{redo}}"/></svg></button>
+<div style="flex:1"></div>
+<span class="pill" role="img" aria-label="128 redactions" data-copy="COPY-export.redaction_count"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="2" fill="currentColor"/></svg>128</span>
+<button class="tbtn primary" data-copy="COPY-action.copy" aria-keyshortcuts="Control+C"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg>Copy</button>
+<button class="ib" aria-label="Download" data-copy="COPY-action.download" aria-keyshortcuts="Control+S"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg></button>
+<button class="ib" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" data-copy="COPY-action.more"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
+</div>
+</div>
+<div style="display:flex;gap:32px;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:20px">
+<div><div class="lab">CMP-Toolbar / narrow 390, tooltip on Arrow (tools scroll; gap space.1–space.3 chosen so the last visible icon is half under the fade: 4 px at 390) / {{t.name}}</div>
+<div class="nar" role="toolbar" aria-label="Tools and actions" data-copy="COPY-a11y.toolbar">
+<div class="r">
+<button class="ib" aria-label="Open image" aria-keyshortcuts="Control+O" data-copy="COPY-action.open"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></button>
+<button class="ib" aria-label="Undo" aria-keyshortcuts="Control+Z" data-copy="COPY-action.undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{undo}}"/></svg></button>
+<button class="ib" aria-label="Redo" aria-keyshortcuts="Control+Shift+Z Control+Y" data-copy="COPY-action.redo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{redo}}"/></svg></button>
+<div style="flex:1"></div>
+<span class="pill" data-copy="COPY-export.redaction_count">3 redactions</span>
+<button class="tbtn primary" data-copy="COPY-action.copy">Copy</button>
+<button class="ib" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" data-copy="COPY-action.more"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
+</div>
+<div class="r scroll">
+<sc-for list="{{tools}}" as="k" hint-placeholder-count="11"><button class="{{k.cls}}" aria-pressed="{{k.on}}" aria-label="{{k.label}}" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"/></svg></button></sc-for>
+</div>
+<div class="fade" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>
+<span class="tip" role="tooltip" data-copy="COPY-tool.shortcut_hint" style="left:132px;top:100px">Arrow (A)</span>
+</div></div>
+<div><div class="lab">CMP-Toolbar / narrow 390, tools scrolled to the end (scrollLeft = max, never flex-end) / {{t.name}}</div>
+<div class="nar" role="toolbar" aria-label="Tools and actions" data-copy="COPY-a11y.toolbar">
+<div class="r scroll">
+<div class="strip" style="margin-left:-144px"><sc-for list="{{toolsEnd}}" as="k" hint-placeholder-count="11"><button class="{{k.cls}}" aria-pressed="{{k.on}}" aria-label="{{k.label}}" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"/></svg></button></sc-for></div>
+</div>
+<div aria-hidden="true" style="position:absolute;left:0;top:0;width:24px;height:48px;background:linear-gradient(270deg,transparent,var(--surface) 85%);display:flex;align-items:center;color:var(--muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></div>
+</div></div>
+<div><div class="lab">CMP-Toolbar / narrow 390, no image / {{t.name}}</div>
+<div class="nar" role="toolbar" aria-label="Tools and actions" data-copy="COPY-a11y.toolbar">
+<div class="r">
+<button class="ib focus" aria-label="Open image" data-copy="COPY-action.open"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></button>
+<button class="ib" disabled aria-label="Undo" data-copy="COPY-action.undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{undo}}"/></svg></button>
+<button class="ib" disabled aria-label="Redo" data-copy="COPY-action.redo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{redo}}"/></svg></button>
+<div style="flex:1"></div>
+<button class="tbtn primary" disabled data-copy="COPY-action.copy">Copy</button>
+<button class="ib" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" data-copy="COPY-action.more"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
+</div>
+<div class="r scroll"><sc-for list="{{tools}}" as="k" hint-placeholder-count="11"><button class="ib" disabled aria-pressed="false" aria-label="{{k.label}}" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.d}}"/></svg></button></sc-for></div>
+<div class="fade" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>
+</div></div>
+<div><div class="lab">CMP-Toolbar / narrow 320 (count fallback: number only) / {{t.name}}</div>
+<div class="nar" role="toolbar" aria-label="Tools and actions" data-copy="COPY-a11y.toolbar" style="width:320px">
+<div class="r">
+<button class="ib" aria-label="Open image" data-copy="COPY-action.open"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></button>
+<button class="ib" aria-label="Undo" data-copy="COPY-action.undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{undo}}"/></svg></button>
+<button class="ib" aria-label="Redo" data-copy="COPY-action.redo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="{{redo}}"/></svg></button>
+<div style="flex:1"></div>
+<span class="pill" role="img" aria-label="3 redactions" data-copy="COPY-export.redaction_count"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="2" fill="currentColor"/></svg>3</span>
+<button class="tbtn primary" style="padding:0 8px" data-copy="COPY-action.copy">Copy</button>
+<button class="ib" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" data-copy="COPY-action.more"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
+</div>
+</div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:20px">
+<div><div class="lab">CMP-Toolbar / overflow open / {{t.name}}</div>
+<div class="menu" role="menu" aria-label="More actions" data-copy="COPY-action.more">
+<button role="menuitem" class="tbtn hov" data-copy="COPY-action.shortcuts">Keyboard shortcuts</button>
+<div style="height:1px;background:var(--line);margin:4px 0"></div>
+<button role="menuitem" class="tbtn" data-copy="COPY-action.clear">Start over</button>
+</div></div>
+<div><div class="lab">CMP-Toolbar / overflow open, narrow / {{t.name}}</div>
+<div class="menu" role="menu" aria-label="More actions" data-copy="COPY-action.more">
+<button role="menuitem" class="tbtn" style="height:44px" data-copy="COPY-action.download">Download</button>
+<button role="menuitem" class="tbtn" style="height:44px" data-copy="COPY-action.shortcuts">Keyboard shortcuts</button>
+<div style="height:1px;background:var(--line);margin:4px 0"></div>
+<button role="menuitem" class="tbtn" style="height:44px" data-copy="COPY-action.clear">Start over</button>
+</div></div>
+</div>
+<div><div class="lab">CMP-Toolbar / button states / {{t.name}}</div>
+<div class="st" style="background:var(--surface);padding:12px;border:1px solid var(--line)">
+<span></span><span class="c">default</span><span class="c">hover</span><span class="c">pressed</span><span class="c">focus</span><span class="c">disabled</span>
+<span>Tool</span>
+<span class="c"><button class="ib" aria-label="Rectangle (R)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16v12H4z"/></svg></button></span>
+<span class="c"><button class="ib hov" aria-label="Rectangle (R)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16v12H4z"/></svg></button></span>
+<span class="c"><button class="ib on" aria-pressed="true" aria-label="Rectangle (R)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16v12H4z"/></svg></button></span>
+<span class="c"><button class="ib focus" aria-label="Rectangle (R)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16v12H4z"/></svg></button></span>
+<span class="c"><button class="ib" disabled aria-label="Rectangle (R)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16v12H4z"/></svg></button></span>
+<span>Text button</span>
+<span class="c"><button class="tbtn" style="padding:0 8px" data-copy="COPY-action.download">Download</button></span>
+<span class="c"><button class="tbtn hov" style="padding:0 8px" data-copy="COPY-action.download">Download</button></span>
+<span class="c"><button class="tbtn prs" style="padding:0 8px" data-copy="COPY-action.download">Download</button></span>
+<span class="c"><button class="tbtn focus" style="padding:0 8px" data-copy="COPY-action.download">Download</button></span>
+<span class="c"><button class="tbtn" disabled style="padding:0 8px" data-copy="COPY-action.download">Download</button></span>
+<span>Copy</span>
+<span class="c"><button class="tbtn primary" data-copy="COPY-action.copy">Copy</button></span>
+<span class="c"><button class="tbtn primary hov" data-copy="COPY-action.copy">Copy</button></span>
+<span class="c"><button class="tbtn primary hov" data-copy="COPY-action.copy">Copy</button></span>
+<span class="c"><button class="tbtn primary focus" data-copy="COPY-action.copy">Copy</button></span>
+<span class="c"><button class="tbtn primary" disabled data-copy="COPY-action.copy">Copy</button></span>
+</div></div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2480,"height":920}}'>
+class Component extends DCLogic {
+renderVals() {
+var t = [
+['Select (V)','M5 3l14 8-6 2-3 6z','V'],
+['Rectangle (R)','M4 6h16v12H4z','R'],
+['Ellipse (O)','M4 12a8 6 0 1016 0a8 6 0 10-16 0','O'],
+['Arrow (A)','M5 19L19 5M10 5h9v9','A'],
+['Line (L)','M5 19L19 5','L'],
+['Pen (P)','M4 17c3-6 5 2 8-3s4-6 8-5','P'],
+['Highlight (H)','M9 15l6-10 4 2-6 10zM9 15l-2 4h4M4 21h16','H'],
+['Text (T)','M5 6h14M12 6v13','T'],
+['Step (N)','M4 12a8 8 0 1016 0a8 8 0 10-16 0M11 9l2-1v8','N'],
+['Redact (X)','M3 8h18v8H3zM6 11h12M6 13h12','X'],
+['Crop (C)','M7 3v14h14M3 7h14v14','C']
+];
+var tools = t.map(function (x, i) { return { label: x[0], d: x[1], key: x[2], on: i === 3 ? 'true' : 'false', cls: i === 3 ? 'ib on' : 'ib' }; });
+var end = t.map(function (x, i) { return { label: x[0], d: x[1], on: i === 9 ? 'true' : 'false', cls: i === 9 ? 'ib on' : 'ib' }; });
+return {
+themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }],
+tools: tools, toolsEnd: end,
+undo: 'M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3',
+redo: 'M15 14l5-5-5-5M20 9H10a6 6 0 000 12h3'
+};
+}
+}
+</script>
+</body>
+</html>

@@ -4,3 +4,17 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Build and tooling output (generated *.gen.* files, public/_headers, public/third-party-notices.txt
+# and pnpm-lock.yaml ARE committed)
+node_modules/
+dist/
+dist-e2e/
+test-results/
+playwright-report/
+.lighthouseci/
+.wrangler/
+.vite/
+
+# Claude Code agent worktrees (local only)
+.claude/worktrees/

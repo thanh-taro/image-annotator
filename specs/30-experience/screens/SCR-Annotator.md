@@ -20,14 +20,14 @@ Overlays: CMP-Notice, CMP-ConfirmDialog, CMP-ShortcutHelp.
 ## States
 | State | When | What the user sees |
 |---|---|---|
-| empty | No image loaded | CMP-EmptyState; tools, export and zoom disabled |
+| empty | No image loaded | CMP-EmptyState across the whole work area; tools, export and zoom disabled; the style panel is hidden |
 | default | Image loaded, drawing tool active | Canvas fitted, style panel for the active tool |
 | canvas-settings | Select tool active, nothing selected | Style panel shows padding and background |
-| selecting | One or more annotations selected | Handles on the selection; style panel for the selection |
-| editing-text | A text annotation is being edited | CMP-TextEditor; shortcuts off |
+| selecting | One or more annotations selected | Handles on a single selection, an outline on each of several (CMP-Canvas); style panel for the selection |
+| editing-text | A text annotation is being edited | CMP-TextEditor has focus; shortcuts off; the style panel shows the edited text's colour and size, and changes apply to it |
 | cropping | Crop tool active | Frame handles, dimmed outside, COPY-crop.size |
 | dragging-file | A file is dragged over the tool | CMP-DropOverlay |
-| loading | Decoding takes longer than 0.5 s | COPY-load.loading in CMP-Notice |
+| loading | Decoding takes longer than 0.5 s | COPY-load.loading in CMP-Notice over the current state (the empty state, or the image being replaced) |
 | exporting | Export takes longer than 0.5 s | COPY-export.preparing |
 | error | Load or export failed | CMP-Notice with the matching error message (e.g. COPY-error.export_failed); session unchanged |
 

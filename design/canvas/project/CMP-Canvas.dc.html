@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Canvas variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.tk-dark{--surface:#18121F;--fg:#EFEAF8;--lineStrong:#6F6290;--muted:#9C92B0;--accent:#A47BFF;--workArea:#0B0812;--checkerA:#2A2333;--checkerB:#1E1828;--selectionOutline:#A47BFF;--handleFill:#FFFFFF;--handleBorder:#6837E0;--cropDim:#07050BA6}
+.tk-light{--surface:#FFFFFF;--fg:#16111F;--lineStrong:#8C82A2;--muted:#5E566F;--accent:#6837E0;--workArea:#ECE8F4;--checkerA:#FFFFFF;--checkerB:#E6E1F0;--selectionOutline:#6837E0;--handleFill:#FFFFFF;--handleBorder:#6837E0;--cropDim:#16111F8C}
+.cell{width:420px;height:400px;background:var(--workArea);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.cell.focus{outline:2px solid var(--accent);outline-offset:-2px}
+.img{width:340px;height:220px;position:relative;background:#F6F7F9;font-family:system-ui,sans-serif;font-size:12px;color:#1F2430}
+.bar{height:26px;background:#FFFFFF;border-bottom:1px solid #E3E6EB;display:flex;align-items:center;padding:0 12px;font-weight:700}
+.row{margin:8px 12px;height:24px;background:#FFFFFF;border:1px solid #E3E6EB;border-radius:4px;display:flex;align-items:center;padding:0 8px}
+.sel{position:absolute;border:2px solid var(--selectionOutline);box-shadow:0 0 0 1px var(--workArea);box-sizing:border-box;pointer-events:none}
+.h{position:absolute;width:10px;height:10px;background:var(--handleFill);border:2px solid var(--handleBorder);box-sizing:border-box}
+.hit{position:absolute;width:24px;height:24px;border:1px dashed var(--muted);box-sizing:border-box}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px;width:420px}
+.chip{position:absolute;padding:4px 8px;border-radius:7px;background:var(--surface);color:var(--fg);border:1px solid var(--lineStrong);font:500 12px 'JetBrains Mono',monospace}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.chk{background:repeating-conic-gradient(var(--checkerB) 0 25%,var(--checkerA) 0 50%) 0 0/16px 16px}
+</style>
+</helmet>
+<div class="board" style="width:2800px;height:980px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;flex-direction:column;gap:40px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="display:flex;gap:40px">
+
+<div><div class="lab">CMP-Canvas / drawing: rectangle (canvas focused, crosshair cursor) / {{t.name}}</div>
+<div class="cell focus" role="region" tabindex="0" aria-label="Image canvas" aria-describedby="cs-{{t.name}}" data-copy="COPY-a11y.canvas"><span class="sr" id="cs-{{t.name}}" data-copy="COPY-a11y.canvas_summary">1,120 × 760 px canvas, 1 annotation</span>
+<div class="img" data-sample="screenshot"><div class="bar">Settings</div><div class="row">Display name</div><div class="row">Notifications</div><div class="row">Delete account</div>
+<div aria-hidden="true" style="position:absolute;left:8px;top:88px;width:200px;height:30px;border:3px solid #D62828;box-sizing:border-box"></div>
+<svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" style="position:absolute;left:196px;top:106px"><path d="M12 3v18M3 12h18" stroke="#16111F" stroke-width="3"/><path d="M12 3v18M3 12h18" stroke="#FFFFFF" stroke-width="1"/></svg>
+</div>
+<div class="sr" role="status" aria-live="polite" data-copy="COPY-a11y.tool_active">Rectangle tool</div>
+</div></div>
+
+<div><div class="lab">CMP-Canvas / selected: single (10 px handles, dashed = 24 px hit area) / {{t.name}}</div>
+<div class="cell" role="region" tabindex="0" aria-label="Image canvas" data-copy="COPY-a11y.canvas">
+<div class="img" data-sample="screenshot"><div class="bar">Settings</div><div class="row">Display name</div><div class="row">Notifications</div><div class="row">Delete account</div>
+<div aria-hidden="true" style="position:absolute;left:8px;top:88px;width:200px;height:30px;border:3px solid #D62828;box-sizing:border-box"></div>
+<div class="sel" style="left:4px;top:84px;width:208px;height:38px"></div>
+<div class="h" style="left:-1px;top:79px"></div><div class="h" style="left:103px;top:79px"></div><div class="h" style="left:207px;top:79px"></div>
+<div class="h" style="left:-1px;top:98px"></div><div class="h" style="left:207px;top:98px"></div>
+<div class="h" style="left:-1px;top:117px"></div><div class="h" style="left:103px;top:117px"></div><div class="h" style="left:207px;top:117px"></div><div class="hit" aria-hidden="true" style="left:200px;top:110px"></div>
+</div>
+<div class="sr" role="status" aria-live="polite" data-copy="COPY-a11y.annotation">Rectangle at 16, 176</div>
+</div></div>
+
+<div><div class="lab">CMP-Canvas / selected: multi (outline, no handles) / {{t.name}}</div>
+<div class="cell" role="region" tabindex="0" aria-label="Image canvas" data-copy="COPY-a11y.canvas">
+<div class="img" data-sample="screenshot"><div class="bar">Settings</div><div class="row">Display name</div><div class="row">Notifications</div><div class="row">Delete account</div>
+<div aria-hidden="true" style="position:absolute;left:8px;top:88px;width:200px;height:30px;border:3px solid #D62828;box-sizing:border-box"></div>
+<div class="sel" style="left:4px;top:84px;width:208px;height:38px"></div>
+<div aria-hidden="true" data-sample="text-annotation" style="position:absolute;left:228px;top:84px;font:600 16px Manrope,sans-serif;color:#D62828">Remove?</div>
+<div class="sel" style="left:224px;top:80px;width:84px;height:30px"></div>
+</div>
+<div class="sr" role="status" aria-live="polite" data-copy="COPY-a11y.selected_count">2 annotations selected</div>
+</div></div>
+
+<div><div class="lab">CMP-Canvas / cropping (size chip space.3 below the frame, clear of handle hit areas) / {{t.name}}</div>
+<div class="cell" role="region" tabindex="0" aria-label="Image canvas" data-copy="COPY-a11y.canvas">
+<div class="img" data-sample="screenshot"><div class="bar">Settings</div><div class="row">Display name</div><div class="row">Notifications</div><div class="row">Delete account</div>
+<div aria-hidden="true" style="position:absolute;left:0;top:0;width:340px;height:30px;background:var(--cropDim)"></div>
+<div aria-hidden="true" style="position:absolute;left:0;top:30px;width:40px;height:150px;background:var(--cropDim)"></div>
+<div aria-hidden="true" style="position:absolute;left:300px;top:30px;width:40px;height:150px;background:var(--cropDim)"></div>
+<div aria-hidden="true" style="position:absolute;left:0;top:180px;width:340px;height:40px;background:var(--cropDim)"></div>
+<div class="sel" style="left:40px;top:30px;width:260px;height:150px"></div>
+<div class="h" style="left:35px;top:25px"></div><div class="h" style="left:165px;top:25px"></div><div class="h" style="left:295px;top:25px"></div>
+<div class="h" style="left:35px;top:100px"></div><div class="h" style="left:295px;top:100px"></div>
+<div class="h" style="left:35px;top:175px"></div><div class="h" style="left:165px;top:175px"></div><div class="h" style="left:295px;top:175px"></div>
+<span class="chip" style="left:112px;top:192px" data-copy="COPY-crop.size">1,040 × 600 px</span>
+</div></div></div>
+
+<div><div class="lab">CMP-Canvas / annotation kinds / {{t.name}}</div>
+<div class="cell" role="region" tabindex="0" aria-label="Image canvas" data-copy="COPY-a11y.canvas">
+<div class="chk" style="width:340px;height:220px;position:relative" data-sample="transparent-png">
+<div style="position:absolute;left:12px;top:12px;width:150px;height:96px;background:#F6F7F9;font:12px system-ui,sans-serif;color:#1F2430;padding:8px;box-sizing:border-box;line-height:1.6">Order #4182<br>Status: shipped<br>Card •••• 4242<br>Email a@b.co</div>
+<div aria-hidden="true" style="position:absolute;left:16px;top:32px;width:96px;height:18px;background:#FFD60A;opacity:.4"></div>
+<div aria-hidden="true" data-sample="pixelate-result" style="position:absolute;left:18px;top:52px;width:96px;height:18px;background-color:#B9BEC7;background-image:linear-gradient(90deg,#9CA3AF 50%,transparent 50%),linear-gradient(#C9CDD3 50%,transparent 50%);background-size:12px 12px"></div>
+<div aria-hidden="true" data-sample="blur-result" style="position:absolute;left:18px;top:71px;width:110px;height:20px;overflow:hidden"><div style="font:12px system-ui,sans-serif;color:#1F2430;filter:blur(3px);padding:2px 0 0 2px">Card •••• 4242</div></div>
+<div aria-hidden="true" style="position:absolute;left:18px;top:90px;width:96px;height:16px;background:#000000"></div>
+<div aria-hidden="true" style="position:absolute;left:180px;top:14px;width:70px;height:44px;border:3px solid #0B63E5;border-radius:50%;box-sizing:border-box"></div>
+<div aria-hidden="true" style="position:absolute;left:262px;top:14px;width:64px;height:44px"><div style="position:absolute;inset:0;background:#2DB84D;opacity:.3"></div><div style="position:absolute;inset:0;border:3px solid #2DB84D"></div></div>
+<svg aria-hidden="true" width="340" height="220" style="position:absolute;left:0;top:0">
+<path d="M180 76 L320 76" stroke="#8E44EC" stroke-width="3" stroke-linecap="round"/>
+<path d="M320 132 L250 98" stroke="#F28C28" stroke-width="3" stroke-linecap="round"/><path d="M250 98 L264 98 M250 98 L257 110" stroke="#F28C28" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M20 196 C50 156 70 216 100 176 S140 146 160 171" fill="none" stroke="#F28C28" stroke-width="3" stroke-linecap="round"/>
+</svg>
+<div style="position:absolute;left:186px;top:120px;width:32px;height:32px;border-radius:50%;background:#D62828;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font:700 16px Manrope,sans-serif">1</div>
+<div style="position:absolute;left:226px;top:150px;width:32px;height:32px;border-radius:50%;background:#FFD60A;color:#000000;display:flex;align-items:center;justify-content:center;font:700 16px Manrope,sans-serif">2</div>
+<div style="position:absolute;left:266px;top:150px;height:32px;padding:0 10px;border-radius:999px;background:#0B63E5;color:#FFFFFF;display:flex;align-items:center;font:700 16px Manrope,sans-serif">100</div>
+<span class="sr" data-copy="COPY-a11y.text_annotation" lang="vi">Text “Đường dẫn lỗi” at 372, 380</span>
+<div aria-hidden="true" data-sample="text-annotation" lang="vi" style="position:absolute;left:186px;top:190px;font:600 16px Manrope,sans-serif;color:#FFFFFF;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000">Đường dẫn lỗi</div>
+</div>
+</div></div>
+
+<div><div class="lab">CMP-Canvas / padding: medium, white background / {{t.name}}</div>
+<div class="cell" role="region" tabindex="0" aria-label="Image canvas" data-copy="COPY-a11y.canvas">
+<div style="background:#FFFFFF;padding:20px;box-shadow:0 0 0 1px var(--muted)" data-sample="padding">
+<div class="img" style="width:300px;height:190px" data-sample="screenshot"><div class="bar">Settings</div><div class="row">Display name</div><div class="row">Notifications</div></div>
+</div></div></div>
+
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2800,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return { themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }] };
+}
+}
+</script>
+</body>
+</html>

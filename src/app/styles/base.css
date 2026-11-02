@@ -1,0 +1,46 @@
+/* MOD-App — the SCR-Annotator frame (style.md "Regions"), tokens only (ADR-0013): a thin toolbar on
+   top, the work area, and the status bar at the bottom, separated by hairlines. Phase 3.3 scaffold:
+   the regions are empty; the toolbar, style panel, empty state and status bar contents arrive with
+   their features. The root is the size container for the layout widths of D-014 (wide / compact /
+   narrow), which its children query once they exist. */
+@layer base {
+  body {
+    background: var(--tk-color-bg);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-body);
+    font-size: var(--tk-font-size-md);
+    font-weight: var(--tk-font-weight-medium);
+    line-height: var(--tk-font-line-height-normal);
+  }
+
+  .tk-annotator {
+    container: tk-annotator / inline-size;
+    display: grid;
+    grid-template-rows: var(--tk-size-toolbar) minmax(0, 1fr) var(--tk-size-statusbar);
+    height: 100%;
+    min-width: var(--tk-size-min-width);
+  }
+
+  .tk-toolbar {
+    background: var(--tk-color-surface);
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+  }
+
+  .tk-work-area {
+    position: relative;
+    overflow: hidden;
+    background: var(--tk-color-work-area);
+  }
+
+  .tk-status-bar {
+    background: var(--tk-color-surface);
+    border-block-start: var(--tk-border-width-hairline) solid var(--tk-color-line);
+  }
+
+  @media (forced-colors: active) {
+    .tk-toolbar,
+    .tk-status-bar {
+      border-color: CanvasText;
+    }
+  }
+}

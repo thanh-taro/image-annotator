@@ -15,9 +15,9 @@ Use these words in specs, UI copy, code and tests. Avoid the listed alternatives
 | Style | Colour, stroke width and other appearance values of an annotation (ENT-Style). | properties |
 | Current style | The style the next new annotation gets. | default style |
 | Selection | The annotations currently selected for editing. | |
-| Frame | The rectangle of the canvas that is exported; set by crop (ENT-Frame). Not the host frame. | crop box, viewport |
-| Padding | Space added around the image, filled with a background (ENT-Padding). | border, margin |
-| Canvas | The full area that can be exported: the image plus any padding. | board, artboard |
+| Frame | The rectangle of the image that is exported; set by crop (ENT-Frame); padding goes around it. Not the host frame. | crop box, viewport |
+| Padding | Space added around the frame, filled with a background (ENT-Padding). | border, margin |
+| Canvas | The area that is exported: the frame plus any padding around it. | board, artboard |
 | Export | Copying or downloading the flattened result as a new image. | save, render |
 | Flattened | Annotations, effects, crop and padding burned into one image with no separate parts. | merged |
 | Session | Everything from loading an image until it is replaced, cleared, or the page closes (ENT-Session). | project, document |

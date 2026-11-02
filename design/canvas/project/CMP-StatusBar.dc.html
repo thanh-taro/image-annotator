@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Status bar variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.tk-dark{--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--success:#5BD6A0}
+.tk-light{--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--success:#13744C}
+.st{height:28px;display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--surface);border:1px solid var(--line);box-sizing:border-box;font:500 12px Manrope,sans-serif;color:var(--muted)}
+.mono{font-family:'JetBrains Mono',monospace;color:var(--fg)}
+.ok{min-height:24px;color:var(--success);display:inline-flex;align-items:center;gap:4px;border:0;border-radius:7px;background:transparent;font:600 12px Manrope,sans-serif;padding:0 4px}
+.lnk{min-height:24px;min-width:24px;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 4px;border-radius:7px}
+.zb{width:24px;height:24px;border:0;background:transparent;color:var(--fg);border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.zb:disabled{color:var(--muted)}
+.tbtn{height:24px;display:inline-flex;align-items:center;gap:4px;padding:0 8px;border:0;border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif}
+.tbtn:disabled{color:var(--muted)}
+.sep{width:1px;height:16px;background:var(--line)}
+.focus{outline:2px solid var(--accent);outline-offset:2px}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+.st.nar{height:48px}
+.st.nar .ok,.st.nar .lnk,.st.nar .zb{min-width:44px;min-height:44px;width:auto;height:44px}
+.st.nar .tbtn{height:44px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pop{background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;color:var(--fg)}
+</style>
+</helmet>
+<div class="board" style="width:2480px;height:800px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;gap:40px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="width:1180px;display:flex;flex-direction:column;gap:20px">
+<div><div class="lab">CMP-StatusBar / default (focus on privacy badge) / {{t.name}}</div>
+<footer class="st">
+<button class="ok focus" data-copy="COPY-privacy.badge" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Runs locally, nothing uploaded</button>
+<a class="lnk" href="https://github.com/thanh-taro/image-annotator" target="_blank" rel="noopener" data-copy="COPY-privacy.source_label"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="{{gh}}"/></svg>Source code on GitHub<span class="sr" data-copy="COPY-a11y.new_tab">(opens in a new tab)</span></a>
+<div style="flex:1"></div>
+<span class="mono" data-copy="COPY-status.image_size">2,880 × 1,800 px</span><div class="sep"></div>
+<button class="zb" aria-label="Zoom out" data-copy="COPY-action.zoom_out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+<span class="mono" data-copy="COPY-status.zoom">31 %</span>
+<button class="zb" aria-label="Zoom in" data-copy="COPY-action.zoom_in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+<button class="tbtn" data-copy="COPY-action.zoom_fit">Fit to view</button><button class="tbtn" data-copy="COPY-action.zoom_actual">Actual size</button>
+</footer></div>
+<div><div class="lab">CMP-StatusBar / compact 900 (800–999 px: image size hidden, D-014) / {{t.name}}</div>
+<footer class="st" style="width:900px">
+<button class="ok" data-copy="COPY-privacy.badge" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Runs locally, nothing uploaded</button>
+<a class="lnk" href="https://github.com/thanh-taro/image-annotator" target="_blank" rel="noopener" data-copy="COPY-privacy.source_label"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="{{gh}}"/></svg>Source code on GitHub<span class="sr" data-copy="COPY-a11y.new_tab">(opens in a new tab)</span></a>
+<div style="flex:1"></div>
+<button class="zb" aria-label="Zoom out" data-copy="COPY-action.zoom_out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+<span class="mono" data-copy="COPY-status.zoom">31 %</span>
+<button class="zb" aria-label="Zoom in" data-copy="COPY-action.zoom_in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+<button class="tbtn" data-copy="COPY-action.zoom_fit">Fit to view</button><button class="tbtn" data-copy="COPY-action.zoom_actual">Actual size</button>
+</footer></div>
+<div><div class="lab">CMP-StatusBar / no image / {{t.name}}</div>
+<footer class="st">
+<button class="ok" data-copy="COPY-privacy.badge" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Runs locally, nothing uploaded</button>
+<a class="lnk" href="https://github.com/thanh-taro/image-annotator" target="_blank" rel="noopener" data-copy="COPY-privacy.source_label"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="{{gh}}"/></svg>Source code on GitHub<span class="sr" data-copy="COPY-a11y.new_tab">(opens in a new tab)</span></a>
+<div style="flex:1"></div>
+<button class="zb" disabled aria-label="Zoom out" data-copy="COPY-action.zoom_out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+<span class="mono" style="color:var(--muted)" data-sample="no-zoom">–</span>
+<button class="zb" disabled aria-label="Zoom in" data-copy="COPY-action.zoom_in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+<button class="tbtn" disabled data-copy="COPY-action.zoom_fit">Fit to view</button><button class="tbtn" disabled data-copy="COPY-action.zoom_actual">Actual size</button>
+</footer></div>
+<div style="display:flex;gap:40px;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:20px">
+<div><div class="lab">CMP-StatusBar / narrow 390 / {{t.name}}</div>
+<footer class="st nar" style="width:390px">
+<button class="ok" aria-label="Privacy: runs locally, nothing uploaded" data-copy="COPY-privacy.badge_label" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
+<a class="lnk" href="https://github.com/thanh-taro/image-annotator" target="_blank" rel="noopener"><span class="sr" data-copy="COPY-privacy.source_label">Source code on GitHub</span><span class="sr" data-copy="COPY-a11y.new_tab">(opens in a new tab)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="{{gh}}"/></svg></a>
+<div style="flex:1"></div>
+<button class="zb" aria-label="Zoom out" data-copy="COPY-action.zoom_out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+<button class="tbtn mono" aria-haspopup="menu" aria-expanded="true" aria-label="Zoom: 31 %" data-copy="COPY-a11y.zoom_menu"><span data-copy="COPY-status.zoom">31 %</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+<button class="zb" aria-label="Zoom in" data-copy="COPY-action.zoom_in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+</footer></div>
+<div><div class="lab">CMP-StatusBar / narrow 390, no image / {{t.name}}</div>
+<footer class="st nar" style="width:390px">
+<button class="ok" aria-label="Privacy: runs locally, nothing uploaded" data-copy="COPY-privacy.badge_label" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
+<a class="lnk" href="https://github.com/thanh-taro/image-annotator" target="_blank" rel="noopener"><span class="sr" data-copy="COPY-privacy.source_label">Source code on GitHub</span><span class="sr" data-copy="COPY-a11y.new_tab">(opens in a new tab)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="{{gh}}"/></svg></a>
+<div style="flex:1"></div>
+<button class="zb" disabled aria-label="Zoom out" data-copy="COPY-action.zoom_out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+<span class="mono" style="color:var(--muted)" data-sample="no-zoom">–</span>
+<button class="zb" disabled aria-label="Zoom in" data-copy="COPY-action.zoom_in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+</footer></div>
+</div>
+<div><div class="lab">CMP-StatusBar / zoom menu / {{t.name}}</div>
+<div class="pop" role="menu" style="width:180px;padding:4px;display:flex;flex-direction:column">
+<button role="menuitem" class="tbtn" style="height:44px;justify-content:flex-start" data-copy="COPY-action.zoom_fit">Fit to view</button>
+<button role="menuitem" class="tbtn" style="height:44px;justify-content:flex-start" data-copy="COPY-action.zoom_actual">Actual size</button>
+</div></div>
+<div style="display:flex;flex-direction:column;gap:20px">
+<div><div class="lab">CMP-StatusBar / privacy details, wide (popover above the badge) / {{t.name}}</div>
+<div class="pop" role="dialog" aria-label="Privacy" data-copy="COPY-privacy.title" style="width:360px;max-width:100%;box-sizing:border-box;padding:16px;display:flex;flex-direction:column;gap:12px;font:500 13px/1.55 Manrope,sans-serif">
+<p style="margin:0" data-copy="COPY-privacy.details">Your images are opened and edited only in this browser. Nothing is uploaded, stored or tracked, and the tool blocks all network requests after it loads. Exported images contain no metadata from the original. Blur and pixelate can sometimes be reversed; use solid redaction for secrets.</p>
+<div style="display:flex;justify-content:space-between;align-items:center"><a class="lnk" href="#notices" data-copy="COPY-privacy.notices">Open-source notices</a><button class="tbtn" style="height:32px;padding:0 12px;border:1px solid var(--lineStrong)" data-copy="COPY-action.close">Close</button></div>
+</div></div>
+<div><div class="lab">CMP-StatusBar / privacy details, narrow 390 (full width minus 16 px gutters, 44 px targets) / {{t.name}}</div>
+<div style="width:390px;padding:0 16px;box-sizing:border-box">
+<div class="pop" role="dialog" aria-label="Privacy" data-copy="COPY-privacy.title" style="width:100%;box-sizing:border-box;padding:16px;display:flex;flex-direction:column;gap:12px;font:500 13px/1.55 Manrope,sans-serif">
+<p style="margin:0" data-copy="COPY-privacy.details">Your images are opened and edited only in this browser. Nothing is uploaded, stored or tracked, and the tool blocks all network requests after it loads. Exported images contain no metadata from the original. Blur and pixelate can sometimes be reversed; use solid redaction for secrets.</p>
+<div style="display:flex;justify-content:space-between;align-items:center"><a class="lnk" style="min-height:44px" href="#notices" data-copy="COPY-privacy.notices">Open-source notices</a><button class="tbtn" style="height:44px;padding:0 12px;border:1px solid var(--lineStrong)" data-copy="COPY-action.close">Close</button></div>
+</div></div></div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2480,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }],
+gh: 'M12 2a10 10 0 00-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 015 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0012 2z'
+};
+}
+}
+</script>
+</body>
+</html>

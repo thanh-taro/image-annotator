@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Drop overlay</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.tk-dark{--surface:#18121F;--lineStrong:#6F6290;--fg:#EFEAF8;--accent:#A47BFF;--workArea:#0B0812;--scrim:#07050BB3}
+.tk-light{--surface:#FFFFFF;--lineStrong:#8C82A2;--fg:#16111F;--accent:#6837E0;--workArea:#ECE8F4;--scrim:#16111F66}
+.cell{width:560px;height:360px;background:var(--workArea);position:relative;overflow:hidden}
+.img{position:absolute;left:60px;top:40px;width:440px;height:280px;background:#F6F7F9}
+.ov{position:absolute;inset:0;background:color-mix(in srgb,var(--workArea) 88%,transparent);display:flex;align-items:center;justify-content:center}
+.zone{position:absolute;inset:12px;border:2px dashed var(--fg);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;background:var(--surface);border:1px solid var(--lineStrong);color:var(--fg);font:700 15px Manrope,sans-serif}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</helmet>
+<div style="width:1240px;height:460px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;gap:40px" class="board">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}"><div class="lab">CMP-DropOverlay / active (live region persists, text set on drag enter) / {{t.name}}</div>
+<div class="cell"><div class="img" data-sample="screenshot"></div>
+<div class="ov"><div class="zone"><div class="pill" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="color:var(--accent)"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-copy="COPY-load.drop_here">Drop to open</span></div></div></div>
+<div class="sr" role="status" aria-live="polite" data-copy="COPY-load.drop_here">Drop to open</div>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":460}}'>
+class Component extends DCLogic {
+renderVals() {
+return { themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }] };
+}
+}
+</script>
+</body>
+</html>

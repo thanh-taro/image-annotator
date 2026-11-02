@@ -1,0 +1,6 @@
+/* MOD-App — stylesheet entry (ADR-0013). Order: generated tokens, fonts, reset, base. No inline
+   styles or <style> blocks (strict CSP, ADR-0010); dynamic positions go through CSSOM. */
+@import './tokens.gen.css';
+@import './fonts.css';
+@import './reset.css';
+@import './base.css';

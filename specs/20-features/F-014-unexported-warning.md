@@ -24,7 +24,8 @@ there is something to lose (D-004).
 - Out: saving drafts; warnings when the portal itself navigates to another page inside the
   portal (the host frame is removed with no prompt, and the tool sends the host nothing but the
   ready signal, RULE-16). Closing or reloading the tab still warns when the host frame allows
-  leave-page dialogs (RULE-16).
+  leave-page dialogs (RULE-16), except in browsers that never show them from an embedded page
+  (edge case, D-028).
 
 ## Requirements
 - **R1** Closing, reloading or navigating away from the tool while the session has unexported changes shows the browser's leave-page warning.
@@ -38,7 +39,7 @@ there is something to lose (D-004).
 - **AC4** Given unexported changes, when the user chooses COPY-action.clear, then CMP-ConfirmDialog shows COPY-confirm.clear; confirming returns to the empty state. (R3)
 - **AC5** Given the user copied, when they undo once and close the tab, then the browser asks whether to leave. (R1)
 - **AC6** Given an image with no unexported changes, when the user chooses COPY-action.clear, then the empty state shows at once with no dialog. (R3)
-- **AC7** Given the tool embedded in a host frame that allows leave-page dialogs, with unexported changes, when the user closes the tab, then the browser asks whether to leave. (R1)
+- **AC7** Given the tool embedded in a host frame that allows leave-page dialogs, in a browser that shows them from an embedded page (ADR-0021), with unexported changes, when the user closes the tab, then the browser asks whether to leave. (R1)
 
 ## UX notes
 The leave-page warning text is the browser's own and can't be changed. COPY-action.clear lives
@@ -46,5 +47,6 @@ in the toolbar's overflow.
 
 ## Edge cases
 - Undo back to the loaded state → still counts as changed until exported (RULE-18).
+- Embedded in a browser that never shows leave-page dialogs from an embedded page (ADR-0021: WebKit-based) → no warning, even when the host allows dialogs. Accepted as a known gap for M-1 (D-028). Standalone, R1 applies (AC1).
 
 ## Open questions

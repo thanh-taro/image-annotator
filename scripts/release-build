@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Repeatable release build (phase 6, MOD-Build; copied from DAFV). Builds a git ref from a clean
+# checkout and runs every gate on it (ADR-0014): codegen, types, lint, unit, spec lint, build,
+# licences + dist scan, size, and the e2e suites on Chromium and WebKit.
+# Usage: scripts/release-build [ref]   (default: HEAD)   — env: HOST_ORIGINS (default https://tarokit.app)
+# Output: <tmp>/ia-release-<ref>/dist plus SHA-256 checksums in dist.sha256. Uploads nothing.
+set -euo pipefail
+REF="${1:-HEAD}"
+REPO="$(git rev-parse --show-toplevel)"
+OUT="${RELEASE_OUT:-${TMPDIR:-/tmp}/ia-release-$(echo "$REF" | tr '/' '-')}"
+export HOST_ORIGINS="${HOST_ORIGINS:-https://tarokit.app}"
+
+rm -rf "$OUT"
+git clone --quiet --no-local "$REPO" "$OUT"
+cd "$OUT"
+git checkout --quiet "$REF"
+echo "Release build of $(git describe --tags --always) in $OUT (HOST_ORIGINS=$HOST_ORIGINS)"
+
+pnpm install --frozen-lockfile
+pnpm gen:check
+pnpm typecheck
+pnpm lint
+pnpm test
+python3 tools/spec_lint.py
+pnpm build              # production config: vite build, minified, no dev server code
+pnpm check:licenses
+pnpm check:size
+pnpm check:dist
+
+if [ "${SKIP_E2E:-0}" != "1" ]; then
+  pnpm exec playwright install chromium webkit >/dev/null
+  CI=1 pnpm test:e2e:all  # e2e runs against `vite preview` of this dist/ and the host/offline harness
+fi
+
+(cd dist && find . -type f ! -name '*.map' | LC_ALL=C sort | xargs shasum -a 256) > dist.sha256
+echo "dist checksum (sha256 of dist.sha256): $(shasum -a 256 dist.sha256 | cut -d' ' -f1)"

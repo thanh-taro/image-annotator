@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Style panel variants</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--onAccent:#0F0B16;--accent2Fg:#FFC48A;--warnBg:#33240F;--selection:#2A1D47;--checkerA:#2A2333;--checkerB:#1E1828}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--onAccent:#FFFFFF;--accent2Fg:#8F4705;--warnBg:#FDEBD8;--selection:#F0EAFE;--checkerA:#FFFFFF;--checkerB:#E6E1F0}
+.row{display:flex;gap:24px}
+.panel{width:272px;height:640px;background:var(--surface);border:1px solid var(--line);padding:12px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;color:var(--fg);font-size:13px}
+.sec{display:flex;flex-direction:column;gap:8px}
+.h{font:600 12px Manrope,sans-serif;color:var(--muted)}
+.sws{display:flex;justify-content:space-between}
+.sw{width:24px;height:24px;border-radius:7px;border:1px solid var(--lineStrong);box-sizing:border-box;padding:0;flex:none}
+.sw.on{border:2px solid var(--accent);box-shadow:inset 0 0 0 2px var(--surface)}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--lineStrong);border-radius:7px}
+.seg button:first-child{border-radius:7px 0 0 7px}
+.seg button:last-child{border-radius:0 7px 7px 0}
+.seg4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.seg button{height:28px;border:0;border-right:1px solid var(--line);background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif;padding:0 4px}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--selection);box-shadow:inset 0 0 0 2px var(--accent)}
+.seg button:disabled{color:var(--muted);background:transparent}
+.note{font:500 12px/1.45 Manrope,sans-serif;color:var(--muted);margin:0}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+.fl{display:flex;align-items:center;justify-content:space-between;gap:4px;font:500 12px Manrope,sans-serif;color:var(--muted)}
+.fl input{width:56px;height:28px;box-sizing:border-box;border:1px solid var(--lineStrong);border-radius:7px;background:var(--bg);color:var(--fg);font:400 16px 'JetBrains Mono',monospace;padding:0 4px}
+.sub{font:600 12px Manrope,sans-serif;color:var(--fg)}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.btn.acc{border-color:var(--accent);color:var(--accent)}
+.btn{height:28px;border:1px solid var(--lineStrong);border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px}
+.warn{display:flex;gap:8px;align-items:flex-start;background:var(--warnBg);color:var(--accent2Fg);border-radius:7px;padding:8px;font:500 12px/1.45 Manrope,sans-serif}
+.warn b{font-weight:700}
+.kind{display:flex;flex-direction:column;gap:4px}
+.kind button{height:32px;display:flex;align-items:center;gap:8px;padding:0 8px;border:1px solid var(--lineStrong);border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif;text-align:left}
+.kind button.on{background:var(--selection);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tag{margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 4px;border-radius:7px;background:var(--warnBg);color:var(--accent2Fg);font:600 12px Manrope,sans-serif}
+.focus{outline:2px solid var(--accent);outline-offset:2px;position:relative;z-index:1}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px;width:272px}
+.mono{font-family:'JetBrains Mono',monospace;color:var(--fg)}
+</style>
+</helmet>
+<div class="board" style="width:3904px;height:1460px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;flex-direction:column;gap:40px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}} row">
+
+<div><div class="lab">CMP-StylePanel / tool: rectangle (focus on Medium) / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" id="c1{{t.name}}" data-copy="COPY-style.color">Color</div>
+<div class="sws" role="radiogroup" aria-labelledby="c1{{t.name}}"><sc-for list="{{swR}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for></div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.size">Size</div>
+<div class="seg" role="radiogroup" aria-label="Size" data-copy="COPY-style.size"><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button class="on focus" role="radio" aria-checked="true" data-copy="COPY-style.size_m">Medium</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_l">Large</button></div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.fill">Fill</div>
+<div class="seg" role="radiogroup" aria-label="Fill" data-copy="COPY-style.fill"><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.fill_none">None</button><button role="radio" aria-checked="false" data-copy="COPY-style.fill_solid">Solid</button><button role="radio" aria-checked="false" data-copy="COPY-style.fill_translucent">Translucent</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / tool: arrow (no Fill for lines, arrows, pen, highlight, text, step) / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-style.color">Color</div>
+<div class="sws" role="radiogroup" aria-label="Color" data-copy="COPY-style.color"><sc-for list="{{swP}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for></div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.size">Size</div>
+<div class="seg" role="radiogroup" aria-label="Size" data-copy="COPY-style.size"><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_m">Medium</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.size_l">Large</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / tool: redact, solid / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-redact.kind">Redaction type</div>
+<div class="kind" role="radiogroup" aria-label="Redaction type" data-copy="COPY-redact.kind">
+<button class="on" role="radio" aria-checked="true" data-copy="COPY-redact.solid"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Solid (secure)</button>
+<button role="radio" aria-checked="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="7" stroke-dasharray="2 2"/></svg><span data-copy="COPY-redact.blur">Blur</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+<button role="radio" aria-checked="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/><rect x="13" y="4" width="7" height="7" opacity=".4"/><rect x="4" y="13" width="7" height="7" opacity=".4"/></svg><span data-copy="COPY-redact.pixelate">Pixelate</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+</div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.color">Color</div>
+<div class="sws" role="radiogroup" aria-label="Color" data-copy="COPY-style.color"><sc-for list="{{swK}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / tool: redact, blur / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-redact.kind">Redaction type</div>
+<div class="kind" role="radiogroup" aria-label="Redaction type" data-copy="COPY-redact.kind">
+<button role="radio" aria-checked="false" data-copy="COPY-redact.solid"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Solid (secure)</button>
+<button class="on" role="radio" aria-checked="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="7" stroke-dasharray="2 2"/></svg><span data-copy="COPY-redact.blur">Blur</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+<button role="radio" aria-checked="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/><rect x="13" y="4" width="7" height="7" opacity=".4"/><rect x="4" y="13" width="7" height="7" opacity=".4"/></svg><span data-copy="COPY-redact.pixelate">Pixelate</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+</div>
+<div class="warn" role="note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex:none" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg><span data-copy="COPY-redact.not_secure"><b>Not secure:</b> blurred or pixelated text can sometimes be recovered.</span></div>
+<button class="btn acc" data-copy="COPY-redact.use_solid">Use solid</button>
+</div>
+<div class="sec"><div class="h" data-copy="COPY-style.strength">Strength</div>
+<div class="seg" role="radiogroup" aria-label="Strength" data-copy="COPY-style.strength"><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.size_m">Medium</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_l">Large</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / tool: redact, pixelate / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-redact.kind">Redaction type</div>
+<div class="kind" role="radiogroup" aria-label="Redaction type" data-copy="COPY-redact.kind">
+<button role="radio" aria-checked="false" data-copy="COPY-redact.solid"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Solid (secure)</button>
+<button role="radio" aria-checked="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="7" stroke-dasharray="2 2"/></svg><span data-copy="COPY-redact.blur">Blur</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+<button class="on" role="radio" aria-checked="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/><rect x="13" y="4" width="7" height="7" opacity=".4"/><rect x="4" y="13" width="7" height="7" opacity=".4"/></svg><span data-copy="COPY-redact.pixelate">Pixelate</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+</div>
+<div class="warn" role="note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex:none" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg><span data-copy="COPY-redact.not_secure"><b>Not secure:</b> blurred or pixelated text can sometimes be recovered.</span></div>
+<button class="btn acc" data-copy="COPY-redact.use_solid">Use solid</button>
+</div>
+<div class="sec"><div class="h" data-copy="COPY-style.strength">Strength</div>
+<div class="seg" role="radiogroup" aria-label="Strength" data-copy="COPY-style.strength"><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_m">Medium</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.size_l">Large</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / selection: single rectangle / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-style.color">Color</div>
+<div class="sws" role="radiogroup" aria-label="Color" data-copy="COPY-style.color"><sc-for list="{{swR}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for></div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.size">Size</div>
+<div class="seg" role="radiogroup" aria-label="Size" data-copy="COPY-style.size"><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.size_m">Medium</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_l">Large</button></div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.fill">Fill</div>
+<div class="seg" role="radiogroup" aria-label="Fill" data-copy="COPY-style.fill"><button role="radio" aria-checked="false" data-copy="COPY-style.fill_none">None</button><button role="radio" aria-checked="false" data-copy="COPY-style.fill_solid">Solid</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.fill_translucent">Translucent</button></div></div>
+<fieldset class="sec" style="border:0;margin:0;padding:0"><legend class="h" style="padding:0;margin-bottom:8px" data-copy="COPY-geometry.title">Position and size</legend>
+<div class="fields">
+<label class="fl"><span data-copy="COPY-geometry.x">X</span><input inputmode="numeric" value="120"></label>
+<label class="fl"><span data-copy="COPY-geometry.y">Y</span><input inputmode="numeric" value="640"></label>
+<label class="fl"><span data-copy="COPY-geometry.width">Width</span><input inputmode="numeric" value="840"></label>
+<label class="fl"><span data-copy="COPY-geometry.height">Height</span><input inputmode="numeric" value="112"></label>
+</div></fieldset>
+<div class="sec"><div class="acts">
+<button class="btn" data-copy="COPY-action.duplicate">Duplicate</button><button class="btn" data-copy="COPY-action.delete">Delete</button>
+<button class="btn" data-copy="COPY-action.bring_forward">Bring forward</button><button class="btn" data-copy="COPY-action.send_backward">Send backward</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / selection: single arrow / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-style.color">Color</div>
+<div class="sws" role="radiogroup" aria-label="Color" data-copy="COPY-style.color"><sc-for list="{{swR}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for></div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.size">Size</div>
+<div class="seg" role="radiogroup" aria-label="Size" data-copy="COPY-style.size"><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_m">Medium</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.size_l">Large</button></div></div>
+<fieldset class="sec" style="border:0;margin:0;padding:0"><legend class="h" style="padding:0;margin-bottom:8px" data-copy="COPY-geometry.title">Position and size</legend>
+<div class="sub" data-copy="COPY-geometry.start">Start</div>
+<div class="fields"><label class="fl"><span data-copy="COPY-geometry.x">X</span><input inputmode="numeric" value="1480"></label><label class="fl"><span data-copy="COPY-geometry.y">Y</span><input inputmode="numeric" value="220"></label></div>
+<div class="sub" data-copy="COPY-geometry.end">End</div>
+<div class="fields"><label class="fl"><span data-copy="COPY-geometry.x">X</span><input inputmode="numeric" value="1080"></label><label class="fl"><span data-copy="COPY-geometry.y">Y</span><input inputmode="numeric" value="610"></label></div>
+</fieldset>
+<div class="sec"><div class="acts">
+<button class="btn" data-copy="COPY-action.duplicate">Duplicate</button><button class="btn" data-copy="COPY-action.delete">Delete</button>
+<button class="btn" data-copy="COPY-action.bring_forward">Bring forward</button><button class="btn" data-copy="COPY-action.send_backward">Send backward</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / selection: blur redaction / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-redact.kind">Redaction type</div>
+<div class="kind" role="radiogroup" aria-label="Redaction type" data-copy="COPY-redact.kind">
+<button role="radio" aria-checked="false" data-copy="COPY-redact.solid"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Solid (secure)</button>
+<button class="on" role="radio" aria-checked="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="7" stroke-dasharray="2 2"/></svg><span data-copy="COPY-redact.blur">Blur</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+<button role="radio" aria-checked="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/><rect x="13" y="4" width="7" height="7" opacity=".4"/><rect x="4" y="13" width="7" height="7" opacity=".4"/></svg><span data-copy="COPY-redact.pixelate">Pixelate</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+</div>
+<div class="warn" role="note"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex:none" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg><span data-copy="COPY-redact.not_secure"><b>Not secure:</b> blurred or pixelated text can sometimes be recovered.</span></div>
+<button class="btn acc" data-copy="COPY-redact.use_solid">Use solid</button>
+</div>
+<div class="sec"><div class="h" data-copy="COPY-style.strength">Strength</div>
+<div class="seg" role="radiogroup" aria-label="Strength" data-copy="COPY-style.strength"><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.size_m">Medium</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_l">Large</button></div></div>
+<fieldset class="sec" style="border:0;margin:0;padding:0"><legend class="h" style="padding:0;margin-bottom:8px" data-copy="COPY-geometry.title">Position and size</legend>
+<div class="fields">
+<label class="fl"><span data-copy="COPY-geometry.x">X</span><input inputmode="numeric" value="260"></label>
+<label class="fl"><span data-copy="COPY-geometry.y">Y</span><input inputmode="numeric" value="904"></label>
+<label class="fl"><span data-copy="COPY-geometry.width">Width</span><input inputmode="numeric" value="420"></label>
+<label class="fl"><span data-copy="COPY-geometry.height">Height</span><input inputmode="numeric" value="56"></label>
+</div></fieldset>
+<div class="sec"><div class="acts"><button class="btn" data-copy="COPY-action.duplicate">Duplicate</button><button class="btn" data-copy="COPY-action.delete">Delete</button><button class="btn" data-copy="COPY-action.bring_forward">Bring forward</button><button class="btn" data-copy="COPY-action.send_backward">Send backward</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / selection: solid redaction / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-redact.kind">Redaction type</div>
+<div class="kind" role="radiogroup" aria-label="Redaction type" data-copy="COPY-redact.kind">
+<button class="on" role="radio" aria-checked="true" data-copy="COPY-redact.solid"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Solid (secure)</button>
+<button role="radio" aria-checked="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="7" stroke-dasharray="2 2"/></svg><span data-copy="COPY-redact.blur">Blur</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+<button role="radio" aria-checked="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/><rect x="13" y="4" width="7" height="7" opacity=".4"/><rect x="4" y="13" width="7" height="7" opacity=".4"/></svg><span data-copy="COPY-redact.pixelate">Pixelate</span><span class="tag" data-copy="COPY-redact.not_secure_short"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/></svg>Not secure</span></button>
+</div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.color">Color</div>
+<div class="sws" role="radiogroup" aria-label="Color" data-copy="COPY-style.color"><sc-for list="{{swK}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for></div></div>
+<fieldset class="sec" style="border:0;margin:0;padding:0"><legend class="h" style="padding:0;margin-bottom:8px" data-copy="COPY-geometry.title">Position and size</legend>
+<div class="fields">
+<label class="fl"><span data-copy="COPY-geometry.x">X</span><input inputmode="numeric" value="512"></label>
+<label class="fl"><span data-copy="COPY-geometry.y">Y</span><input inputmode="numeric" value="388"></label>
+<label class="fl"><span data-copy="COPY-geometry.width">Width</span><input inputmode="numeric" value="300"></label>
+<label class="fl"><span data-copy="COPY-geometry.height">Height</span><input inputmode="numeric" value="44"></label>
+</div></fieldset>
+<div class="sec"><div class="acts"><button class="btn" data-copy="COPY-action.duplicate">Duplicate</button><button class="btn" data-copy="COPY-action.delete">Delete</button><button class="btn" data-copy="COPY-action.bring_forward">Bring forward</button><button class="btn" data-copy="COPY-action.send_backward">Send backward</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / selection: rectangle + text / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sub" style="font-size:13px;padding-bottom:8px;border-bottom:1px solid var(--line)" data-copy="COPY-a11y.selected_count">2 annotations selected</div>
+<div class="sec"><div class="h" data-copy="COPY-style.color">Color</div>
+<div class="sws" role="radiogroup" aria-label="Color" data-copy="COPY-style.color"><sc-for list="{{swB}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for></div></div>
+<div class="sec"><div class="h" data-copy="COPY-style.size">Size</div>
+<div class="seg" role="radiogroup" aria-label="Size" data-copy="COPY-style.size"><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.size_m">Medium</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_l">Large</button></div></div>
+<div class="sec"><div class="acts">
+<button class="btn" data-copy="COPY-action.duplicate">Duplicate</button><button class="btn" data-copy="COPY-action.delete">Delete</button>
+<button class="btn" data-copy="COPY-action.bring_forward">Bring forward</button><button class="btn" data-copy="COPY-action.send_backward">Send backward</button></div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / canvas / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-canvas.padding">Padding</div>
+<div class="seg seg4" role="radiogroup" aria-label="Padding" data-copy="COPY-canvas.padding"><button role="radio" aria-checked="false" data-copy="COPY-canvas.padding_none">None</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_s">Small</button><button class="on" role="radio" aria-checked="true" data-copy="COPY-style.size_m">Medium</button><button role="radio" aria-checked="false" data-copy="COPY-style.size_l">Large</button></div></div>
+<div class="sec"><div class="h" data-copy="COPY-canvas.background">Background</div>
+<div class="sws" role="radiogroup" aria-label="Background" data-copy="COPY-canvas.background">
+<button class="sw" role="radio" aria-checked="false" aria-label="Transparent" data-copy="COPY-canvas.transparent" style="background-color:var(--checkerA);background-image:linear-gradient(45deg,var(--checkerB) 25%,transparent 25%,transparent 75%,var(--checkerB) 75%),linear-gradient(45deg,var(--checkerB) 25%,transparent 25%,transparent 75%,var(--checkerB) 75%);background-size:8px 8px;background-position:0 0,4px 4px"></button>
+<sc-for list="{{bgW}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for>
+</div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / canvas: at size limit / {{t.name}}</div>
+<aside class="panel" aria-label="Style" data-copy="COPY-a11y.style_panel">
+<div class="sec"><div class="h" data-copy="COPY-canvas.padding">Padding</div>
+<div class="seg seg4" role="radiogroup" aria-label="Padding" data-copy="COPY-canvas.padding" aria-describedby="pu-{{t.name}}"><button class="on" role="radio" aria-checked="true" data-copy="COPY-canvas.padding_none">None</button><button role="radio" aria-checked="false" disabled data-copy="COPY-style.size_s">Small</button><button role="radio" aria-checked="false" disabled data-copy="COPY-style.size_m">Medium</button><button role="radio" aria-checked="false" disabled data-copy="COPY-style.size_l">Large</button></div>
+<p class="note" id="pu-{{t.name}}" data-copy="COPY-canvas.padding_unavailable">Larger padding would make the image too big to export.</p></div>
+<div class="sec"><div class="h" data-copy="COPY-canvas.background">Background</div>
+<div class="sws" role="radiogroup" aria-label="Background" data-copy="COPY-canvas.background">
+<button class="sw on" role="radio" aria-checked="true" aria-label="Transparent" data-copy="COPY-canvas.transparent" style="background-color:var(--checkerA);background-image:linear-gradient(45deg,var(--checkerB) 25%,transparent 25%,transparent 75%,var(--checkerB) 75%),linear-gradient(45deg,var(--checkerB) 25%,transparent 25%,transparent 75%,var(--checkerB) 75%);background-size:8px 8px;background-position:0 0,4px 4px"></button>
+<sc-for list="{{bg0}}" as="s" hint-placeholder-count="8"><button class="{{s.cls}}" role="radio" aria-checked="{{s.on}}" aria-label="{{s.name}}" data-copy="{{s.id}}" style="background:{{s.hex}}"></button></sc-for>
+</div></div>
+</aside></div>
+
+<div><div class="lab">CMP-StylePanel / crop / {{t.name}}</div>
+<aside class="panel" aria-label="Crop" data-copy="COPY-tool.crop">
+<div class="sec"><div class="h" data-copy="COPY-tool.crop">Crop</div><div class="mono" style="font-size:13px" data-copy="COPY-crop.size">1,720 × 1,080 px</div></div>
+<fieldset class="sec" style="border:0;margin:0;padding:0"><legend class="h" style="padding:0;margin-bottom:8px" data-copy="COPY-geometry.title">Position and size</legend>
+<div class="fields">
+<label class="fl"><span data-copy="COPY-geometry.x">X</span><input inputmode="numeric" value="200"></label>
+<label class="fl"><span data-copy="COPY-geometry.y">Y</span><input inputmode="numeric" value="0"></label>
+<label class="fl"><span data-copy="COPY-geometry.width">Width</span><input inputmode="numeric" value="1720"></label>
+<label class="fl"><span data-copy="COPY-geometry.height">Height</span><input inputmode="numeric" value="1080"></label>
+</div></fieldset>
+<button class="btn" data-copy="COPY-action.crop_reset">Reset crop</button>
+</aside></div>
+
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3904,"height":1460}}'>
+class Component extends DCLogic {
+renderVals() {
+var pal = [['Red','#D62828'],['Orange','#F28C28'],['Yellow','#FFD60A'],['Green','#2DB84D'],['Blue','#0B63E5'],['Purple','#8E44EC'],['Black','#000000'],['White','#FFFFFF']];
+function sw(sel) { return pal.map(function (p, i) { return { name: p[0], hex: p[1], id: 'COPY-color.' + p[0].toLowerCase(), on: i === sel ? 'true' : 'false', cls: i === sel ? 'sw on' : 'sw' }; }); }
+return {
+themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }],
+swR: sw(0), swP: sw(5), swK: sw(6), swB: sw(4), bgW: sw(7), bg0: sw(-1)
+};
+}
+}
+</script>
+</body>
+</html>

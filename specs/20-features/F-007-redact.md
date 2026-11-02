@@ -38,12 +38,13 @@ gone (PRN-02). Blur and pixelate look softer but can be reversed, so the tool sa
 - **AC4** Given the redaction kind pixelate, strength M, on a 1000 × 800 image, when the user drags, then the area shows blocks of 16 × 16 image pixels, updating while dragging. (R3)
 - **AC5** Given the redaction tool, when the user chooses blur or pixelate, then COPY-redact.not_secure is visible next to the choice and COPY-redact.use_solid is offered. (R4)
 - **AC6** Given the tool was just opened, when the user picks the redaction tool, then its kind is solid. (R4)
-- **AC7** Given a blur redaction over text, when the result is exported, then each pixel in the box equals the reference blur of the image there (defined in the architecture) within ±1 per channel, and the file holds one image and no extra data blocks. (R3, R5)
+- **AC7** Given a blur redaction over text, when the result is downloaded, then each pixel in the box equals the reference blur of the image there (defined in the architecture) within ±1 per channel, and the file holds one image and no extra data blocks (INV-02). (R3, R5)
 - **AC8** Given a selected pixelate redaction, when the user switches its kind to solid, then it becomes an opaque box in the current solid colour. (R6)
 - **AC9** Given an arrow and a later blur redaction over part of it, when exported, then inside the blur box the pixels equal the reference blur of the image alone (the arrow does not appear in or tint the blur) and the arrow outside the box is unchanged; after the blur is sent behind the arrow, the arrow is drawn over the blur. (R3)
 - **AC10** Given a solid redaction over an email and a blur redaction placed later over half of it and brought to the front, when exported, then every pixel inside the solid box is the solid colour. (R5)
 - **AC11** Given a solid redaction whose left edge was drawn at x = 10.4 at 33 % zoom, when exported, then pixel column 10 inside its box is entirely the redaction colour. (R2)
 - **AC12** Given the redaction tool and canvas focus, when the user presses Enter, then a default-size redaction of the current kind appears at the centre of the view and is selected. (R1)
+- **AC13** Given a 1000 × 500 image cropped to 400 × 200 with padding M on white and a blur redaction spanning the frame's left edge, when exported, then the part of the box in the padding is white and no exported pixel depends on image pixels outside the frame. (R3)
 
 ## UX notes
 COPY-tool.redact in CMP-Toolbar. Kind choice in CMP-StylePanel: COPY-redact.solid,
@@ -51,8 +52,8 @@ COPY-redact.blur, COPY-redact.pixelate, with strengths COPY-style.strength. The 
 warning (COPY-redact.not_secure) appears inline in CMP-StylePanel, not as a dialog.
 
 ## Edge cases
-- A redaction partly over the padding → only the image part is obscured by blur or pixelate;
-  the solid kind covers its whole box.
+- A redaction partly outside the frame (e.g. over the padding) → only the part inside the frame
+  is blurred or pixelated, sampling only pixels inside the frame; the solid kind covers its whole box.
 - Very small blur boxes (under 4 image pixels) → still blurred using the surrounding pixels
   (with solid redactions already applied).
 

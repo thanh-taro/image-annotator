@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SCR-Annotator / default / narrow-vi 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:Manrope,system-ui,sans-serif}
+.board{--board:#0B0812;--boardLabel:#9C92B0}
+.tk-dark{--bg:#0F0B16;--surface:#18121F;--surface2:#221A2F;--line:#2D2440;--lineStrong:#6F6290;--fg:#EFEAF8;--muted:#9C92B0;--accent:#A47BFF;--accentHover:#B79BFF;--onAccent:#0F0B16;--accent2Fg:#FFC48A;--selection:#2A1D47;--success:#5BD6A0;--warnBg:#33240F;--workArea:#0B0812;--checkerA:#2A2333;--checkerB:#1E1828;--selectionOutline:#A47BFF;--handleFill:#FFFFFF;--handleBorder:#6837E0}
+.tk-light{--bg:#FBFAFE;--surface:#FFFFFF;--surface2:#F1EDFA;--line:#E2DCF0;--lineStrong:#8C82A2;--fg:#16111F;--muted:#5E566F;--accent:#6837E0;--accentHover:#5429C0;--onAccent:#FFFFFF;--accent2Fg:#8F4705;--selection:#F0EAFE;--success:#13744C;--warnBg:#FDEBD8;--workArea:#ECE8F4;--checkerA:#FFFFFF;--checkerB:#E6E1F0;--selectionOutline:#6837E0;--handleFill:#FFFFFF;--handleBorder:#6837E0}
+.tk-dark,.tk-light{--ann-red:#D62828;--ann-orange:#F28C28;--ann-yellow:#FFD60A;--ann-green:#2DB84D;--ann-blue:#0B63E5;--ann-purple:#8E44EC;--ann-black:#000000;--ann-white:#FFFFFF}
+.lab{font:600 12px Manrope,sans-serif;color:var(--boardLabel);margin:0 0 8px}
+.app{width:1200px;height:760px;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);border:1px solid var(--line);box-sizing:border-box;overflow:hidden}
+.tb{height:40px;flex:none;display:flex;align-items:center;gap:4px;padding:0 8px;background:var(--surface);border-bottom:1px solid var(--line);box-sizing:border-box}
+.sep{width:1px;height:20px;background:var(--line);margin:0 4px;flex:none}
+.ib{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:7px;background:transparent;color:var(--fg);padding:0}
+.ib.on{background:var(--selection);box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent)}
+.ib:disabled,.tbtn:disabled{color:var(--muted);background:transparent}
+.tbtn{height:32px;flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif}
+.primary{background:var(--accent);color:var(--onAccent)}
+.pill{height:24px;flex:none;display:inline-flex;align-items:center;gap:4px;padding:0 8px;border-radius:999px;background:var(--surface2);color:var(--fg);font:600 12px Manrope,sans-serif}
+.body{flex:1;display:flex;min-height:0}
+.work{flex:1;position:relative;overflow:hidden;background:var(--workArea)}
+.work:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.img{position:absolute;left:24px;top:69px;width:878px;height:549px;overflow:hidden;box-shadow:0 0 0 1px var(--lineStrong)}
+.inner{position:absolute;left:0;top:0;width:720px;height:450px;transform:scale(1.219444);transform-origin:0 0;background:#F6F7F9;font-family:system-ui,sans-serif;color:#1F2430}
+.ov{position:absolute;inset:0;pointer-events:none}
+.h{position:absolute;width:10px;height:10px;background:var(--handleFill);border:2px solid var(--handleBorder);box-sizing:border-box}
+.sel{position:absolute;border:2px solid var(--selectionOutline);box-shadow:0 0 0 1px var(--workArea);box-sizing:border-box}
+.ed{position:absolute;padding:4px;border:2px dashed var(--selectionOutline);box-shadow:0 0 0 1px var(--workArea);white-space:pre;color:transparent;caret-color:var(--ann-red);outline:2px solid var(--accent);outline-offset:2px}
+.caret{display:inline-block;width:2px;background:var(--ann-red);vertical-align:top}
+.panel{order:2;width:272px;flex:none;background:var(--surface);border-left:1px solid var(--line);padding:12px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;color:var(--fg);font-size:13px}
+.sec{display:flex;flex-direction:column;gap:8px}
+.ph{font:600 12px Manrope,sans-serif;color:var(--muted)}
+.sws{display:flex;justify-content:space-between}
+.sw{width:24px;height:24px;border-radius:7px;border:1px solid var(--lineStrong);box-sizing:border-box;padding:0;flex:none}
+.sw.on{border:2px solid var(--accent);box-shadow:inset 0 0 0 2px var(--surface)}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--lineStrong);border-radius:7px}
+.seg4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.seg button{height:28px;border:0;border-right:1px solid var(--line);background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif;padding:0 4px}
+.seg button:first-child{border-radius:7px 0 0 7px}
+.seg button:last-child{border-right:0;border-radius:0 7px 7px 0}
+.seg button.on{background:var(--selection);box-shadow:inset 0 0 0 2px var(--accent)}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}
+.fl{display:flex;align-items:center;justify-content:space-between;gap:4px;font:500 12px Manrope,sans-serif;color:var(--muted)}
+.fl input{width:56px;height:28px;box-sizing:border-box;border:1px solid var(--lineStrong);border-radius:7px;background:var(--bg);color:var(--fg);font:400 16px 'JetBrains Mono',monospace;padding:0 4px}
+.sub{font:600 12px Manrope,sans-serif;color:var(--fg)}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.btn{height:28px;border:1px solid var(--lineStrong);border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px}
+.kind{display:flex;flex-direction:column;gap:4px}
+.kind button{height:32px;display:flex;align-items:center;gap:8px;padding:0 8px;border:1px solid var(--lineStrong);border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif;text-align:left}
+.kind button.on{background:var(--selection);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tag{margin-left:auto;display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 4px;border-radius:7px;background:var(--warnBg);color:var(--accent2Fg);font:600 12px Manrope,sans-serif}
+.st{height:28px;flex:none;display:flex;align-items:center;gap:8px;padding:0 8px;background:var(--surface);border-top:1px solid var(--line);box-sizing:border-box;font:500 12px Manrope,sans-serif;color:var(--muted)}
+.mono{font-family:'JetBrains Mono',monospace;color:var(--fg)}
+.ok{min-height:24px;color:var(--success);display:inline-flex;align-items:center;gap:4px;border:0;border-radius:7px;background:transparent;font:600 12px Manrope,sans-serif;padding:0 4px}
+.lnk{min-height:24px;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:0 4px;border-radius:7px}
+.zb{width:24px;height:24px;border:0;background:transparent;color:var(--fg);border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.st .tbtn{height:24px;padding:0 8px;gap:4px}
+.n{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:680px;max-width:calc(100% - 32px);min-height:44px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;color:var(--fg);font:500 13px/1.45 Manrope,sans-serif}
+.n p{margin:0;flex:1}
+.x{width:28px;height:28px;flex:none;border:0;background:transparent;color:var(--muted);border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.fx{position:absolute;display:flex;align-items:center;padding:0 10px;box-sizing:border-box}
+.tk-dark{--danger:#FF8595;--dangerBg:#3A1622;--scrim:#07050BB3;--cropDim:#07050BA6}
+.tk-light{--danger:#C0243B;--dangerBg:#FCE8EC;--scrim:#16111F66;--cropDim:#16111F8C}
+.app{position:relative}
+.n.err{background:var(--dangerBg);border-color:var(--danger)}
+.n .nb{height:28px;flex:none;display:inline-flex;align-items:center;padding:0 12px;border:1px solid var(--danger);border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif}
+.ring{display:none;stroke-dasharray:2 4}
+@media (prefers-reduced-motion:reduce){.spin .arc{display:none}.spin .ring{display:inline}}
+.empty{position:absolute;inset:24px;border:2px dashed var(--muted);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;color:var(--fg)}
+.empty h2{font:700 17px Manrope,sans-serif;margin:0}
+.empty p{font:500 14px/1.55 Manrope,sans-serif;color:var(--muted);margin:0;max-width:360px}
+kbd{font:500 12px 'JetBrains Mono',monospace;padding:0 4px;border:1px solid var(--lineStrong);border-bottom-width:2px;border-radius:7px;color:var(--fg);background:var(--surface);white-space:nowrap}
+.ebtn{height:32px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--lineStrong);border-radius:7px;background:var(--surface);color:var(--fg);font:600 13px Manrope,sans-serif}
+.empty~.n{bottom:40px}
+.zslot{display:inline-block;width:40px}
+.bgw{display:contents}
+.help .hb:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.chip{position:absolute;padding:4px 8px;border-radius:7px;background:var(--surface);color:var(--fg);border:1px solid var(--lineStrong);font:500 12px 'JetBrains Mono',monospace;white-space:nowrap}
+.dim{position:absolute;background:var(--cropDim)}
+.scrim{position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;z-index:5}
+.dlg{position:relative;width:420px;max-width:calc(100% - 32px);box-sizing:border-box;padding:16px;background:var(--surface);border:1px solid var(--lineStrong);border-radius:10px;color:var(--fg)}
+.dlg h2{margin:0 0 8px;font:700 17px Manrope,sans-serif}
+.dlg p{margin:0 0 16px;font:500 13px/1.5 Manrope,sans-serif;color:var(--muted);text-wrap:pretty}
+.drow{display:flex;justify-content:flex-end;gap:8px}
+.dbtn{height:32px;display:inline-flex;align-items:center;padding:0 12px;border:1px solid var(--lineStrong);border-radius:7px;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif}
+.dbtn.quiet{border-color:transparent}
+.dbtn.dng{border-color:var(--danger);color:var(--danger)}
+.focus{outline:2px solid var(--accent);outline-offset:2px}
+.help{width:640px;max-height:calc(100% - 32px);display:flex;flex-direction:column;padding:16px}
+.help .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex:none}
+.help .hd h2{margin:0}
+.help .note{margin:0 0 12px;font:500 12px/1.55 Manrope,sans-serif;color:var(--muted);flex:none}
+.help .hb{flex:1 1 auto;overflow-y:auto;min-height:0;display:grid;grid-template-columns:1fr 1fr;column-gap:24px;align-items:start;border-top:1px solid var(--line);padding-top:12px;background:linear-gradient(var(--surface) 30%,transparent) center top/100% 40px no-repeat local,linear-gradient(transparent,var(--surface) 70%) center bottom/100% 40px no-repeat local,radial-gradient(farthest-side at 50% 0,var(--lineStrong),transparent) center top/100% 12px no-repeat scroll,radial-gradient(farthest-side at 50% 100%,var(--lineStrong),transparent) center bottom/100% 12px no-repeat scroll}
+.grp{break-inside:avoid;margin:0 0 12px}
+.grp h3{margin:0 0 4px;font:600 12px Manrope,sans-serif;color:var(--muted)}
+.grp ul{list-style:none;margin:0;padding:0}
+.r{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:24px;border-bottom:1px solid var(--line);font:500 12px Manrope,sans-serif}
+.dx{width:32px;height:32px;border:0;background:transparent;color:var(--muted);border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.drop{position:absolute;inset:0;background:color-mix(in srgb,var(--workArea) 88%,transparent);z-index:6}
+.drop .zone{position:absolute;inset:12px;border:2px dashed var(--fg);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.drop .pill2{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;background:var(--surface);border:1px solid var(--lineStrong);color:var(--fg);font:700 18px Manrope,sans-serif}
+.nw{width:390px;height:760px}
+.ntb{flex:none;background:var(--surface);border-bottom:1px solid var(--line);position:relative}
+.ntb .r{height:48px;display:flex;align-items:center;gap:4px;padding:0 4px;box-sizing:border-box}
+.ntb .r+.r{border-top:1px solid var(--line)}
+.ntb .ib{width:44px;height:44px}
+.ntb .tbtn{height:44px}
+.ntb .scroll{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;gap:8px}
+.ntb .fade{position:absolute;right:0;bottom:0;width:24px;height:48px;background:linear-gradient(90deg,transparent,var(--surface) 85%);pointer-events:none;display:flex;align-items:center;justify-content:flex-end;color:var(--muted)}
+.nbody{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
+.nbody .work{order:1}
+.npanel{order:2;flex:none;height:48px;position:relative;z-index:3}
+.npanel .in{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;flex-direction:column}
+.npanel.open .in{border:1px solid var(--lineStrong);border-bottom:0;border-radius:10px 10px 0 0}
+.sbar{height:47px;flex:none;width:100%;display:flex;align-items:center;gap:8px;padding:0 16px;border:0;background:transparent;color:var(--fg);font:600 13px Manrope,sans-serif;text-align:left}
+.sbar .chip2{width:16px;height:16px;border-radius:999px;border:1px solid var(--lineStrong);box-sizing:border-box;flex:none}
+.sbar .chev{margin-left:auto;color:var(--muted);display:inline-flex}
+.sheet{max-height:235px;overflow-y:auto;padding:4px 16px 24px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;border-top:1px solid var(--line);-webkit-mask-image:linear-gradient(#000 calc(100% - 24px),transparent);mask-image:linear-gradient(#000 calc(100% - 24px),transparent)}
+.sheet>*{flex:none}
+.sheet .sec:first-child{padding-top:8px}
+.ntb .fadeL{position:absolute;left:0;bottom:0;width:24px;height:48px;background:linear-gradient(270deg,transparent,var(--surface) 85%);pointer-events:none}
+.sheet .sws .sw{width:44px;height:44px}
+.sheet .seg button{height:44px}
+.sheet .btn{height:44px}
+.sheet .fields{gap:8px 24px}
+.sheet .fl input{width:72px;height:44px}
+.st.nar{height:48px;gap:4px;padding:0 4px}
+.st.nar .ok,.st.nar .lnk,.st.nar .zb{min-width:44px;min-height:44px;width:auto;height:44px;justify-content:center}
+.st.nar .tbtn{height:44px}
+.nw .empty{inset:16px}
+.nw .empty p{max-width:300px}
+.nw .ebtn{height:44px}
+.nw .img{left:16px;width:356px;height:222.6px}
+.nw .chip{font-size:12px}
+</style>
+</helmet>
+<div class="board" style="width:900px;height:920px;box-sizing:border-box;padding:40px;background:var(--board);display:flex;gap:40px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div class="{{t.cls}}" style="width:390px">
+<div class="lab" style="min-height:44px">default, vi-VN (count falls back to icon + number; summary bar in Vietnamese) / narrow 390 / {{t.name}}</div>
+<div class="app nw" lang="vi">
+<div class="ntb" role="toolbar" aria-label="Công cụ và thao tác" data-copy="COPY-a11y.toolbar">
+<div class="r">
+<button class="ib" aria-label="Mở ảnh" aria-keyshortcuts="Control+O" data-copy="COPY-action.open"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></svg></button>
+<button class="ib" aria-label="Hoàn tác" aria-keyshortcuts="Control+Z" data-copy="COPY-action.undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"/></svg></button>
+<button class="ib" disabled aria-label="Làm lại" aria-keyshortcuts="Control+Shift+Z Control+Y" data-copy="COPY-action.redo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5M20 9H10a6 6 0 000 12h3"/></svg></button>
+<div style="flex:1"></div>
+<span class="pill" role="img" aria-label="2 vùng che" data-copy="COPY-export.redaction_count"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden='true'><rect x='3' y='8' width='18' height='8' rx='2' fill='currentColor'/></svg>2</span>
+<button class="tbtn primary" data-copy="COPY-action.copy" aria-keyshortcuts="Control+C">Sao chép</button>
+<button class="ib" aria-label="Thao tác khác" aria-haspopup="menu" aria-expanded="false" data-copy="COPY-action.more"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18" cy="12" r="1.5"/></svg></button>
+</div>
+<div class="r scroll"><button class="ib" aria-pressed="false" aria-label="Chọn (V)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M5 3l14 8-6 2-3 6z'/></svg></button><button class="ib" aria-pressed="false" aria-label="Hình chữ nhật (R)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M4 6h16v12H4z'/></svg></button><button class="ib" aria-pressed="false" aria-label="Hình elip (O)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M4 12a8 6 0 1016 0a8 6 0 10-16 0'/></svg></button><button class="ib on" aria-pressed="true" aria-label="Mũi tên (A)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M5 19L19 5M10 5h9v9'/></svg></button><button class="ib" aria-pressed="false" aria-label="Đường thẳng (L)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M5 19L19 5'/></svg></button><button class="ib" aria-pressed="false" aria-label="Bút vẽ (P)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M4 17c3-6 5 2 8-3s4-6 8-5'/></svg></button><button class="ib" aria-pressed="false" aria-label="Tô sáng (H)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M9 15l6-10 4 2-6 10zM9 15l-2 4h4M4 21h16'/></svg></button><button class="ib" aria-pressed="false" aria-label="Chữ (T)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M5 6h14M12 6v13'/></svg></button><button class="ib" aria-pressed="false" aria-label="Bước (N)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M4 12a8 8 0 1016 0a8 8 0 10-16 0M11 9l2-1v8'/></svg></button><button class="ib" aria-pressed="false" aria-label="Che thông tin (X)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M3 8h18v8H3zM6 11h12M6 13h12'/></svg></button><button class="ib" aria-pressed="false" aria-label="Cắt (C)" data-copy="COPY-tool.shortcut_hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M7 3v14h14M3 7h14v14'/></svg></button></div>
+<div class="fade" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>
+</div>
+<main class="nbody">
+<aside class="npanel" aria-label="Kiểu dáng" data-copy="COPY-a11y.style_panel"><div class="in"><button class="sbar" aria-expanded="false" aria-controls="sh-{{t.name}}" aria-labelledby="shl-{{t.name}} shd-{{t.name}}"><span class="sr" id="shl-{{t.name}}" data-copy="COPY-style.sheet_toggle">Tùy chọn kiểu dáng:</span><span class="chip2" aria-hidden="true" style="background:var(--ann-red)"></span><span id="shd-{{t.name}}" data-copy="COPY-style.sheet_summary">Mũi tên · Vừa</span><span class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 14l5-5 5 5"/></svg></span></button><div id="sh-{{t.name}}" hidden></div></div></aside>
+<div class="work" role="region" tabindex="0" aria-label="Vùng ảnh" aria-describedby="cs-{{t.name}}" data-copy="COPY-a11y.canvas">
+<span class="sr" id="cs-{{t.name}}" data-copy="COPY-a11y.canvas_summary">Khung ảnh 1.756 × 1.098 px, 5 chú thích</span>
+<div class="img" style="top:170px"><div class="inner" style="transform:scale(0.49444)" data-sample="screenshot" aria-hidden="true">
+<div class="fx" style="left:0;top:0;width:720px;height:44px;padding:0 20px;background:#FFFFFF;border-bottom:1px solid #E3E6EB;font-weight:700;font-size:15px">Checkout<span style="margin-left:auto;font-weight:400;font-size:13px;color:#5B6372">Step 3 of 3</span></div>
+<div style="position:absolute;left:20px;top:64px;width:400px;height:236px;background:#FFFFFF;border:1px solid #E3E6EB;border-radius:8px;box-sizing:border-box"></div>
+<div class="fx" style="left:26px;top:72px;height:20px;font-weight:700;font-size:13px">Contact</div>
+<div class="fx" style="left:26px;top:100px;height:20px;font-size:12px;color:#5B6372">Email</div>
+<div class="fx" style="left:36px;top:130px;width:368px;height:32px;border:1px solid #CBD0D8;border-radius:6px;font-size:13px">alex.morgan@example.com</div>
+<div class="fx" style="left:26px;top:166px;height:20px;font-size:12px;color:#5B6372">API key for invoices</div>
+<div class="fx" style="left:36px;top:194px;width:368px;height:32px;border:1px solid #CBD0D8;border-radius:6px;font:12px ui-monospace,monospace">tok_7f3a91c2e8b04d55</div>
+<div class="fx" style="left:36px;top:244px;width:368px;height:36px;justify-content:center;background:#2F6FEB;color:#FFFFFF;border-radius:6px;font-weight:700;font-size:13px">Place order</div>
+<div style="position:absolute;left:440px;top:64px;width:260px;height:182px;background:#FFFFFF;border:1px solid #E3E6EB;border-radius:8px;box-sizing:border-box"></div>
+<div class="fx" style="left:446px;top:76px;height:20px;font-weight:700;font-size:13px">Order summary</div>
+<div class="fx" style="left:456px;top:108px;width:228px;height:20px;font-size:13px">Desk lamp<span style="margin-left:auto">$48.00</span></div><div class="fx" style="left:456px;top:132px;width:228px;height:20px;font-size:13px">Cable set<span style="margin-left:auto">$22.40</span></div><div class="fx" style="left:456px;top:156px;width:228px;height:20px;font-size:13px">Shipping<span style="margin-left:auto">$29.00</span></div><div class="fx" style="left:456px;top:180px;width:228px;height:20px;font-size:13px">Shipping<span style="margin-left:auto">$29.00</span></div>
+<div style="position:absolute;left:456px;top:206px;width:228px;height:1px;background:#E3E6EB"></div>
+<div class="fx" style="left:456px;top:214px;width:228px;height:20px;font-weight:700;font-size:13px">Total<span style="margin-left:auto">$128.40</span></div>
+<div style="position:absolute;left:448px;top:150px;width:244px;height:54px;border:2.870159453302961px solid var(--ann-red);box-sizing:border-box"></div><svg width="720" height="450" style="position:absolute;left:0;top:0"><path d="M420 372 L533.2 219.2" stroke="var(--ann-red)" stroke-width="2.870159453302961" stroke-linecap="round"/><path d="M540 210 L536.6 221.8 L529.7 216.7 Z" fill="var(--ann-red)"/></svg><div data-sample="text-annotation" style="position:absolute;left:300px;top:380px;font:600 18.041002277904326px/1.25 Manrope,sans-serif;color:var(--ann-red);white-space:pre;-webkit-text-stroke:3.28px var(--ann-white);paint-order:stroke fill">Shipping charged twice</div><div style="position:absolute;left:36px;top:130px;width:368px;height:32px;background:var(--ann-black)"></div><div style="position:absolute;left:36px;top:194px;width:368px;height:32px;background:var(--ann-black)"></div>
+</div></div>
+<div class="ov" aria-hidden="true"></div>
+
+<div class="sr" role="listbox" aria-multiselectable="true" aria-label="Chú thích" data-copy="COPY-a11y.annotations_list" aria-describedby="ah-{{t.name}}"><span class="sr" id="ah-{{t.name}}" data-copy="COPY-a11y.annotations_hint">Tab để chuyển sang chú thích tiếp theo; phím mũi tên di chuyển chú thích đang chọn.</span><div role="option" id="an0-{{t.name}}" tabindex="-1" aria-selected="false" data-copy="COPY-a11y.annotation">Hình chữ nhật tại 1.093, 366</div><div role="option" id="an1-{{t.name}}" tabindex="-1" aria-selected="false" data-copy="COPY-a11y.annotation">Mũi tên tại 1.024, 907</div><div role="option" id="an2-{{t.name}}" tabindex="-1" aria-selected="false" data-copy="COPY-a11y.text_annotation">Chữ “Shipping charged twice” tại 732, 927</div><div role="option" id="an3-{{t.name}}" tabindex="-1" aria-selected="false" data-copy="COPY-a11y.annotation">Khối đặc (an toàn) tại 88, 317</div><div role="option" id="an4-{{t.name}}" tabindex="-1" aria-selected="false" data-copy="COPY-a11y.annotation">Khối đặc (an toàn) tại 88, 473</div></div>
+<div class="sr" role="status" aria-live="polite"></div>
+<div class="sr" role="alert"></div>
+</div>
+</main>
+<footer class="st nar">
+<button class="ok" aria-label="Quyền riêng tư: chạy trên máy, không tải lên" data-copy="COPY-privacy.badge_label" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
+<a class="lnk" href="https://github.com/thanh-taro/image-annotator" target="_blank" rel="noopener"><span class="sr" data-copy="COPY-privacy.source_label">Mã nguồn trên GitHub</span> <span class="sr" data-copy="COPY-a11y.new_tab">(mở trong thẻ mới)</span><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 00-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 015 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0012 2z"/></svg></a>
+<div style="flex:1"></div>
+<button class="zb" aria-label="Thu nhỏ" data-copy="COPY-action.zoom_out"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+<button class="tbtn mono" aria-haspopup="menu" aria-expanded="false" aria-label="Thu phóng: 20 %" data-copy="COPY-a11y.zoom_menu"><span data-copy="COPY-status.zoom">20 %</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d='M7 10l5 5 5-5'/></svg></button>
+<button class="zb" aria-label="Phóng to" data-copy="COPY-action.zoom_in"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+</footer>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":920}}'>
+class Component extends DCLogic {
+renderVals() {
+return { themes: [{ name: 'dark', cls: 'tk-dark' }, { name: 'light', cls: 'tk-light' }] };
+}
+}
+</script>
+</body>
+</html>
