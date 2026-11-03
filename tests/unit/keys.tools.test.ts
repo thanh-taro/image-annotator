@@ -57,6 +57,16 @@ describe('MOD-Keys tools, Enter and Esc (RULE-19)', () => {
     expect(named(key({ key: 'Enter', code: 'Enter' }), scope({ tool: 'arrow', focus: 'control' }))).toBeUndefined();
   });
 
+  it('F-004.AC6 RULE-19 P and H pick the pen and highlight; Enter with either places (a dot)', () => {
+    expect(named(key({ key: 'p', code: 'KeyP' }))).toBe('tool:pen');
+    expect(named(key({ key: 'h', code: 'KeyH' }))).toBe('tool:highlight');
+    for (const t of ['pen', 'highlight'] as const)
+      expect(resolveKey(key({ key: 'Enter', code: 'Enter' }), scope({ tool: t }))).toEqual({
+        action: { kind: 'named', group: 'canvas', name: 'place' },
+        preventDefault: true,
+      });
+  });
+
   it('RULE-19 Esc on the canvas runs the Esc chain (cancel drag, clear selection, select tool)', () => {
     expect(named(key({ key: 'Escape', code: 'Escape' }))).toBe('edit:escape');
     expect(named(key({ key: 'Escape', code: 'Escape' }), scope({ focus: 'dialog' }))).toBeUndefined();

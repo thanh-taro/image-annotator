@@ -20,6 +20,8 @@ const TOOL_ICONS: Partial<Record<ToolName, IconName>> = {
   ellipse: 'ellipse',
   arrow: 'arrow',
   line: 'line',
+  pen: 'pen',
+  highlight: 'highlight',
 };
 
 function OpenButton({ icon }: { icon: boolean }) {
@@ -103,6 +105,7 @@ function ToolGroup({ narrow }: { narrow: boolean }) {
       <div
         ref={ref}
         class="tk-tools__strip"
+        data-disabled={disabled || undefined}
         role="radiogroup"
         aria-label={t('a11y.tool_group')}
         onKeyDown={onKeyDown}

@@ -2,13 +2,16 @@
 // (specs/40-technical/modules/MOD-Render.md, ADR-0004, ADR-0016, ADR-0022). Imports MOD-Core only and
 // never reads language, theme or view state beyond the transform it is given (INV-05).
 // The palette constants are generated from the tokens (scripts/gen-tokens.mjs). `paintBase` is built
-// (F-001); `paint` draws rectangles, ellipses, lines and arrows and the selection overlay (F-003); the
-// other kinds join with F-004…F-007. Promoted from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022).
+// (F-001); `paint` draws rectangles, ellipses, lines and arrows and the selection overlay (F-003), pen
+// strokes and highlights (F-004); the other kinds join with F-005…F-007. Promoted from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022).
 import {
   ARROW_HEAD_LENGTH,
   arrowHead,
   canvasRect,
   handlesOf,
+  HIGHLIGHT_OPACITY,
+  markWidth,
+  strokePieces,
   isLineAnnotation,
   shapeBox,
   strokePixels,
@@ -18,6 +21,7 @@ import {
   type Colour,
   type Frame,
   type Padding,
+  type PathAnnotation,
 } from '../core';
 import { PALETTE_HEX } from './palette.gen';
 
@@ -73,7 +77,7 @@ type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
  * image layer, ADR-0016) it copies that layer instead of scene steps 1–2; the export never passes one
  * and gets the background and the image clipped to the frame from the image itself. Then the
  * annotations in painter's order, clipped to the canvas (RULE-14), then the screen-only overlays.
- * Implements: F-003.R1/R2/R3, NFR-08.
+ * Implements: F-003.R1/R2/R3, F-004.R1/R2, RULE-09, NFR-08.
  */
 export function paint(
   ctx: Ctx,
@@ -174,10 +178,42 @@ function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
       ctx.fill();
       return;
     }
+    case 'stroke':
+    case 'highlight':
+      drawPath(ctx, a, markWidth(a, shortSide));
+      return;
     default:
-      // Strokes, highlights, text, steps and redactions are drawn by F-004…F-007.
+      // Text, steps and redactions are drawn by F-005…F-007.
       return;
   }
+}
+
+/**
+ * F-004.R1/R2 (ADR-0004 §4): a pen stroke as midpoint quadratics with round ends and joins; a highlight
+ * as the same path, 3 × wider with square ends, stroked once at 40 % opacity so the parts where it
+ * crosses itself are no darker than the rest (RULE-09, platform-mapping). A single point is a dot: a
+ * circle of the stroke size for the pen, a square of the highlight's width for a highlight (RULE-05).
+ */
+function drawPath(ctx: Ctx, a: PathAnnotation, width: number): void {
+  const highlight = a.kind === 'highlight';
+  const pieces = strokePieces(a.points);
+  const [first] = pieces;
+  if (!first) return;
+  if (highlight) ctx.globalAlpha = HIGHLIGHT_OPACITY;
+  ctx.lineWidth = width;
+  if (a.points.length === 1) {
+    const { x, y } = first.from;
+    if (highlight) ctx.rect(x - width / 2, y - width / 2, width, width);
+    else ctx.arc(x, y, width / 2, 0, 2 * Math.PI);
+    ctx.fill();
+  } else {
+    ctx.lineCap = highlight ? 'square' : 'round';
+    ctx.lineJoin = 'round';
+    ctx.moveTo(first.from.x, first.from.y);
+    for (const q of pieces) ctx.quadraticCurveTo(q.control.x, q.control.y, q.to.x, q.to.y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 }
 
 /**
@@ -201,6 +237,9 @@ function paintSelection(ctx: Ctx, scene: Scene, transform: Transform, ids: reado
   ctx.rect(c.x, c.y, c.width, c.height);
   ctx.clip();
   for (const a of selected) {
+    // TODO(F-008): a straight (e.g. Shift) highlight's points box has zero height, so its outline is a
+    // line through the band and the n/s handles stack; F-008 decides the box, scaling H from 0 and
+    // which of overlapping handles a press picks (review F-004 round 1, finding 4).
     if (!single || !isLineAnnotation(a)) {
       const b = shapeBox(a);
       const x = X(b.x);

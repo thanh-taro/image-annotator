@@ -1,8 +1,11 @@
 // MOD-Core — shape geometry, RULE-05 clicks, RULE-06 constraints, analytic hit-testing, handles, and
 // move/resize, for the box kinds (rectangle, ellipse, redaction) and the line kinds (line, arrow).
 // Promoted from the SP-engine spike (ADR-0004 §3, ADR-0016) and adapted to the domain types; stroke,
-// highlight, text and step geometry join with F-004…F-006. Pure; coordinates are image pixels.
-// Implements: F-003.R1/R2/R4/R5, RULE-05 (default size), RULE-06 (constrain), ADR-0004 §3.
+// text and step geometry join with F-005 and F-006. Pen strokes and highlights (F-004) are lists of
+// points drawn as midpoint quadratics (ADR-0004 §4), stored as the pointer sampled them (no smoothing
+// or simplification: the specs ask for neither). Pure; coordinates are image pixels.
+// Implements: F-003.R1/R2/R4/R5, F-004.R1/R3/R4, RULE-04 (highlight width), RULE-05 (default size, dots),
+// RULE-06 (constrain), ADR-0004 §3.
 // Spec gap (reported with F-003's review): MOD-Core's public surface lists `hitTest(annotation, point,
 // tolerance)`, `boundsOf(annotation)`, `constrain(drag, kind)` and `defaultAnnotationAt(point, kind,
 // sizes)`. Here stroke widths need the image's shorter side (RULE-04), so they take `shortSide`, and
@@ -17,8 +20,12 @@ export type LineAnnotation = Extract<Annotation, { readonly tail: Point }>;
 export const isBoxKind = (kind: AnnotationKind): kind is BoxAnnotation['kind'] =>
   kind === 'rectangle' || kind === 'ellipse' || kind === 'redaction';
 export const isLineKind = (kind: AnnotationKind): kind is LineAnnotation['kind'] => kind === 'line' || kind === 'arrow';
+export type PathAnnotation = Extract<Annotation, { readonly points: readonly Point[] }>;
+export const isPathKind = (kind: AnnotationKind): kind is PathAnnotation['kind'] =>
+  kind === 'stroke' || kind === 'highlight';
 export const isBoxAnnotation = (a: Annotation): a is BoxAnnotation => isBoxKind(a.kind);
 export const isLineAnnotation = (a: Annotation): a is LineAnnotation => isLineKind(a.kind);
+export const isPathAnnotation = (a: Annotation): a is PathAnnotation => isPathKind(a.kind);
 
 /** F-003.R2: an arrowhead is 4 × the stroke size long and 3 × the stroke size wide. */
 export const ARROW_HEAD_LENGTH = 4;
@@ -29,6 +36,15 @@ export const HIT_TOLERANCE_PX = 6;
 
 /** RULE-04: the stroke size in pixels of a style on an image whose shorter side is `shortSide`. */
 export const strokePixels = (style: Style, shortSide: number): number => styleSizes(shortSide, style.strokeSize).stroke;
+
+/**
+ * RULE-04: the width of an annotation's mark in pixels — the stroke size, or for a highlight 3 × the
+ * stroke size of its size.
+ */
+export function markWidth(a: Annotation, shortSide: number): number {
+  const sizes = styleSizes(shortSide, a.style.strokeSize);
+  return a.kind === 'highlight' ? sizes.highlight : sizes.stroke;
+}
 
 /** RULE-05: the default size of a click-placed shape (20 % of the shorter side, rounded). */
 export const defaultSize = (shortSide: number): number => Math.round(DEFAULT_SIZE_FACTOR * shortSide);
@@ -99,16 +115,40 @@ export function shapeFromDrag<K extends BoxAnnotation['kind'] | LineAnnotation['
 }
 
 /**
+ * F-004.R1/R2/R4: the path a pen or highlight drag draws through the sampled `points` (image pixels, in
+ * order, the press point first). `shift` applies RULE-06 to highlights only: a straight horizontal or
+ * vertical run from the press point to the pointer (whichever the drag is closer to).
+ */
+export function pathFromDrag(
+  kind: PathAnnotation['kind'],
+  id: string,
+  style: Style,
+  points: readonly Point[],
+  shift: boolean,
+): Annotation {
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (shift && kind === 'highlight' && first && last) {
+    const end = constrain(first, last, kind);
+    // RULE-09: a run that ends back at its press point is a highlight dot, never an empty run.
+    const run = end.x === first.x && end.y === first.y ? [{ ...first }] : [{ ...first }, end];
+    return { id, kind, style, points: run };
+  }
+  return { id, kind, style, points: points.map((p) => ({ ...p })) };
+}
+
+/**
  * RULE-05: a click with a shape (or redaction) tool places it at 20 % of `s`, centred on the click;
- * lines and arrows point right.
+ * lines and arrows point right; a click with the pen or highlight tool places a dot (one point).
  */
 export function defaultAnnotationAt(
   point: Point,
-  kind: BoxAnnotation['kind'] | LineAnnotation['kind'],
+  kind: BoxAnnotation['kind'] | LineAnnotation['kind'] | PathAnnotation['kind'],
   shortSide: number,
   id: string,
   style: Style,
 ): Annotation {
+  if (isPathKind(kind)) return { id, kind, style, points: [{ ...point }] };
   const size = defaultSize(shortSide);
   const half = size / 2;
   if (isLineKind(kind)) {
@@ -140,10 +180,55 @@ export function arrowHead(tail: Point, head: Point, stroke: number): readonly [P
   ];
 }
 
-/** The geometry box of a shape, without its stroke (handles sit on it). */
+/**
+ * ADR-0004 §4 midpoint quadratics: each inner sample is a control point and the curve passes through
+ * the midpoints between samples, from the first point to the last. Consecutive pieces share their end
+ * and its tangent (the control points and the midpoint between them are collinear), so the curve has
+ * no angle at any sample (F-004.AC1). Two points make one straight piece; one point a zero-length dot.
+ */
+export interface QuadPiece {
+  readonly from: Point;
+  readonly control: Point;
+  readonly to: Point;
+}
+
+export function strokePieces(points: readonly Point[]): readonly QuadPiece[] {
+  const n = points.length;
+  const p = (i: number) => points[i] as Point;
+  const mid = (a: Point, b: Point): Point => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+  if (n === 0) return [];
+  if (n === 1) return [{ from: p(0), control: p(0), to: p(0) }];
+  if (n === 2) return [{ from: p(0), control: mid(p(0), p(1)), to: p(1) }];
+  const out: QuadPiece[] = [];
+  let from = p(0);
+  for (let i = 1; i < n - 1; i++) {
+    const to = i === n - 2 ? p(n - 1) : mid(p(i), p(i + 1));
+    out.push({ from, control: p(i), to });
+    from = to;
+  }
+  return out;
+}
+
+/** The box of a list of points (one pass, so long strokes cost no spread of their points). */
+function pointsBox(points: readonly Point[]): Box {
+  let x1 = Infinity;
+  let y1 = Infinity;
+  let x2 = -Infinity;
+  let y2 = -Infinity;
+  for (const p of points) {
+    if (p.x < x1) x1 = p.x;
+    if (p.x > x2) x2 = p.x;
+    if (p.y < y1) y1 = p.y;
+    if (p.y > y2) y2 = p.y;
+  }
+  return points.length ? { x: x1, y: y1, width: x2 - x1, height: y2 - y1 } : { x: 0, y: 0, width: 0, height: 0 };
+}
+
+/** The geometry box of a shape, without its stroke (handles sit on it; for paths, the points' box). */
 export function shapeBox(a: Annotation): Box {
   if (isBoxAnnotation(a)) return normalizeBox(a.box);
   if (isLineAnnotation(a)) return boxBetween(a.tail, a.head);
+  if (isPathAnnotation(a)) return pointsBox(a.points);
   throw new Error(`shapeBox: ${a.kind} arrives with its feature`);
 }
 
@@ -162,6 +247,13 @@ export function boundsOf(a: Annotation, shortSide: number): Box {
     const x = Math.min(...xs) - hw;
     const y = Math.min(...ys) - hw;
     return { x, y, width: Math.max(...xs) + hw - x, height: Math.max(...ys) + hw - y };
+  }
+  if (isPathAnnotation(a)) {
+    // The curve stays inside its points' hull. Pens have round ends (half the width around the path);
+    // a highlight's square ends reach half the width × √2 at their corners.
+    const reach = a.kind === 'highlight' ? (markWidth(a, shortSide) / 2) * Math.SQRT2 : hw;
+    const b = pointsBox(a.points);
+    return { x: b.x - reach, y: b.y - reach, width: b.width + 2 * reach, height: b.height + 2 * reach };
   }
   throw new Error(`boundsOf: ${a.kind} arrives with its feature`);
 }
@@ -204,6 +296,54 @@ export function distanceToEllipse(px: number, py: number, a: number, b: number):
     ty /= l;
   }
   return Math.hypot(ax - a * tx, ay - b * ty);
+}
+
+/** The chord error allowed when a quadratic piece is flattened for hit-testing (image pixels). */
+const FLATTEN_ERROR = 0.01;
+
+/** Distance from `p` to a quadratic piece, flattened so the chords stay within FLATTEN_ERROR of it. */
+export function distanceToQuad(p: Point, { from: a, control: c, to: b }: QuadPiece): number {
+  // A quadratic split into n chords deviates from them by at most |a − 2c + b| / (4 n²).
+  const bend = Math.hypot(a.x - 2 * c.x + b.x, a.y - 2 * c.y + b.y);
+  const n = Math.max(1, Math.ceil(Math.sqrt(bend / (4 * FLATTEN_ERROR))));
+  let best = Infinity;
+  let last = a;
+  for (let i = 1; i <= n; i++) {
+    const t = i / n;
+    const u = 1 - t;
+    const q = { x: u * u * a.x + 2 * u * t * c.x + t * t * b.x, y: u * u * a.y + 2 * u * t * c.y + t * t * b.y };
+    const d = distanceToSegment(p, last, q);
+    if (d < best) best = d;
+    last = q;
+  }
+  return best;
+}
+
+/**
+ * RULE-09: whether `p` is within the square end of a highlight at either end point — a square of side
+ * 2 × `half` centred on the end and turned with the path's tangent there (axis-aligned for a dot).
+ */
+function hitsSquareEnds(p: Point, points: readonly Point[], pieces: readonly QuadPiece[], half: number): boolean {
+  const inSquare = (c: Point, dir: Point) => {
+    const l = Math.hypot(dir.x, dir.y);
+    const ux = l ? dir.x / l : 1;
+    const uy = l ? dir.y / l : 0;
+    const dx = p.x - c.x;
+    const dy = p.y - c.y;
+    return Math.abs(dx * ux + dy * uy) <= half && Math.abs(-dx * uy + dy * ux) <= half;
+  };
+  const first = pieces[0];
+  const last = pieces[pieces.length - 1];
+  if (!first || !last) return false;
+  if (points.length === 1) return inSquare(first.from, { x: 1, y: 0 });
+  // The tangent at each end: towards the control point, or along the piece when they coincide.
+  const away = (a: Point, b: Point, c: Point) => (a.x !== b.x || a.y !== b.y ? b : c);
+  const start = away(first.from, first.control, first.to);
+  const end = away(last.to, last.control, last.from);
+  return (
+    inSquare(first.from, { x: start.x - first.from.x, y: start.y - first.from.y }) ||
+    inSquare(last.to, { x: last.to.x - end.x, y: last.to.y - end.y })
+  );
 }
 
 function distanceToBoxOutline(p: Point, b: Box): number {
@@ -254,6 +394,15 @@ export function hitTest(a: Annotation, p: Point, tolerance: number, shortSide: n
         return true;
     }
     return distanceToSegment(p, a.tail, a.head) <= reach;
+  }
+  if (isPathAnnotation(a)) {
+    // F-004: the visible mark is the curve widened by half the mark's width (a highlight is 3 × wider).
+    const half = tolerance + markWidth(a, shortSide) / 2;
+    const pieces = strokePieces(a.points);
+    for (const piece of pieces) if (distanceToQuad(p, piece) <= half) return true;
+    // RULE-09: a highlight's ends and dot are square, so their corners count too.
+    if (a.kind === 'highlight') return hitsSquareEnds(p, a.points, pieces, half);
+    return false;
   }
   return false;
 }
