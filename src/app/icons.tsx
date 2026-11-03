@@ -2,7 +2,7 @@
 // (the package has no side effects). Each SVG string is turned into elements once — never injected
 // as HTML (ADR-0003) — and drawn with the stroke width of the designs.
 import type { JSX } from 'preact';
-import { CircleAlert, CircleCheck, Download, Image, LoaderCircle, X } from 'lucide-static';
+import { CircleAlert, CircleCheck, CodeXml, Download, Image, LoaderCircle, ShieldCheck, X } from 'lucide-static';
 
 const SOURCES = {
   alert: CircleAlert,
@@ -11,6 +11,9 @@ const SOURCES = {
   image: Image,
   spinner: LoaderCircle,
   close: X,
+  // F-016: the privacy statement and the source link (lucide has no brand marks, so no GitHub logo).
+  shieldCheck: ShieldCheck,
+  code: CodeXml,
 } as const;
 
 export type IconName = keyof typeof SOURCES;

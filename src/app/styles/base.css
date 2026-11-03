@@ -33,6 +33,13 @@
   }
 
   .tk-status-bar {
+    /* F-016: a row of status items with the privacy statement at the start (style.md "Status bar"). */
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    padding-inline: var(--tk-space-2);
+    min-inline-size: 0;
     background: var(--tk-color-surface);
     border-block-start: var(--tk-border-width-hairline) solid var(--tk-color-line);
   }
