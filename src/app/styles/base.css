@@ -18,6 +18,8 @@
     display: grid;
     /* The toolbar is one 40 px row, or two rows on narrow widths (CMP-Toolbar "narrow", F-003). */
     grid-template-rows: auto minmax(0, 1fr) var(--tk-size-statusbar);
+    /* One column no wider than the tool: the narrow tool row scrolls instead of widening the page. */
+    grid-template-columns: minmax(0, 1fr);
     height: 100%;
     min-width: var(--tk-size-min-width);
   }

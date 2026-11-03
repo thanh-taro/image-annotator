@@ -3,9 +3,11 @@
 // schedules one `requestAnimationFrame` paint into a canvas sized to its box × device pixel ratio
 // (capped at 2); the paint copies the image layer (./layer.ts, ADR-0016), which MOD-Render `paintBase`
 // rebuilds only when its inputs change. On it MOD-Render `paint` draws the annotations and the selection
-// handles; while a shape is drawn (./draw.ts) the split drag layers (./drag.ts, ADR-0022) hold the rest.
+// handles; while a shape, stroke or highlight is drawn (./draw.ts) the split drag layers (./drag.ts,
+// ADR-0022) hold the rest. Pointer moves pass their coalesced samples on, so strokes follow the
+// pointer's full path (F-004.R1).
 // The accessible list arrives with F-013.
-// Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, RULE-12, CMP-Canvas "Behavior" (two fingers pan
+// Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, F-004.R1/R2/R4, RULE-12, CMP-Canvas "Behavior" (two fingers pan
 // and zoom) and "drawing" / "selected", architecture A5 (crisp from 200 %), ADR-0016, ADR-0022.
 import { useEffect, useRef } from 'preact/hooks';
 import {
@@ -22,7 +24,7 @@ import {
 import type { Doc } from '../document';
 import { paint as paintScene, type BaseView, type OverlayLook, type Patches, type Transform } from '../render';
 import { DragLayers } from './drag';
-import { DRAFT_ID, DrawTool, shapeKindOf } from './draw';
+import { DRAFT_ID, DrawTool, drawKindOf } from './draw';
 import { InputController } from './input';
 import { ImageLayer } from './layer';
 import { ViewController } from './view';
@@ -146,7 +148,8 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       return tokens;
     };
 
-    // F-003: the shape tools (./draw.ts) take one-finger, mouse and pen drags the view does not take.
+    // F-003/F-004: the shape, pen and highlight tools (./draw.ts) take one-finger, mouse and pen drags
+    // the view does not take.
     const draw = new DrawTool(
       () => {
         const { image: img, tool: active, style: current } = live.current;
@@ -265,7 +268,11 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       if (e.pointerType !== 'touch') e.preventDefault();
       el.setPointerCapture(e.pointerId);
     };
-    const onPointerMove = (e: PointerEvent) => input.move(read(e));
+    // F-004.R1: every position the browser sampled since the last move (where it reports them).
+    const onPointerMove = (e: PointerEvent) => {
+      const coalesced = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
+      input.move(coalesced.length ? { ...read(e), samples: coalesced.map(local) } : read(e));
+    };
     const onPointerEnd = (e: PointerEvent) => input.up(read(e));
     const onPointerCancel = (e: PointerEvent) => input.cancel(read(e));
     // RULE-06: Shift pressed or released mid-drag constrains the preview at once, without a move.
@@ -300,9 +307,10 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       },
       cancelDrag: () => draw.cancel(),
       placeAtCentre() {
-        // RULE-19 Enter / F-003.R5: the default shape (RULE-05) at the centre of the view.
+        // RULE-19 Enter / F-003.R5 / F-004.R4: the default shape, or a pen or highlight dot (RULE-05), at
+        // the centre of the view.
         const { image: img, tool: active, style: current } = live.current;
-        const kind = shapeKindOf(active);
+        const kind = drawKindOf(active);
         const centre = view.centreImage();
         if (!kind || !current || !centre) return false;
         live.current.onCreate?.(defaultAnnotationAt(centre, kind, Math.min(img.width, img.height), DRAFT_ID, current));

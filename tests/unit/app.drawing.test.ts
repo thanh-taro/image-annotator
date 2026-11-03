@@ -89,7 +89,7 @@ describe('MOD-App drawing commands', () => {
     expect(tool.value).toBe('ellipse');
     expect(selection.value).toBe(selected);
     expect(lastPolite()).toBe('Ellipse tool');
-    setTool('pen');
+    setTool('text');
     expect(tool.value).toBe('ellipse');
   });
 
@@ -164,5 +164,35 @@ describe('MOD-App drawing commands', () => {
     expect(sheetOpen.value).toBe(false);
     expect(tool.value).toBe('rectangle');
     cancel.mockRestore();
+  });
+
+  it('F-004.R1 F-004.R2 CMP-Toolbar the pen and highlight tools can be picked and are announced', () => {
+    setTool('pen');
+    expect(tool.value).toBe('pen');
+    expect(lastPolite()).toBe('Pen tool');
+    setTool('highlight');
+    expect(tool.value).toBe('highlight');
+    expect(lastPolite()).toBe('Highlight tool');
+  });
+
+  it('F-004.R4 RULE-11 a finished stroke is one undo step, selected, announced as placed', () => {
+    setTool('pen');
+    createAnnotation({ id: 'draft', kind: 'stroke', style: DEFAULT_STYLES.pen, points: [{ x: 1, y: 2 }] });
+    const [a] = doc.value?.annotations ?? [];
+    expect(a).toMatchObject({ kind: 'stroke', points: [{ x: 1, y: 2 }] });
+    expect(selection.value).toEqual([a?.id]);
+    expect(lastPolite()).toBe('Pen added');
+    expect(loaded.value?.session.history.undo()?.doc.annotations).toEqual([]);
+  });
+
+  it('F-004.AC2 CMP-StylePanel RULE-04 the highlight tool offers colour and size (yellow, L), never fill', () => {
+    const m = panelModel('highlight', [], doc.value, currentStyles.value);
+    expect(m).toMatchObject({ variant: 'tool', subject: 'Highlight', color: 'yellow', size: 'L' });
+    expect(m).not.toHaveProperty('fill');
+    expect(panelModel('pen', [], doc.value, currentStyles.value)).toMatchObject({ color: 'red', size: 'M' });
+    setTool('highlight');
+    setStyle({ color: 'green', strokeSize: 'M', fill: 'solid' });
+    expect(currentStyles.value.highlight).toMatchObject({ color: 'green', strokeSize: 'M', fill: 'none' });
+    expect(currentStyles.value.pen).toBe(DEFAULT_STYLES.pen);
   });
 });

@@ -105,6 +105,11 @@
     overflow-y: hidden;
     scrollbar-width: none;
   }
+  /* CMP-Toolbar "no image": the disabled tools take no focus, so the row does not scroll (a scrolling
+     region needs keyboard access, NFR-06); the end fade still shows that more tools follow. */
+  .tk-tools--narrow .tk-tools__strip[data-disabled] {
+    overflow-x: hidden;
+  }
   .tk-tools--narrow .tk-tools__strip .tk-tool:focus-visible {
     outline-offset: calc(-1 * var(--tk-border-width-focus));
   }

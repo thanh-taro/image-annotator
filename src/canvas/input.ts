@@ -16,6 +16,11 @@ export interface PointerInput {
   readonly shift?: boolean;
   /** Alt held (RULE-19 Pointer: Alt+drag moves an annotation, F-008). */
   readonly alt?: boolean;
+  /**
+   * F-004.R1: for a move, every position the browser sampled since the last event (its coalesced
+   * events, `getCoalescedEvents`), in order, ending at `point`; absent where the browser has none.
+   */
+  readonly samples?: readonly Point[];
 }
 
 /** What a drawing tool receives (F-003…F-010); the view takes the pointer first. */

@@ -2,7 +2,7 @@
 // shows. Creating a shape is one undo step that selects it (RULE-11, F-003.R6); a style change applies
 // to the selection as one step and becomes the current style of its tools, else it is the active tool's
 // current style and no step (RULE-04, RULE-11). Tool changes and placing are announced (NFR-06).
-// Implements: F-003.R3/R6, RULE-04, RULE-11, RULE-19 (Esc chain), CMP-Toolbar "Behavior",
+// Implements: F-003.R3/R6, F-004.R1/R2 (the pen and highlight tools), RULE-04, RULE-11, RULE-19 (Esc chain), CMP-Toolbar "Behavior",
 // CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed).
 import { canvasCommands } from '../canvas';
 import { t, type MessageId } from '../copy';
@@ -22,8 +22,8 @@ import {
 import { add, restyle, type Doc, type Selection } from '../document';
 import { announcePolite, commit, currentStyles, doc, loaded, selection, sheetOpen, tool } from './state';
 
-/** The tools built so far, in CMP-Toolbar order; the others join with their features (F-004…F-010). */
-export const BUILT_TOOLS: readonly ToolName[] = ['select', 'rectangle', 'ellipse', 'arrow', 'line'];
+/** The tools built so far, in CMP-Toolbar order; the others join with their features (F-005…F-010). */
+export const BUILT_TOOLS: readonly ToolName[] = ['select', 'rectangle', 'ellipse', 'arrow', 'line', 'pen', 'highlight'];
 
 const TOOL_COPY = {
   select: 'tool.select',
