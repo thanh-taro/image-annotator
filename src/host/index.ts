@@ -59,11 +59,6 @@ function apply(settings: Settings): void {
   }
 }
 
-function ancestorOrigins(): string[] | undefined {
-  const list = (location as Location & { ancestorOrigins?: DOMStringList }).ancestorOrigins;
-  return list ? Array.from(list) : undefined;
-}
-
 /**
  * Starts the host contract after first render: follows the device preference while the host has
  * not set a theme, tracks focus, accepts origin-checked settings messages and posts the single
@@ -95,7 +90,7 @@ export function startHost(): void {
   });
 
   // Implements: F-015.R5 (one ready signal, no content, never to '*').
-  for (const origin of readyTargets(HOST_ORIGINS, ancestorOrigins())) window.parent.postMessage(READY_MESSAGE, origin);
+  for (const origin of readyTargets(HOST_ORIGINS)) window.parent.postMessage(READY_MESSAGE, origin);
 }
 
 /** Registers and seeds the offline service worker after first render (ADR-0011, F-017). */

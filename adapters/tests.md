@@ -36,7 +36,7 @@ with its ID**; `python3 tools/spec_lint.py --coverage tests` lists criteria with
   cases), a disallowed host origin, and the two tool builds. The tool servers keep a server-side
   request log (`/__log/dump`, `/__log/reset`, reachable only from the test runner, since the page has
   `connect-src 'none'`) for NFR-01. The stub host records every message the tool posts and offers
-  `__sendTheme`, `__sendLanguage`, `__postRaw`, `__fromSibling` and `__resizeTool`.
+  `__sendTheme`, `__sendLanguage`, `__fromSibling(data)` and `__resizeTool`.
 - Accessibility: `@axe-core/playwright` with tags `wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa` on
   every screen state in both themes; zero violations expected (NFR-06).
 - No CI (ADR-0014): every suite runs locally (`pnpm check:full`, `scripts/release-build`). Firefox and

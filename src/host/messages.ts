@@ -41,14 +41,11 @@ export function acceptSettings(event: IncomingMessage, allow: readonly string[],
 }
 
 /**
- * The target origins for the ready signal, never `'*'`: the embedding page's origin when the
- * browser reports it (`location.ancestorOrigins`) and it is allowed; without that report (Gecko),
- * every allowed origin, since the browser delivers a message only to a matching target.
+ * The target origins for the ready signal, never `'*'`: every allowed origin. `frame-ancestors`
+ * already guarantees the parent is one of them, and the browser delivers a message only to a
+ * matching target, so the parent's origin need not be known (a host frame with
+ * `referrerpolicy="no-referrer"` masks it as "null" in `location.ancestorOrigins`).
  */
-export function readyTargets(allow: readonly string[], ancestors: readonly string[] | undefined): string[] {
-  if (ancestors && ancestors.length > 0) {
-    const parentOrigin = ancestors[0];
-    return parentOrigin !== undefined && allow.includes(parentOrigin) ? [parentOrigin] : [];
-  }
+export function readyTargets(allow: readonly string[]): string[] {
   return [...allow];
 }

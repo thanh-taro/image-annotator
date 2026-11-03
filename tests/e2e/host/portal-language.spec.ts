@@ -6,7 +6,15 @@
 import { expect, test, type Page } from '@playwright/test';
 import { CATALOG } from '../../../src/copy/messages.gen';
 import { HOST_ALLOWED, TOOL_ALLOWED, hostPageUrl } from '../support/urls';
-import { markWindow, postFromForeignOrigin, settle, SHELL, stillSameWindow, toolFrame } from './support';
+import {
+  markWindow,
+  postFromForeignOrigin,
+  postFromSibling,
+  settle,
+  SHELL,
+  stillSameWindow,
+  toolFrame,
+} from './support';
 
 /** Every en-US string that differs from its vi-VN text (plural forms included). */
 const ENGLISH_ONLY: string[] = (() => {
@@ -21,6 +29,9 @@ const ENGLISH_ONLY: string[] = (() => {
   }
   return out;
 })();
+
+const sendTheme = (page: Page, value: string) =>
+  page.evaluate((v) => (window as unknown as { __sendTheme: (v: string) => void }).__sendTheme(v), value);
 
 const sendLanguage = (page: Page, value: unknown) =>
   page.evaluate((v) => (window as unknown as { __sendLanguage: (v: unknown) => void }).__sendLanguage(v), value);
@@ -80,10 +91,13 @@ test('F-018.R2 a language message switches the UI live, without reloading', asyn
 
   await sendLanguage(page, 'en-US');
   await expectUi(page, 'en-US');
-  // Edge case: the same language again is applied with no visible change.
+  // Edge case: the same language again is applied with no visible change; the theme message sent
+  // after it by the same window proves it was processed.
   await sendLanguage(page, 'en-US');
-  await settle(page);
+  await sendTheme(page, 'light');
+  await expect(page.frameLocator('#tool').locator('html')).toHaveAttribute('data-theme', 'light');
   await expectUi(page, 'en-US');
+  await sendTheme(page, 'dark');
   // RULE-17 matching applies to messages too: `vi` → vi-VN.
   await sendLanguage(page, 'vi');
   await expectUi(page, 'vi-VN');
@@ -118,9 +132,14 @@ test('F-018.AC4 language messages from another origin, another window or with an
   await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark', 'vi-VN'));
   await toolFrame(page);
   await postFromForeignOrigin(page, { type: 'taro:language', value: 'en-US' });
-  await page.evaluate(() => (window as unknown as { __fromSibling: (v: string) => void }).__fromSibling('en-US'));
+  await postFromSibling(page, { type: 'taro:language', value: 'en-US' });
+  await settle(page); // other windows: no ordering with the parent's messages
+  await expectUi(page, 'vi-VN');
+  // Unsupported values from the parent, then a valid theme control from the same window: once the
+  // control has taken effect, every earlier message has been handled.
   for (const value of ['fr-FR', '', null, 42, { lang: 'en-US' }]) await sendLanguage(page, value);
-  await settle(page);
+  await sendTheme(page, 'light');
+  await expect(page.frameLocator('#tool').locator('html')).toHaveAttribute('data-theme', 'light');
   await expectUi(page, 'vi-VN');
 });
 

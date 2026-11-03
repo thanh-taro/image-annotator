@@ -49,7 +49,16 @@ export async function postFromForeignOrigin(page: Page, data: unknown): Promise<
   ] as const);
 }
 
-/** Lets queued messages be delivered and handled before asserting that nothing changed. */
+/** Posts `data` to the tool from a same-origin sibling frame: the allowed origin, but not the parent. */
+export async function postFromSibling(page: Page, data: unknown): Promise<void> {
+  await page.evaluate((d) => (window as unknown as { __fromSibling: (d: unknown) => void }).__fromSibling(d), data);
+}
+
+/**
+ * Lets messages from other windows be delivered and handled before asserting that nothing changed.
+ * Messages from the parent need no wait: follow them with a valid control from the parent, which
+ * arrives after them (one source, in order), and wait for its effect.
+ */
 export async function settle(page: Page): Promise<void> {
   await page.waitForTimeout(300);
 }

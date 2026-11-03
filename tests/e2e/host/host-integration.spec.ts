@@ -5,7 +5,16 @@
 // (every M-1 feature), AC9/AC10 (copy and download, F-012).
 import { expect, test, type Page } from '@playwright/test';
 import { HOST_ALLOWED, HOST_OTHER, TOOL_ALLOWED, TOOL_EMPTY, hostPageUrl } from '../support/urls';
-import { markWindow, postFromForeignOrigin, received, settle, SHELL, stillSameWindow, toolFrame } from './support';
+import {
+  markWindow,
+  postFromForeignOrigin,
+  postFromSibling,
+  received,
+  settle,
+  SHELL,
+  stillSameWindow,
+  toolFrame,
+} from './support';
 
 const DARK_WORK_AREA = 'rgb(11, 8, 18)';
 const LIGHT_WORK_AREA = 'rgb(236, 232, 244)';
@@ -54,9 +63,14 @@ test('F-015.R1 follows later theme messages without reloading', async ({ page })
   await expect(page.frameLocator('#tool').locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await workArea(page)).toBe(DARK_WORK_AREA);
 
-  // Edge case: an unknown theme value keeps the current theme.
-  await page.evaluate(() => (window as unknown as { __sendTheme: (v: string) => void }).__sendTheme('blue'));
-  await settle(page);
+  // Edge case: an unknown theme value keeps the current theme. A language message sent after it by
+  // the same window is handled after it, so its effect proves 'blue' was processed.
+  await page.evaluate(() => {
+    const w = window as unknown as { __sendTheme: (v: string) => void; __sendLanguage: (v: string) => void };
+    w.__sendTheme('blue');
+    w.__sendLanguage('vi-VN');
+  });
+  await expect(page.frameLocator('#tool').locator('html')).toHaveAttribute('lang', 'vi-VN');
   await expect(page.frameLocator('#tool').locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await stillSameWindow(frame)).toBe(true);
 });
@@ -136,14 +150,7 @@ test('F-015.AC5 settings messages from another origin or another window are igno
   // An origin not in the allowed list (a sibling frame on HOST_OTHER).
   await postFromForeignOrigin(page, { type: 'taro:theme', value: 'light' });
   // The allowed origin, but a window other than the embedding page (a same-origin sibling frame).
-  await page.evaluate((tool) => {
-    const sib = document.createElement('iframe');
-    sib.style.display = 'none';
-    document.body.appendChild(sib);
-    (sib.contentWindow as Window & { eval: (s: string) => void }).eval(
-      `parent.frames[0].postMessage({ type: 'taro:theme', value: 'light' }, ${JSON.stringify(tool)})`,
-    );
-  }, TOOL_ALLOWED);
+  await postFromSibling(page, { type: 'taro:theme', value: 'light' });
   await settle(page);
   await expect(html).toHaveAttribute('data-theme', 'dark');
 

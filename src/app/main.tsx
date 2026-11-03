@@ -18,6 +18,8 @@ const address = (() => {
   }
 })();
 language.value = resolveLanguage(address, navigator.languages ?? [navigator.language]);
+// Implements: F-018.R1 (mark the page language even if the boot script did not run).
+document.documentElement.lang = language.value;
 document.title = t('app.title');
 
 const root = document.getElementById('app');

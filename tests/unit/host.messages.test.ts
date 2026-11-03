@@ -67,10 +67,18 @@ describe('MOD-Host ready signal', () => {
   });
 
   it('RULE-16 the ready signal goes only to the allowed parent origin, never "*"', () => {
-    expect(readyTargets(ALLOW, [HOST])).toEqual([HOST]);
-    expect(readyTargets(ALLOW, ['https://evil.example'])).toEqual([]);
-    // Without ancestorOrigins (Gecko), each allowed origin; the browser drops the mismatches.
-    expect(readyTargets(['https://a.example', HOST], undefined)).toEqual(['https://a.example', HOST]);
-    expect(readyTargets([], undefined)).toEqual([]);
+    expect(readyTargets(ALLOW)).toEqual([HOST]);
+    // Each allowed origin; the browser drops the ones that do not match the parent.
+    expect(readyTargets(['https://a.example', HOST])).toEqual(['https://a.example', HOST]);
+    expect(readyTargets([])).toEqual([]);
+  });
+
+  it('RULE-16 the ready signal is still sent when the parent origin is masked as "null"', () => {
+    // A host frame with referrerpolicy="no-referrer" makes location.ancestorOrigins[0] "null"
+    // (Chromium). The targets do not depend on it, so the allowed parent still gets taro:ready.
+    const targets = readyTargets(ALLOW);
+    expect(targets).toEqual([HOST]);
+    expect(targets).not.toContain('null');
+    expect(targets).not.toContain('*');
   });
 });
