@@ -1,17 +1,18 @@
 // MOD-Core — shape geometry, RULE-05 clicks, RULE-06 constraints, analytic hit-testing, handles, and
 // move/resize, for the box kinds (rectangle, ellipse, redaction) and the line kinds (line, arrow).
 // Promoted from the SP-engine spike (ADR-0004 §3, ADR-0016) and adapted to the domain types; stroke,
-// text and step geometry join with F-005 and F-006. Pen strokes and highlights (F-004) are lists of
+// text geometry joins with F-005; step badges (F-006) come from ./steps. Pen strokes and highlights (F-004) are lists of
 // points drawn as midpoint quadratics (ADR-0004 §4), stored as the pointer sampled them (no smoothing
 // or simplification: the specs ask for neither). Pure; coordinates are image pixels.
 // Implements: F-003.R1/R2/R4/R5, F-004.R1/R3/R4, RULE-04 (highlight width), RULE-05 (default size, dots),
-// RULE-06 (constrain), ADR-0004 §3.
+// RULE-06 (constrain), ADR-0004 §3, F-006.R1 (step badges hit as filled), F-008.R3 (steps have no handles).
 // Spec gap (reported with F-003's review): MOD-Core's public surface lists `hitTest(annotation, point,
 // tolerance)`, `boundsOf(annotation)`, `constrain(drag, kind)` and `defaultAnnotationAt(point, kind,
 // sizes)`. Here stroke widths need the image's shorter side (RULE-04), so they take `shortSide`, and
 // `constrain` takes the drag's two points. Hit-testing and handles are used by F-008.
 import { DEFAULT_SIZE_FACTOR } from './constants';
 import { styleSizes } from './sizes';
+import { distanceToStep, isStepAnnotation, stepBox } from './steps';
 import type { Annotation, AnnotationKind, Box, Point, Style } from './types';
 
 export type BoxAnnotation = Extract<Annotation, { readonly box: Box }>;
@@ -224,7 +225,10 @@ function pointsBox(points: readonly Point[]): Box {
   return points.length ? { x: x1, y: y1, width: x2 - x1, height: y2 - y1 } : { x: 0, y: 0, width: 0, height: 0 };
 }
 
-/** The geometry box of a shape, without its stroke (handles sit on it; for paths, the points' box). */
+/**
+ * The geometry box of a shape, without its stroke (handles sit on it; for paths, the points' box). A
+ * step's box is its badge, whose size needs the image's shorter side: use `boundsOf` (RULE-04).
+ */
 export function shapeBox(a: Annotation): Box {
   if (isBoxAnnotation(a)) return normalizeBox(a.box);
   if (isLineAnnotation(a)) return boxBetween(a.tail, a.head);
@@ -255,6 +259,7 @@ export function boundsOf(a: Annotation, shortSide: number): Box {
     const b = pointsBox(a.points);
     return { x: b.x - reach, y: b.y - reach, width: b.width + 2 * reach, height: b.height + 2 * reach };
   }
+  if (isStepAnnotation(a)) return stepBox(a, shortSide);
   throw new Error(`boundsOf: ${a.kind} arrives with its feature`);
 }
 
@@ -404,6 +409,8 @@ export function hitTest(a: Annotation, p: Point, tolerance: number, shortSide: n
     if (a.kind === 'highlight') return hitsSquareEnds(p, a.points, pieces, half);
     return false;
   }
+  // F-006: a step's badge is filled, so a click anywhere on it hits.
+  if (isStepAnnotation(a)) return distanceToStep(a, p, shortSide) <= tolerance;
   return false;
 }
 
@@ -427,6 +434,8 @@ export function hitTopmost(
 export type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'tail' | 'head';
 
 export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] {
+  // F-008.R3: text and steps have no handles (their size is S/M/L).
+  if (isStepAnnotation(a)) return [];
   if (isLineAnnotation(a))
     return [
       ['tail', a.tail],
@@ -461,6 +470,7 @@ export function moved(a: Annotation, dx: number, dy: number): Annotation {
   const at = (p: Point): Point => ({ x: p.x + dx, y: p.y + dy });
   if (isBoxAnnotation(a)) return { ...a, box: { ...a.box, x: a.box.x + dx, y: a.box.y + dy } };
   if (isLineAnnotation(a)) return { ...a, tail: at(a.tail), head: at(a.head) };
+  if (isStepAnnotation(a)) return { ...a, centre: at(a.centre) };
   throw new Error(`moved: ${a.kind} arrives with its feature`);
 }
 

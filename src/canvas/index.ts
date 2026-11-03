@@ -1,7 +1,7 @@
 // MOD-Canvas — view, pointer and touch input, tool state machine, handles, crop, text overlay
 // (specs/40-technical/modules/MOD-Canvas.md, ADR-0004, ADR-0009, ADR-0016, ADR-0020, ADR-0022).
 // <Canvas> shows the loaded image (F-001, ./Canvas.tsx) in a view that zooms and pans (F-002,
-// ./view.ts); shapes, pen strokes and highlights are drawn with ./draw.ts (F-003, F-004); the other
+// ./view.ts); shapes, pen strokes, highlights and steps are drawn with ./draw.ts (F-003, F-004, F-006); the other
 // drawing commands are built with F-005…F-008 and F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
 import type { Point } from '../core';
 import { activeCanvas } from './Canvas';
@@ -14,7 +14,17 @@ const notImplemented = (name: string): never => {
 export { Canvas, viewTransform, type CanvasProps } from './Canvas';
 export { ViewController, type WheelInput } from './view';
 export { InputController, type PanCursor, type PointerInput, type ToolInput } from './input';
-export { DRAFT_ID, DrawTool, drawKindOf, type DragKind, type DrawSetup } from './draw';
+export {
+  DRAFT_ID,
+  defaultAt,
+  DrawTool,
+  drawKindOf,
+  placeKindOf,
+  type DragKind,
+  type DrawSetup,
+  type PlaceKind,
+} from './draw';
+export { connectFontGate, FontGate, fontGate } from './fonts';
 export { DragLayers, type DragFrame } from './drag';
 
 /**

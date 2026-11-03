@@ -1,10 +1,12 @@
 // MOD-Canvas — the drawing part of the tool state machine (promoted from the SP-engine spike's
 // controller, ADR-0004 §5): a DOM-free `ToolInput` that turns one pointer gesture of a shape tool (F-003)
-// or of the pen or highlight tool (F-004) into one new annotation. Transient drag state stays here, in plain mutable data; only the finished shape
+// or of the pen or highlight tool (F-004) into one new annotation, and a click of the step tool (F-006)
+// into one step. Transient drag state stays here, in plain mutable data; only the finished shape
 // leaves (one undo step, RULE-11). Text, steps and redactions add their tools beside it; selecting,
 // moving and resizing are F-008. A pen or highlight gesture keeps every pointer sample (the coalesced
 // events of each move included) from the press on, as image pixels; a repeated sample is kept once.
-// Implements: F-003.R1/R2/R4/R5, F-004.R1/R2/R3/R4, RULE-05 (a drag under 4 screen pixels is a click; a
+// Implements: F-003.R1/R2/R4/R5, F-004.R1/R2/R3/R4, F-006.R1/R4 (a step per click, centred on the press
+// point; nothing is dragged, so no preview and no drag layers), RULE-05 (a drag under 4 screen pixels is a click; a
 // pen or highlight click places a dot), RULE-06 (Shift),
 // RULE-19 (Esc cancels the current drag), F-003 edge case "Esc during a drag → nothing is created".
 // The pointer is mapped through the view as it is now (setup().toImage on every call), so a scroll or
@@ -18,6 +20,7 @@ import {
   isShapeKind,
   pathFromDrag,
   shapeFromDrag,
+  stepAt,
   TOOL_KIND,
   type Annotation,
   type PathAnnotation,
@@ -51,9 +54,25 @@ export function drawKindOf(tool: ToolName): DragKind | null {
   return isShapeKind(kind) || isPathKind(kind) ? kind : null;
 }
 
+/** The kinds the pointer and RULE-19 Enter place: the drag kinds and steps (F-006). */
+export type PlaceKind = DragKind | 'step';
+
+/** The kind a tool places with a click or Enter, or null for tools built elsewhere (or not drawing). */
+export function placeKindOf(tool: ToolName): PlaceKind | null {
+  if (tool === 'step') return 'step';
+  return drawKindOf(tool);
+}
+
+/** RULE-05 / RULE-19: the default annotation of `kind` centred on `point` (a step: the next number on add). */
+export function defaultAt(point: Point, kind: PlaceKind, shortSide: number, style: Style): Annotation {
+  return kind === 'step'
+    ? stepAt(point, DRAFT_ID, style)
+    : defaultAnnotationAt(point, kind, shortSide, DRAFT_ID, style);
+}
+
 interface Gesture {
   readonly id: number;
-  readonly kind: DragKind;
+  readonly kind: PlaceKind;
   readonly style: Style;
   readonly shortSide: number;
   readonly start: Point; // screen
@@ -82,18 +101,37 @@ export class DrawTool implements ToolInput {
     private readonly onCreate: (draft: Annotation) => void,
     /** ADR-0022 / NFR-02: a gesture started; build the drag layers now, before the 4 px threshold. */
     private readonly onPrepare: () => void = () => {},
+    /** ADR-0009 §4: nothing is drawn or placed until the tool's face is ready (./fonts.ts). */
+    private readonly fonts: { readonly ready: boolean } = { ready: true },
   ) {}
+
+  /**
+   * RULE-19 Enter / F-003.R5 / F-004.R4 / F-006.R4: the active tool's default annotation (a shape, a pen
+   * or highlight dot, or the next step) at `centre` (image pixels). Returns true if one was placed.
+   */
+  placeAt(centre: Point | null): boolean {
+    const s = this.fonts.ready ? this.setup() : null;
+    const kind = s && placeKindOf(s.tool);
+    if (!s || !kind || !centre) return false;
+    this.onCreate(defaultAt(centre, kind, s.shortSide, s.style));
+    return true;
+  }
 
   /** True while a gesture is in progress (pointer down, not cancelled). */
   get active(): boolean {
     return !!this.gesture && !this.gesture.cancelled;
   }
 
+  /** True while a gesture that can become a drag is pressed (ADR-0022: the drag layers are prepared). */
+  get dragging(): boolean {
+    return this.active && this.gesture?.kind !== 'step';
+  }
+
   down(input: PointerInput): boolean {
     // A cancelled gesture whose pointer is still down (or was taken by a pinch) gives way to a new one.
-    if (this.active || input.button !== 0) return false;
+    if (this.active || input.button !== 0 || !this.fonts.ready) return false;
     const s = this.setup();
-    const kind = s && drawKindOf(s.tool);
+    const kind = s && placeKindOf(s.tool);
     if (!s || !kind) return false;
     const from = s.toImage(input.point);
     this.gesture = {
@@ -110,13 +148,13 @@ export class DrawTool implements ToolInput {
       dragging: false,
       cancelled: false,
     };
-    this.onPrepare();
+    if (kind !== 'step') this.onPrepare(); // a step is never dragged: no drag layers
     return true;
   }
 
   move(input: PointerInput): void {
     const g = this.gesture;
-    if (!g || g.cancelled || input.id !== g.id) return;
+    if (!g || g.cancelled || input.id !== g.id || g.kind === 'step') return;
     if (isPathKind(g.kind)) for (const p of input.samples ?? [input.point]) this.addSample(g, g.toImage(p));
     if (!g.dragging && Math.hypot(input.point.x - g.start.x, input.point.y - g.start.y) < CLICK_THRESHOLD_PX) return;
     g.dragging = true;
@@ -148,6 +186,7 @@ export class DrawTool implements ToolInput {
   }
 
   private update(g: Gesture): void {
+    if (g.kind === 'step') return;
     this.preview = isPathKind(g.kind)
       ? pathFromDrag(g.kind, DRAFT_ID, g.style, g.points, g.shift)
       : shapeFromDrag(g.kind, DRAFT_ID, g.style, g.from, g.toImage(g.last), g.shift);
@@ -163,8 +202,9 @@ export class DrawTool implements ToolInput {
     this.preview = null;
     if (g.cancelled) return;
     if (g.dragging && preview) this.onCreate(preview);
-    // RULE-05: a click places the default-size shape centred on it, or a pen or highlight dot.
-    else this.onCreate(defaultAnnotationAt(g.from, g.kind, g.shortSide, DRAFT_ID, g.style));
+    // RULE-05: a click places the default-size shape centred on it, or a pen or highlight dot; F-006.R1:
+    // the step tool places a step at the press point.
+    else this.onCreate(defaultAt(g.from, g.kind, g.shortSide, g.style));
   }
 
   /**
