@@ -24,7 +24,7 @@ empty new text = no step; emptied existing text = one deletion step).
 
 ## Public surface
 - `Doc` type; operations `add`, `update`, `remove`, `duplicate`, `reorder`, `setFrame`,
-  `setPadding`, `setBackground`, `commitText`.
+  `setPadding`, `setBackground`, `commitText(text, isNew)` (a new text carries its anchor and style).
 - `History`: `apply(op, selection, coalesceKey?)`, `undo()`, `redo()`, `canUndo`, `canRedo`,
   each returning the document and the selection to restore.
 - `Session`: `startSession(image)` (empty history), `markExported()`, `unexported` (RULE-18).

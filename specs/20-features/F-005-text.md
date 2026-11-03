@@ -24,9 +24,9 @@ A short label ("Wrong total", "Click here") turns a mark into an explanation (PR
   candidate), spell check beyond what the browser offers.
 
 ## Requirements
-- **R1** With the text tool, clicking empty canvas places a text annotation whose top-left corner is the click point and starts editing it; clicking an existing text edits that text.
+- **R1** With the text tool, clicking empty canvas places a text annotation whose top-left corner is the click point and starts editing it; clicking an existing text edits that text (the topmost text under the pointer, even when another annotation lies above it). A click outside the canvas does nothing (D-030).
 - **R2** While editing, the user types and edits text as in any text field, including new lines, and the text appears at its final size and colour; keys belong to the text except Esc and Mod+S (RULE-19).
-- **R3** Editing ends when the user clicks outside the text (which only ends the edit) or presses Esc; the text stays and is selected, and the text tool stays active. Text left empty is removed (RULE-08).
+- **R3** Editing ends when the user clicks outside the text (which only ends the edit) or presses Esc, or focus moves anywhere other than the text or CMP-StylePanel (choosing a style in the panel keeps editing); the text stays and is selected, and the text tool stays active. Text left empty is removed (RULE-08).
 - **R4** With the select tool, double-clicking a text annotation (or pressing Enter when it is the only selection) edits it again.
 - **R5** Exported text looks the same as on screen at 100 % (NFR-08), with the outline from RULE-08, in the tool's own typeface including Vietnamese letters.
 - **R6** Creating a text is one undo step; editing an existing text to empty deletes it as one undo step (RULE-11).
@@ -47,6 +47,7 @@ A short label ("Wrong total", "Click here") turns a mark into an explanation (PR
 - **AC13** Given the text tool and canvas focus, when the user presses Enter, then a text starts at the centre of the view in editing. (R1)
 - **AC14** Given the user types "Đường dẫn lỗi" and downloads, when the export is opened, then every letter and diacritic is drawn in the tool's own typeface. (R5)
 - **AC15** Given a text being edited, when the user pastes "Đường" in decomposed form (separate accent marks: Đ, u, U+031B, o, U+031B, U+0300, n, g), then the text holds "Đường" as 5 characters, and in the export every letter is drawn in the tool's own typeface; given a text holding 1,999 characters, when the user pastes e + U+0302 + U+0301, then "ế" is kept and the text holds 2,000 characters. (R5)
+- **AC16** Given the text tool and padding or a zoom that shows the surround, when the user clicks outside the canvas, then no text is created, nothing is edited and no undo step is added. (R1)
 
 ## UX notes
 COPY-tool.text in CMP-Toolbar; editing happens in CMP-TextEditor over CMP-Canvas, with
@@ -55,6 +56,7 @@ COPY-text.placeholder while empty.
 ## Edge cases
 - Pasting text while editing → inserted as plain text, cut at 2,000 characters.
 - Dropping text onto a text being edited → inserted as plain text, as a paste.
+- A press with the text tool that moves before release → one text at the press point, as a click.
 - Text extending past the canvas edge → kept; the part outside the frame is not exported.
 
 ## Open questions
