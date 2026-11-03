@@ -54,7 +54,7 @@
     "build": {
       "title": "4 Implementation",
       "status": "in_progress",
-      "step": "4 plan written; awaiting owner OK + commit policy",
+      "step": "4 wave 1: F-015+F-018 built (branch build/f015-f018), in review; F-001 building",
       "gate": {
         "status": "pending",
         "at": null,
@@ -1302,9 +1302,21 @@
     {
       "at": "2026-11-02T08:54:06+00:00",
       "event": "build step: 4 plan written; awaiting owner OK + commit policy"
+    },
+    {
+      "at": "2026-11-02T08:55:30+00:00",
+      "event": "build step: 4 wave 1: F-001 and F-015+F-018 building in worktrees; F-016 next"
+    },
+    {
+      "at": "2026-11-02T08:55:30+00:00",
+      "event": "Build plan approved; branch build/m1 with baseline commit 92b3673"
+    },
+    {
+      "at": "2026-11-03T01:06:26+00:00",
+      "event": "build step: 4 wave 1: F-015+F-018 built (branch build/f015-f018), in review; F-001 building"
     }
   ],
-  "updated": "2026-11-02T08:54:06+00:00",
+  "updated": "2026-11-03T01:06:26+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

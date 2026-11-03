@@ -18,3 +18,15 @@ Spike code is promoted deliberately into the feature that needs it, in a commit 
 Scale: about 18 builder agents, each followed by 1–2 review agents, so roughly 40–55 agent runs over many sessions. Each feature ends with a commit on a build branch.
 
 Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, or each gap listed as a manual check (Firefox, Safari Vietnamese typing, paste into apps, GPU Chromium drag fps, iPad limits).
+
+## Deferred acceptance criteria (each gets its test when the named feature lands)
+| AC | Needs |
+|---|---|
+| F-015.AC2 | annotations + undo history (F-003, F-009) |
+| F-015.AC6, AC7 | every M-1 feature (end of M-1) |
+| F-015.AC9, AC10 | copy and download (F-012) |
+| F-018.AC2 | image, selection, tools, zoom, history (F-008, F-009) |
+| F-018.AC5 | export (F-012) |
+| F-018.AC6 (e2e) | crop size shown (F-010) |
+| F-018.AC7 | every screen state (end of M-1) |
+| F-018.AC10 | text, download, offline (F-005, F-012, F-017) |
