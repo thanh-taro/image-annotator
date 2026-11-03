@@ -51,7 +51,7 @@ values live in `tokens.json`; no hard-coded colours, sizes or fonts in component
   highlight, text, step, redact, crop) · undo/redo · (right-aligned) redaction count pill, Copy
   (filled), Download, overflow. On narrow widths labels hide, tools scroll horizontally in their
   group, and Download moves into the overflow.
-- **Work area:** `workArea` background, canvas centred with a 1 px `lineStrong` outline so its edge shows on light images; transparent areas show a `checkerA` /
+- **Work area:** `workArea` background; Fit leaves `space.6` between the canvas and the work area's edges; canvas centred with a 1 px `lineStrong` outline so its edge shows on light images; transparent areas show a `checkerA` /
   `checkerB` checkerboard of `size.checker` squares; outside the crop frame `cropDim` while cropping.
 - **Style panel:** sections with small `muted` headings: colour swatches (8, in RULE-04 order) ·
   size S/M/L segmented control · fill or redaction kind · position and size fields · selection

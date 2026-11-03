@@ -65,5 +65,7 @@ CMP-Notice; decoding longer than 0.5 s shows COPY-load.loading.
 - Paste while editing text → pastes the text into the text annotation, never loads an image.
 - Animated GIF → first frame only (RULE-01), no message.
 - Transparent PNG → transparency kept (shown over a checkerboard on screen, transparent in export).
+- A drop that holds no files (only folders) → refused with COPY-error.unsupported_format.
+- A paste, drop or open that arrives while an image is loading or a dialog is open → ignored.
 
 ## Open questions

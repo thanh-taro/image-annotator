@@ -15,7 +15,7 @@ Message text; optional action (e.g. COPY-action.download after COPY-error.clipbo
 ## Variants & states
 | Variant / state | Description |
 |---|---|
-| success | Export results; disappears after 4 s |
+| success | Export results and COPY-load.first_only; disappears after 4 s |
 | error | Stays until dismissed or the next action |
 | progress | While loading (COPY-load.loading) or exporting (COPY-export.preparing) takes longer than 0.5 s |
 

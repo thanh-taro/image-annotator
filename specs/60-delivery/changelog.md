@@ -47,3 +47,6 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - Spike spec review round 2 (4 major, 8 minor, all fixed): **RULE-05** covers Alt+drag with a drawing tool, resizes and short presses on empty canvas; **F-008** AC17 and RULE-05 in its rules; **F-007** AC7 checks the downloaded file; ADR-0022 defines the split layers (interleaved selections, solids over blur, rebuilds, drawing); MOD-IO frees the export canvas; module "Decided by" lists updated; architecture.md reflects SP-large-image.
 - Spike spec review round 3 (final; 2 major, 2 minor, all fixed): F-008.AC17 says no undo step was added; ADR-0022 draws every blur and pixelate above the lowest dragged solid each frame.
 - Foundations (phase 3.3): rounding to the nearest whole pixel rounds halves up (rules preamble); MOD-Render takes a `Scene` view type from MOD-Core; DEP-19 approved after the lockfile licence audit (666 packages, all within ADR-0001).
+
+## 2026-11-03 — Build (phase 4)
+- F-001 gaps found while building: F-001 edge cases (a folder-only drop is refused; input during a load or dialog is ignored); CMP-Notice lists COPY-load.first_only as a success notice; style.md sets the Fit margin to `space.6`.
