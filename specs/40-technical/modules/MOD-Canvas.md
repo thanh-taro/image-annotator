@@ -40,3 +40,5 @@ F-013.R4; INV-05; RULE-05, RULE-06, RULE-12, RULE-19; NFR-02, NFR-06, NFR-07. De
 ADR-0009, ADR-0016, ADR-0020, ADR-0022.
 
 SP-engine outcome (ADR-0016, ADR-0022): keeps a device-sized image layer for the current view, rebuilt whenever its inputs change (zoom, pan, viewport size, device pixel ratio, theme, image, frame, padding or background, crop view on or off). While drawing, moving or resizing, it also caches the annotations below the lowest and above the highest dragged one in two layers; anything in between, and every blur or pixelate above the lowest dragged solid, is drawn each frame (ADR-0022). Pointer thresholds follow RULE-05.
+
+F-002 outcome: the view controller exposes `viewCommands` (zoom in/out, fit, actual size, zoom at a point, `panKey`, `holdSpace`) for MOD-App and MOD-Keys.

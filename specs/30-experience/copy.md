@@ -173,6 +173,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | ID | en-US | vi-VN | Notes |
 |---|---|---|---|
 | **COPY-status.zoom** | {percent} % | {percent} % | |
+| **COPY-status.zoom_none** | – | – | Zoom level shown when no image is loaded |
 | **COPY-status.image_size** | {width} × {height} px | {width} × {height} px | |
 | **COPY-privacy.badge** | Runs locally, nothing uploaded | Chạy trên máy, không tải lên | |
 | **COPY-privacy.badge_label** | Privacy: runs locally, nothing uploaded | Quyền riêng tư: chạy trên máy, không tải lên | Icon-only accessible name |

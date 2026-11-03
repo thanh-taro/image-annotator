@@ -26,7 +26,7 @@ and zoom in to place marks precisely. The view never affects the export (INV-05)
 - **R1** A newly loaded image is fitted so the whole canvas is visible, never above 100 % (RULE-12).
 - **R2** The user can zoom in and out in steps, fit the image to the view, and show it at 100 %, within RULE-12's range.
 - **R3** Zooming with the pointer (wheel with Ctrl/Cmd, or pinch on a trackpad or touch screen) keeps the point under the pointer in place.
-- **R4** The user can pan when the canvas is larger than the visible area (scrolling, Space+drag, two-finger drag on touch, or arrow keys with nothing selected, RULE-19).
+- **R4** The user can pan when the canvas is larger than the visible area (scrolling, Space+drag, two-finger drag on touch, or arrow keys with nothing selected, RULE-19). A canvas smaller than the visible area is centred on that axis; a larger one pans until its edge reaches the Fit margin.
 - **R5** The current zoom level is always visible.
 
 ## Acceptance criteria
