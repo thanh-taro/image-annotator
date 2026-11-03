@@ -48,3 +48,5 @@ ADR-0005, ADR-0007, ADR-0019, ADR-0020, ADR-0022, ADR-0023.
 SP-png-export outcome (ADR-0019): `stripPngChunks` also fails closed on unknown critical chunks, non-consecutive IDAT, CRC mismatches and bytes after IEND.
 
 SP-text outcome (ADR-0020): text metrics constants are ascent 1.066 em and descent 0.300 em; `toNFC` for inserted text.
+
+F-004 outcome: pen and highlight paths store the sampled pointer points as given (coalesced where the browser provides them), dropping only exact repeats; no smoothing or simplification.

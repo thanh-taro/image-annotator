@@ -55,3 +55,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-002 gaps: F-002.R4 centres a small canvas and limits panning to the Fit margin; RULE-19 arrow pan is 40 screen px (Shift: 200) and Mod++ also zooms in; copy.md COPY-status.zoom_none.
 - F-003 gaps: RULE-19 Esc closes the narrow style sheet after cancelling a drag; CMP-StylePanel coarse-pointer swatches in 2 rows of 4.
 - F-003 review: CMP-Toolbar's tool group is a radio group named by the new COPY-a11y.tool_group.
+- F-004 gaps: RULE-09 highlight ends are square and a Shift highlight is a straight run; MOD-Core stores stroke points as sampled.
