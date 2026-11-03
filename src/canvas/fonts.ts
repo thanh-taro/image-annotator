@@ -5,9 +5,9 @@
 // Implements: ADR-0009 §4, F-006.R3 (the number drawn in the tool's face), NFR-08.
 import { TEXT_WEIGHT } from '../core';
 
-/** The canvas face (ADR-0009) and the characters steps draw. */
+/** The canvas face (ADR-0009) and characters of both subsets it draws: step digits, Latin and Vietnamese (ADR-0009 §4). */
 const FACE = `${TEXT_WEIGHT} 16px Manrope`;
-const DIGITS = '0123456789';
+const SAMPLE = '0123456789Aa Đường';
 
 /**
  * Opens once `pending` settles. A failed load opens it too (as `document.fonts.ready` does): the canvas
@@ -61,11 +61,11 @@ export function connectFontGate(
 
 let shared: FontGate | null = null;
 
-/** The page's gate: `document.fonts.ready`, then the canvas face with its digits (already loaded at startup). */
+/** The page's gate: `document.fonts.ready`, then the canvas face for digits, Latin and Vietnamese (loaded at startup). */
 export function fontGate(): FontGate {
   if (!shared) {
     const fonts = typeof document !== 'undefined' && 'fonts' in document ? document.fonts : null;
-    shared = new FontGate(fonts ? fonts.ready.then(() => fonts.load(FACE, DIGITS)) : Promise.resolve());
+    shared = new FontGate(fonts ? fonts.ready.then(() => fonts.load(FACE, SAMPLE)) : Promise.resolve());
   }
   return shared;
 }

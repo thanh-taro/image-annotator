@@ -2,10 +2,12 @@
 // (specs/40-technical/modules/MOD-Document.md, ADR-0008). Imports MOD-Core only; no DOM.
 // The session, its history and the RULE-18 change epoch are built (F-001); `add` and `restyle` (F-003);
 // step numbering in `add`, `remove` and `duplicate` (F-006, RULE-07; F-008 wires them to the keys and
-// the panel); the other edit operations throw until F-005…F-011 build them.
+// the panel); the text commit rules in `commitText` (F-005); the other edit operations throw until
+// F-007…F-011 build them.
 import {
   DUPLICATE_OFFSET,
   HISTORY_STEPS,
+  isBlankText,
   moved,
   nextStepNumber,
   renumberSteps,
@@ -15,6 +17,7 @@ import {
   type ImageInfo,
   type PaddingSize,
   type Style,
+  type TextAnnotation,
 } from '../core';
 
 /** The session's editable state: frozen plain objects with structural sharing. */
@@ -110,7 +113,30 @@ export const reorder = (_ids: Selection, _direction: 'forward' | 'backward'): Op
 export const setFrame = (_frame: Frame): Op => notImplemented('setFrame');
 export const setPadding = (_size: PaddingSize): Op => notImplemented('setPadding');
 export const setBackground = (_background: 'transparent' | Colour): Op => notImplemented('setBackground');
-export const commitText = (_id: string, _text: string, _isNew: boolean): Op => notImplemented('commitText');
+
+/**
+ * F-005.R6 / RULE-11 / RULE-08 text commit rules (MOD-Document "Responsibility"): `text` is the edited
+ * annotation as it is when editing ends. A new text and its first edit are one step (`add`); a new text
+ * left empty or only whitespace adds nothing (no step); an existing text edited to empty is one deletion
+ * step; an existing text with new content is one step; an unchanged one is none. The text is kept
+ * composed (NFC), as a safety net behind CMP-TextEditor (ADR-0020).
+ * Spec gap (reported with F-005): MOD-Document's surface names `commitText` without its parameters; a
+ * new text needs its anchor and style, so it takes the whole annotation.
+ */
+export const commitText =
+  (text: TextAnnotation, isNew: boolean): Op =>
+  (doc) => {
+    const value = text.text.normalize('NFC');
+    if (isBlankText(value)) return isNew ? doc : remove([text.id])(doc);
+    if (isNew) return add({ ...text, text: value })(doc);
+    let changed = false;
+    const annotations = doc.annotations.map((a) => {
+      if (a.id !== text.id || a.kind !== 'text' || a.text === value) return a;
+      changed = true;
+      return freezeAnnotation({ ...a, text: value });
+    });
+    return changed ? Object.freeze({ ...doc, annotations: Object.freeze(annotations) }) : doc;
+  };
 
 export interface Restore {
   readonly doc: Doc;

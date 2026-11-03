@@ -89,7 +89,7 @@ describe('MOD-App drawing commands', () => {
     expect(tool.value).toBe('ellipse');
     expect(selection.value).toBe(selected);
     expect(lastPolite()).toBe('Ellipse tool');
-    setTool('text');
+    setTool('redact');
     expect(tool.value).toBe('ellipse');
   });
 

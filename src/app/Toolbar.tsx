@@ -22,6 +22,7 @@ const TOOL_ICONS: Partial<Record<ToolName, IconName>> = {
   line: 'line',
   pen: 'pen',
   highlight: 'highlight',
+  text: 'text',
   step: 'step',
 };
 

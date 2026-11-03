@@ -45,6 +45,12 @@ export const currentStyles = signal<Readonly<Record<DrawingTool, Style>>>(DEFAUL
 /** The selected annotations' ids, in selection order (not an undo step, RULE-11). */
 export const selection = signal<Selection>([]);
 
+/**
+ * SCR-Annotator "editing-text" (F-005): the text being edited — an existing one by id, or a new one
+ * (id null, not in the document until editing ends). MOD-Canvas owns the edit; this mirrors it.
+ */
+export const textEditing = signal<{ readonly id: string | null } | null>(null);
+
 /** D-014 layout width of the tool itself (wide ≥ 1000 px, compact 800–999 px, narrow below). */
 export type Layout = 'wide' | 'compact' | 'narrow';
 export const layout = signal<Layout>('wide');

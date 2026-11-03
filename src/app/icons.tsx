@@ -24,6 +24,7 @@ import {
   RectangleHorizontal,
   ShieldCheck,
   Slash,
+  Type,
   X,
 } from 'lucide-static';
 
@@ -49,6 +50,8 @@ const SOURCES = {
   // F-004: the pen and highlight tools.
   pen: Pen,
   highlight: Highlighter,
+  // F-005: the text tool (the designs' "T").
+  text: Type,
   // F-006: the step tool (lucide has no numbered circle; the ordered list stands for numbered steps).
   step: ListOrdered,
   chevronLeft: ChevronLeft,

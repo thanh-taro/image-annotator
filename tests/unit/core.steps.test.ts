@@ -16,6 +16,9 @@ import {
   type StepAnnotation,
 } from '../../src/core';
 
+/** These kinds need no text measuring (only text does, ADR-0020). */
+const noMeasure = (): number => 0;
+
 const style = DEFAULT_STYLES.step;
 const step = (id: string, number: number, x = 100, y = 100): StepAnnotation => ({
   id,
@@ -67,7 +70,7 @@ describe('MOD-Core steps', () => {
     expect(badge.textSize).toBe(32);
     expect(badge.width).toBe(64);
     expect(badge.height).toBe(64);
-    expect(boundsOf(step('a', 1, 500, 400), 800)).toEqual({ x: 468, y: 368, width: 64, height: 64 });
+    expect(boundsOf(step('a', 1, 500, 400), 800, noMeasure)).toEqual({ x: 468, y: 368, width: 64, height: 64 });
   });
 
   it('RULE-04 a step badge is 2 × the text size of its size (S, M, L)', () => {
@@ -107,20 +110,20 @@ describe('MOD-Core steps', () => {
 
   it('F-006.R1 a click hits the whole badge, and nothing outside it beyond the tolerance', () => {
     const a = step('a', 1, 100, 100);
-    expect(hitTest(a, { x: 100, y: 100 }, 0, 800)).toBe(true);
-    expect(hitTest(a, { x: 131, y: 100 }, 0, 800)).toBe(true);
-    expect(hitTest(a, { x: 125, y: 125 }, 0, 800)).toBe(false); // outside the circle, inside its box
-    expect(hitTest(a, { x: 135, y: 100 }, 4, 800)).toBe(true);
-    expect(hitTest(a, { x: 140, y: 100 }, 4, 800)).toBe(false);
+    expect(hitTest(a, { x: 100, y: 100 }, 0, 800, noMeasure)).toBe(true);
+    expect(hitTest(a, { x: 131, y: 100 }, 0, 800, noMeasure)).toBe(true);
+    expect(hitTest(a, { x: 125, y: 125 }, 0, 800, noMeasure)).toBe(false); // outside the circle, inside its box
+    expect(hitTest(a, { x: 135, y: 100 }, 4, 800, noMeasure)).toBe(true);
+    expect(hitTest(a, { x: 140, y: 100 }, 4, 800, noMeasure)).toBe(false);
     const pill = step('p', 100, 100, 100);
     const w = stepBadge(pill, 800).width;
-    expect(hitTest(pill, { x: 100 + w / 2 - 1, y: 100 }, 0, 800)).toBe(true);
+    expect(hitTest(pill, { x: 100 + w / 2 - 1, y: 100 }, 0, 800, noMeasure)).toBe(true);
   });
 
   it('F-008.R3 a selected step has no handles; its outline is the badge box', () => {
     const a = step('a', 1, 100, 100);
     expect(handlesOf(a)).toEqual([]);
-    expect(boundsOf(a, 800)).toEqual({ x: 68, y: 68, width: 64, height: 64 });
+    expect(boundsOf(a, 800, noMeasure)).toEqual({ x: 68, y: 68, width: 64, height: 64 });
   });
 
   it('F-006.R5 a step moves by its centre (the duplicate offset) and keeps its number', () => {

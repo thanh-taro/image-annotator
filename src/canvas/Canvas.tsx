@@ -7,27 +7,49 @@
 // ADR-0022) hold the rest. Pointer moves pass their coalesced samples on, so strokes follow the
 // pointer's full path (F-004.R1). The step tool (F-006) places a step per click or on Enter. Drawing
 // is accepted only once the tool's face is ready (ADR-0009 §4, ./fonts.ts), and the canvas repaints
-// then, so step numbers never show in a fallback face.
+// then, so step numbers never show in a fallback face. The text tool (F-005, ./text.ts) places and
+// edits text through CMP-TextEditor, the transparent field over the canvas glyphs (./editor.ts,
+// ADR-0009 §2), which is placed here with CSSOM on every paint so it follows zoom and pan; while it is
+// open the canvas paints the edited text with the field's value.
 // The accessible list arrives with F-013.
 // Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, F-004.R1/R2/R4, F-006.R1/R4, ADR-0009 §4, RULE-12, CMP-Canvas "Behavior" (two fingers pan
-// and zoom) and "drawing" / "selected", architecture A5 (crisp from 200 %), ADR-0016, ADR-0022.
+// and zoom) and "drawing" / "selected", architecture A5 (crisp from 200 %), ADR-0016, ADR-0022;
+// F-005.R1/R2/R3/R4, CMP-TextEditor, ADR-0009, ADR-0020.
 import { useEffect, useRef } from 'preact/hooks';
+import { t } from '../copy';
 import {
   canvasRect,
   CRISP_ZOOM,
+  EDITOR_CARET_ROOM_PX,
+  DEFAULT_STYLES,
+  EDITOR_EXTRA_EM,
+  HIT_TOLERANCE_PX,
+  textFont,
+  textLayout,
   toImage,
   type Annotation,
   type Point,
   type Style,
+  type TextAnnotation,
   type ToolName,
   type View,
 } from '../core';
 import type { Doc } from '../document';
-import { paint as paintScene, type BaseView, type OverlayLook, type Patches, type Transform } from '../render';
+import {
+  measureWith,
+  paint as paintScene,
+  paletteColour,
+  type BaseView,
+  type OverlayLook,
+  type Patches,
+  type Transform,
+} from '../render';
 import { DragLayers } from './drag';
 import { DrawTool } from './draw';
+import { bindTextField } from './editor';
 import { connectFontGate, fontGate } from './fonts';
-import { InputController, pointerInput } from './input';
+import { InputController, pointerInput, type ToolInput } from './input';
+import { TextTool, type TextEdit, type TextEndReason } from './text';
 import { ImageLayer } from './layer';
 import { ViewController } from './view';
 
@@ -45,6 +67,14 @@ export interface CanvasProps {
   readonly selection?: readonly string[];
   /** A finished shape (F-003.R1/R5); its id is DRAFT_ID, MOD-App gives it a session id. */
   readonly onCreate?: (draft: Annotation) => void;
+  /** The text tool's current style (RULE-04), for a new text (F-005). */
+  readonly textStyle?: Style;
+  /** A text edit started (F-005.R1/R4): SCR-Annotator "editing-text". */
+  readonly onTextEdit?: (edit: TextEdit) => void;
+  /** A text edit ended with the text as it is now (null when discarded); MOD-App commits it (F-005.R6). */
+  readonly onTextEnd?: (edit: TextEdit, text: TextAnnotation | null, reason: TextEndReason) => void;
+  /** Focus may move to this element while a text is edited without ending the edit (the style panel). */
+  readonly keepsTextEdit?: (target: Element) => boolean;
 }
 
 /** What the view commands reach while a canvas is shown (MOD-Canvas public surface). */
@@ -58,6 +88,10 @@ export interface ActiveCanvas {
   cancelDrag(): boolean;
   /** RULE-19 Enter: places the active tool's default annotation at the centre of the view; true if placed. */
   placeAtCentre(): boolean;
+  /** F-005.R4 / RULE-19 Enter: edits the text with this id (caret at the end); true if started. */
+  beginTextEdit(id: string): boolean;
+  /** RULE-19 Esc: ends the text edit, keeping the text, and returns focus to the canvas; true if one was open. */
+  endTextEdit(): boolean;
 }
 
 let active: ActiveCanvas | null = null;
@@ -107,8 +141,32 @@ function overlayLook(el: Element, dpr: number): OverlayLook {
 /** Finished blur/pixelate patches (MOD-Effects, F-007); none yet. */
 const NO_PATCHES: Patches = new Map();
 
-export function Canvas({ image, doc, theme, onView, tool = 'select', style, selection = [], onCreate }: CanvasProps) {
+/** The document with the edited text in it: replacing the existing one, or a new one on top (F-005.R2). */
+function withText(scene: Doc, text: TextAnnotation | null, isNew: boolean): Doc {
+  if (!text) return scene;
+  const annotations = isNew
+    ? [...scene.annotations, text]
+    : scene.annotations.map((a) => (a.id === text.id ? text : a));
+  return { ...scene, annotations };
+}
+
+export function Canvas({
+  image,
+  doc,
+  theme,
+  onView,
+  tool = 'select',
+  style,
+  selection = [],
+  onCreate,
+  textStyle = DEFAULT_STYLES.text,
+  onTextEdit,
+  onTextEnd,
+  keepsTextEdit,
+}: CanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+  const textRef = useRef<TextTool | null>(null);
   // Mutable per-mount state (MOD-Canvas: transient state stays in a plain controller, not signals).
   const live = useRef({
     image,
@@ -119,10 +177,27 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     style,
     selection,
     onCreate,
+    textStyle,
+    onTextEdit,
+    onTextEnd,
+    keepsTextEdit,
     schedule: () => {},
     onViewChanged: () => {},
   });
-  Object.assign(live.current, { image, doc, theme, onView, tool, style, selection, onCreate });
+  Object.assign(live.current, {
+    image,
+    doc,
+    theme,
+    onView,
+    tool,
+    style,
+    selection,
+    onCreate,
+    textStyle,
+    onTextEdit,
+    onTextEnd,
+    keepsTextEdit,
+  });
   const controller = useRef<ViewController | null>(null);
   controller.current ??= new ViewController((v) => {
     live.current.onView?.(v);
@@ -133,8 +208,9 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
   // Mount: the paint loop, the box and device pixel ratio watchers, and the pointer input.
   useEffect(() => {
     const el = ref.current;
+    const ta = editorRef.current;
     const view = controller.current;
-    if (!el || !view) return;
+    if (!el || !ta || !view) return;
     const layer = new ImageLayer();
     let raf = 0;
     let box = { width: 0, height: 0 };
@@ -176,9 +252,101 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       fonts,
     );
 
+    // F-005: the text tool and CMP-TextEditor. Lines are measured in the tool's face (ADR-0020).
+    const measureCanvas =
+      typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(1, 1) : document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d') as CanvasRenderingContext2D | null;
+    const measureLine = measureCtx ? measureWith(measureCtx) : () => 0;
+    const region = () => el.closest<HTMLElement>('[tabindex]');
+    const textSetup = () => {
+      const { image: img, tool: active, textStyle: current, doc: scene } = live.current;
+      const now = view.view;
+      if (!now) return null;
+      return {
+        tool: active,
+        style: current,
+        shortSide: Math.min(img.width, img.height),
+        annotations: scene.annotations,
+        canvas: canvasRect(scene.frame, scene.padding.size),
+        measure: measureLine,
+        tolerance: HIT_TOLERANCE_PX / (now.zoom / 100),
+        toImage: (p: Point) => toImage(now, p),
+      };
+    };
+    const draft = () => text.draft(live.current.doc.annotations, live.current.textStyle);
+    /** ADR-0009 §2: the field exactly over the text — same face, size × zoom and line height (CSSOM). */
+    const placeEditor = () => {
+      const v = view.view;
+      const a = draft();
+      if (!v || !a) return;
+      const { image: img } = live.current;
+      const z = v.zoom / 100;
+      const ratio = dpr();
+      const L = textLayout(a, Math.min(img.width, img.height), measureLine);
+      const cs = getComputedStyle(ta);
+      const left = ta.clientLeft + parseFloat(cs.paddingLeft);
+      const top = ta.clientTop + parseFloat(cs.paddingTop);
+      // CMP-TextEditor: while empty the field is as wide as COPY-text.placeholder.
+      const width = Math.max(L.box.width, ta.value ? 0 : measureLine(L.font, ta.placeholder)) * z;
+      const s = ta.style;
+      // The display canvas snaps the view's offset to device pixels (viewTransform); so does the field.
+      s.left = `${Math.round(v.x * ratio) / ratio + a.anchor.x * z - left}px`;
+      s.top = `${Math.round(v.y * ratio) / ratio + a.anchor.y * z - top}px`;
+      s.font = textFont(L.size * z);
+      s.lineHeight = `${L.lineHeight * z}px`;
+      s.width = `${Math.ceil(width) + EDITOR_CARET_ROOM_PX}px`;
+      // ADR-0020: 0.2 em taller than the lines, so the field never scrolls inside.
+      s.height = `${L.lines.length * L.lineHeight * z + Math.ceil(EDITOR_EXTRA_EM * L.size * z)}px`;
+      s.setProperty('--tk-text-colour', paletteColour(a.style.color));
+      ta.scrollLeft = 0;
+      ta.scrollTop = 0;
+    };
+    const bound = bindTextField(ta, {
+      onInput: () => {
+        placeEditor();
+        schedule();
+      },
+      onFocusLeft: () => text.end('focus'),
+      // The canvas region takes focus on every press, which then ends the edit (TextTool.down).
+      keepsEdit: (target) => target === region() || !!live.current.keepsTextEdit?.(target),
+    });
+    const text = new TextTool(
+      textSetup,
+      bound.field,
+      {
+        begin: (edit) => {
+          live.current.onTextEdit?.(edit);
+          schedule();
+        },
+        end: (edit, result, reason) => {
+          live.current.onTextEnd?.(edit, result, reason);
+          schedule();
+        },
+      },
+      fonts,
+    );
+    textRef.current = text;
+    // F-005 before the shape tools: a press while editing only ends the edit (F-005.R3).
+    const tools: ToolInput = {
+      down: (i) => text.down(i) || draw.down(i),
+      move: (i) => {
+        text.move();
+        draw.move(i);
+      },
+      up: (i) => {
+        text.up(i);
+        draw.up(i);
+      },
+      cancel: () => text.cancel() || draw.cancel(),
+    };
+
     const paint = () => {
       raf = 0;
-      const { image: img, doc: scene, theme: th, selection: selected } = live.current;
+      const { image: img, doc: shown, theme: th, selection: chosen } = live.current;
+      // F-005.R2: while a text is edited it is painted with the field's value, at its final size and colour.
+      const edited = draft();
+      const scene = withText(shown, edited, text.edit?.id === null);
+      const selected = text.edit?.id ? chosen.filter((id) => id !== text.edit?.id) : chosen;
       const v = view.view;
       // The previous image's bitmap is closed when a new one loads (NFR-04); a closed (0 × 0) one is skipped.
       if (!v || img.width === 0) return;
@@ -193,7 +361,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       if (!ctx) return;
       const crisp = v.zoom >= CRISP_ZOOM;
       const source = layer.get(
-        { image: img, doc: scene, transform: viewTransform(v, ratio), width, height, theme: th, crisp },
+        { image: img, doc: shown, transform: viewTransform(v, ratio), width, height, theme: th, crisp },
         () => ({ ...themed(th, ratio).view, crisp }),
       );
       if (!source) return;
@@ -222,6 +390,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       // NFR-02: a gesture is pressed but not yet a drag: build the layers now (nothing new is drawn).
       if (draw.dragging) drag.prepare(dragFrame);
       else drag.release();
+      if (edited) placeEditor();
     };
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(paint);
@@ -262,7 +431,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     };
 
     // F-002.R4 Space+drag (mouse and pen) and two touch fingers (CMP-Canvas), routed by ./input.ts.
-    const input = new InputController(view, (cursor) => (el.dataset['pan'] = cursor), draw);
+    const input = new InputController(view, (cursor) => (el.dataset['pan'] = cursor), tools);
     // The canvas position is read once per event (not once per coalesced sample).
     const read = (e: PointerEvent, withSamples = false) => {
       const r = el.getBoundingClientRect();
@@ -271,7 +440,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     const onPointerDown = (e: PointerEvent) => {
       // RULE-19: the canvas keys (Enter, Esc, tool letters) need the canvas region to have focus; the
       // default focus move is lost to preventDefault below, so the region is focused here.
-      (el.closest('[tabindex]') as HTMLElement | null)?.focus({ preventScroll: true });
+      region()?.focus({ preventScroll: true });
       if (!input.down(read(e))) return;
       if (e.pointerType !== 'touch') e.preventDefault();
       el.setPointerCapture(e.pointerId);
@@ -303,6 +472,11 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     };
     const GESTURES = ['gesturestart', 'gesturechange', 'gestureend'] as const;
 
+    // F-005.R4: a double-click with the select tool on a text edits it, caret where clicked.
+    const onDoubleClick = (e: MouseEvent) => {
+      if (text.editAtScreen(local(e))) e.preventDefault();
+    };
+
     active = {
       controller: view,
       holdSpace: (held) => input.holdSpace(held),
@@ -311,8 +485,16 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
         measure();
       },
       cancelDrag: () => draw.cancel(),
-      // RULE-19 Enter: the active tool's default annotation at the centre of the view (./draw.ts).
-      placeAtCentre: () => draw.placeAt(view.centreImage()),
+      // RULE-19 Enter: the active tool's default annotation at the centre of the view (./draw.ts); with
+      // the text tool, a new text there, editing (./text.ts).
+      placeAtCentre: () => text.placeAt(view.centreImage()) || draw.placeAt(view.centreImage()),
+      beginTextEdit: (id) => text.editById(id),
+      endTextEdit: () => {
+        // CMP-TextEditor "Accessibility": focus returns to the canvas, with the text selected.
+        const ended = text.end('escape');
+        if (ended) region()?.focus({ preventScroll: true });
+        return ended;
+      },
     };
 
     measure();
@@ -320,10 +502,13 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     el.addEventListener('wheel', onWheel, { passive: false });
+    // F-002.R3 over the text being edited too: the field sits above the canvas (F-005 review m2).
+    ta.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('pointerdown', onPointerDown);
     el.addEventListener('pointermove', onPointerMove);
     el.addEventListener('pointerup', onPointerEnd);
     el.addEventListener('pointercancel', onPointerCancel);
+    el.addEventListener('dblclick', onDoubleClick);
     window.addEventListener('keydown', onShift);
     window.addEventListener('keyup', onShift);
     for (const g of GESTURES) el.addEventListener(g, onGesture, { passive: false });
@@ -333,10 +518,15 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       observer.disconnect();
       media?.removeEventListener('change', onDpr);
       el.removeEventListener('wheel', onWheel);
+      ta.removeEventListener('wheel', onWheel);
       el.removeEventListener('pointerdown', onPointerDown);
       el.removeEventListener('pointermove', onPointerMove);
       el.removeEventListener('pointerup', onPointerEnd);
       el.removeEventListener('pointercancel', onPointerCancel);
+      el.removeEventListener('dblclick', onDoubleClick);
+      text.end('discard');
+      bound.stop();
+      textRef.current = null;
       window.removeEventListener('keydown', onShift);
       window.removeEventListener('keyup', onShift);
       for (const g of GESTURES) el.removeEventListener(g, onGesture);
@@ -353,13 +543,31 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
   const shown = useRef<ImageBitmap | null>(null);
   useEffect(() => {
     const fresh = shown.current !== image;
+    // A new image starts a new session (F-001.R7): an open text edit belongs to the old one.
+    if (fresh && shown.current) textRef.current?.end('discard');
     shown.current = image;
     controller.current?.setContent(canvasRect(doc.frame, doc.padding.size), fresh);
     live.current.schedule();
   }, [image, doc]);
 
-  useEffect(() => live.current.schedule(), [theme, selection]);
+  useEffect(() => live.current.schedule(), [theme, selection, textStyle]);
 
-  // CMP-Canvas: the pointer cursor per tool (crosshair for the drawing tools, ./zoom.css).
-  return <canvas ref={ref} class="tk-canvas" data-tool={tool} aria-hidden="true" />;
+  // CMP-Canvas: the pointer cursor per tool (crosshair for the drawing tools, ./zoom.css). CMP-TextEditor:
+  // a multi-line text field named COPY-tool.text with COPY-text.placeholder while empty; shown, placed and
+  // focused by the text tool (data-open, ./editor.ts), never wrapping (RULE-08).
+  return (
+    <>
+      <canvas ref={ref} class="tk-canvas" data-tool={tool} aria-hidden="true" />
+      <textarea
+        ref={editorRef}
+        class="tk-text-editor"
+        aria-label={t('tool.text')}
+        placeholder={t('text.placeholder')}
+        wrap="off"
+        spellcheck={false}
+        autocomplete="off"
+        autocapitalize="off"
+      />
+    </>
+  );
 }

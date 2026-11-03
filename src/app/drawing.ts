@@ -2,12 +2,16 @@
 // shows. Creating a shape is one undo step that selects it (RULE-11, F-003.R6); a style change applies
 // to the selection as one step and becomes the current style of its tools, else it is the active tool's
 // current style and no step (RULE-04, RULE-11). Tool changes and placing are announced (NFR-06).
-// Implements: F-003.R3/R6, F-004.R1/R2 (the pen and highlight tools), F-006.R1 (the step tool), RULE-04, RULE-11, RULE-19 (Esc chain), CMP-Toolbar "Behavior",
-// CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed).
-import { canvasCommands } from '../canvas';
+// A text edit (F-005) mirrors into `textEditing`; when it ends the text is committed with MOD-Document
+// `commitText` (create + first edit one step, an emptied text one deletion step, RULE-11).
+// Implements: F-003.R3/R6, F-004.R1/R2 (the pen and highlight tools), F-006.R1 (the step tool), F-005.R1/R3/R4/R6
+// (the text tool), RULE-04, RULE-08, RULE-11, RULE-19 (Esc chain, Enter on a text), CMP-Toolbar "Behavior",
+// CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed, deleted_count).
+import { canvasCommands, type TextEdit, type TextEndReason } from '../canvas';
 import { t, type MessageId } from '../copy';
 import {
   hasFill,
+  isBlankText,
   isDrawingTool,
   TOOL_KIND,
   toolOf,
@@ -17,10 +21,11 @@ import {
   type Fill,
   type Size,
   type Style,
+  type TextAnnotation,
   type ToolName,
 } from '../core';
-import { add, restyle, type Doc, type Selection } from '../document';
-import { announcePolite, commit, currentStyles, doc, loaded, selection, sheetOpen, tool } from './state';
+import { add, commitText, restyle, type Doc, type Selection } from '../document';
+import { announcePolite, commit, currentStyles, doc, loaded, selection, sheetOpen, textEditing, tool } from './state';
 
 /** The tools built so far, in CMP-Toolbar order; the others join with their features (F-005…F-010). */
 export const BUILT_TOOLS: readonly ToolName[] = [
@@ -31,6 +36,7 @@ export const BUILT_TOOLS: readonly ToolName[] = [
   'line',
   'pen',
   'highlight',
+  'text',
   'step',
 ];
 
@@ -79,6 +85,44 @@ export function createAnnotation(draft: Annotation): void {
   announcePolite(t('a11y.placed', { kind: toolLabel(toolOf(annotation.kind)) }));
 }
 
+/**
+ * F-005.R1/R4: a text edit started. An existing text becomes the selection (the style panel shows and
+ * changes its colour and size, SCR-Annotator "editing-text"); a new one is not in the document yet, so
+ * the panel shows the text tool's current style. Not an undo step.
+ */
+export function textEditStarted(edit: TextEdit): void {
+  textEditing.value = { id: edit.id };
+  select(edit.id ? [edit.id] : []);
+}
+
+/**
+ * F-005.R3/R6, RULE-08, RULE-11: a text edit ended. The text stays and is selected; a new text and its
+ * first edit are one step (announced with COPY-a11y.placed); a new text left empty adds nothing; an
+ * existing text left empty is deleted as one step (COPY-a11y.deleted_count). A discarded edit (a new
+ * image) changes nothing.
+ */
+export function textEditEnded(edit: TextEdit, text: TextAnnotation | null, reason: TextEndReason): void {
+  textEditing.value = null;
+  const l = loaded.value;
+  if (!l || !text || reason === 'discard') return;
+  const isNew = edit.id === null;
+  const blank = isBlankText(text.text);
+  if (isNew && blank) {
+    select([]);
+    return;
+  }
+  const id = isNew ? l.session.newId() : text.id;
+  commit(l.session.history.apply(commitText({ ...text, id }, isNew), blank ? [] : [id]));
+  if (isNew) announcePolite(t('a11y.placed', { kind: toolLabel('text') }));
+  else if (blank) announcePolite(t('a11y.deleted_count', { count: 1 }));
+}
+
+/** RULE-19 Enter with the select tool and one text selected: edits it (F-005.R4). */
+export function editSelectedText(): void {
+  const [id] = selection.value;
+  if (id && selection.value.length === 1) canvasCommands.beginTextEdit(id);
+}
+
 /** The style choices CMP-StylePanel offers (RULE-04). */
 export type StylePatch = Partial<Pick<Style, 'color' | 'strokeSize' | 'fill'>>;
 
@@ -120,8 +164,8 @@ export function setStyle(patch: StylePatch): void {
 }
 
 /**
- * RULE-19 Esc: cancel the current drag; else (D-019) close the narrow sheet; else clear the selection;
- * else switch to the select tool. (Ending a text edit joins with F-005.)
+ * RULE-19 Esc: cancel the current drag; else (D-019) close the narrow sheet; else end text editing,
+ * keeping the text (F-005.R3); else clear the selection; else switch to the select tool.
  */
 export function escape(): void {
   if (canvasCommands.cancelDrag()) return;
@@ -129,6 +173,7 @@ export function escape(): void {
     sheetOpen.value = false;
     return;
   }
+  if (canvasCommands.endTextEdit()) return;
   if (selection.value.length) {
     select([]);
     return;
