@@ -1,0 +1,135 @@
+/* MOD-App — F-002: the status bar's zoom control (CMP-StatusBar, style.md "Status bar"),
+   and the canvas's pan cursors. Tokens only (ADR-0013). */
+@layer components {
+  /* CMP-StatusBar's row comes from base.css (F-016); the zoom control sits at its end. */
+  .tk-zoom {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--tk-space-2);
+    margin-inline-start: auto;
+  }
+  .tk-zoom__step,
+  .tk-zoom__text,
+  .tk-zoom__menu-button,
+  .tk-zoom__item {
+    display: inline-flex;
+    align-items: center;
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: transparent;
+    color: var(--tk-color-fg);
+    cursor: pointer;
+    transition: background-color var(--tk-motion-duration-fast) var(--tk-motion-easing-standard);
+  }
+  .tk-zoom__step {
+    justify-content: center;
+    width: var(--tk-size-target-min);
+    height: var(--tk-size-target-min);
+    padding: 0;
+  }
+  .tk-zoom__text,
+  .tk-zoom__menu-button {
+    gap: var(--tk-space-1);
+    height: var(--tk-size-target-min);
+    padding: 0 var(--tk-space-2);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-semibold);
+    white-space: nowrap;
+  }
+  .tk-zoom__step:hover:enabled,
+  .tk-zoom__text:hover:enabled,
+  .tk-zoom__menu-button:hover,
+  .tk-zoom__item:hover {
+    background: var(--tk-color-surface2);
+  }
+  .tk-zoom__step:disabled,
+  .tk-zoom__text:disabled {
+    color: var(--tk-color-muted);
+    cursor: default;
+  }
+  .tk-zoom__step:focus-visible,
+  .tk-zoom__text:focus-visible,
+  .tk-zoom__menu-button:focus-visible,
+  .tk-zoom__item:focus-visible {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: var(--tk-border-width-focus);
+  }
+
+  /* COPY-status.zoom: numbers in JetBrains Mono (style.md "Type"); muted dash with no image. */
+  .tk-zoom__level,
+  .tk-zoom__menu-button {
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    font-variant-numeric: tabular-nums;
+  }
+  .tk-zoom[data-state='no-image'] .tk-zoom__level {
+    color: var(--tk-color-muted);
+  }
+
+  /* Narrow (D-014): Fit and Actual size move into a menu opened from the level. */
+  .tk-zoom__anchor {
+    position: relative;
+    display: none;
+  }
+  @container tk-annotator (width < 800px) {
+    .tk-zoom__anchor {
+      display: inline-flex;
+    }
+    .tk-zoom__level--wide,
+    .tk-zoom__text {
+      display: none;
+    }
+  }
+  .tk-zoom__menu {
+    position: absolute;
+    inset-block-end: calc(100% + var(--tk-space-1));
+    inset-inline-end: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    min-width: max-content;
+    padding: var(--tk-space-1);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+  }
+  .tk-zoom__item {
+    justify-content: flex-start;
+    height: var(--tk-size-touch-target);
+    padding: 0 var(--tk-space-3);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-semibold);
+    white-space: nowrap;
+  }
+
+  /* style.md: on a coarse pointer every target grows to size.touchTarget. */
+  @media (pointer: coarse) {
+    .tk-zoom__step {
+      width: var(--tk-size-touch-target);
+      height: var(--tk-size-touch-target);
+    }
+    .tk-zoom__text,
+    .tk-zoom__menu-button {
+      height: var(--tk-size-touch-target);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .tk-zoom__menu {
+      border-color: CanvasText;
+    }
+  }
+
+  /* CMP-Canvas: two fingers pan and zoom (no browser gestures); Space+drag shows the pan hand. */
+  .tk-canvas {
+    touch-action: none;
+  }
+  .tk-canvas[data-pan='ready'] {
+    cursor: grab;
+  }
+  .tk-canvas[data-pan='active'] {
+    cursor: grabbing;
+  }
+}

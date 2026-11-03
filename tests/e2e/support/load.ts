@@ -96,6 +96,8 @@ export async function expectLoaded(page: Page, width: number, height: number): P
   const h = height.toLocaleString('en-US');
   await expect(summary(page)).toHaveText(`${w} × ${h} px canvas, 0 annotations`);
   await expect(page.locator('canvas.tk-canvas')).toBeVisible();
+  // The canvas paints on the next animation frame (F-002, MOD-Canvas rAF loop): wait for it.
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null)))));
 }
 
 /** The notice's text (CMP-Notice). */

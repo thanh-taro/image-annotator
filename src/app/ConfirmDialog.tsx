@@ -2,7 +2,7 @@
 // moves to the safe choice (cancel), stays inside and returns on close; Esc and cancel keep everything;
 // clicking outside does nothing. The rest of the tool is made inert by the shell. The text is rendered
 // from COPY IDs, so a language switch changes it without changing the pending choice.
-import { useEffect, useRef } from 'preact/hooks';
+import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
 import type { DialogRequest } from './state';
 
@@ -22,7 +22,8 @@ export function ConfirmDialog({ request }: { request: DialogRequest }) {
   const box = useRef<HTMLDivElement>(null);
   const cancel = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
+  // Layout effect: focus and the key trap are in place as soon as the dialog shows (no key slips past).
+  useLayoutEffect(() => {
     const returnTo = document.activeElement;
     cancel.current?.focus();
     // While the dialog is open only Esc acts (RULE-19), and Tab stays inside the dialog.

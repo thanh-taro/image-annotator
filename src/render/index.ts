@@ -59,6 +59,8 @@ export interface BaseView {
   readonly checkerSize: number;
   /** style.md "Work area": a hairline around the canvas so its edge shows on light images. */
   readonly outline: { readonly colour: string; readonly width: number };
+  /** Architecture A5: at zoom ≥ 200 % the image is drawn without smoothing on screen (INV-05: export unaffected). */
+  readonly crisp?: boolean;
 }
 
 /**
@@ -97,10 +99,22 @@ export function paintBase(
   ctx.beginPath();
   ctx.rect(frame.x, frame.y, frame.width, frame.height);
   ctx.clip();
-  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = !view.crisp;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(image, 0, 0);
+  // Only the part of the frame on screen is drawn (one source pixel of margin keeps the smoothing at its
+  // edges); zoomed in, this is a small part of the image (NFR-02).
+  const src = visibleSource(frame, transform, ctx.canvas);
+  if (src) ctx.drawImage(image, src.x, src.y, src.width, src.height, src.x, src.y, src.width, src.height);
   ctx.restore();
+}
+
+/** The whole image pixels of `frame` that land on the context, plus one pixel around them, or null. */
+function visibleSource(frame: Box, { scale, dx, dy }: Transform, out: { width: number; height: number }): Box | null {
+  const x = Math.max(frame.x, Math.floor(-dx / scale) - 1);
+  const y = Math.max(frame.y, Math.floor(-dy / scale) - 1);
+  const right = Math.min(frame.x + frame.width, Math.ceil((out.width - dx) / scale) + 1);
+  const bottom = Math.min(frame.y + frame.height, Math.ceil((out.height - dy) / scale) + 1);
+  return right > x && bottom > y ? { x, y, width: right - x, height: bottom - y } : null;
 }
 
 /** A box in image pixels → context pixels, snapped outward to whole pixels. */
@@ -115,14 +129,27 @@ function screenRect(box: Box, { scale, dx, dy }: Transform): Box {
   };
 }
 
+/**
+ * The checkerboard over `r`, drawn only where it meets the context (zoomed in, the canvas can be far
+ * larger than the screen), with the squares' phase anchored to the canvas corner so panning moves it.
+ */
 function paintChecker(ctx: Ctx, r: Box, view: BaseView): void {
   const size = Math.max(1, Math.round(view.checkerSize));
+  const x0 = Math.max(r.x, 0);
+  const y0 = Math.max(r.y, 0);
+  const x1 = Math.min(r.x + r.width, ctx.canvas.width);
+  const y1 = Math.min(r.y + r.height, ctx.canvas.height);
+  if (x1 <= x0 || y1 <= y0) return;
   ctx.fillStyle = view.checkerA;
-  ctx.fillRect(r.x, r.y, r.width, r.height);
+  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
   ctx.beginPath();
-  for (let y = 0; y < r.height; y += size) {
-    for (let x = ((y / size) % 2) * size; x < r.width; x += 2 * size) {
-      ctx.rect(r.x + x, r.y + y, Math.min(size, r.width - x), Math.min(size, r.height - y));
+  const row0 = Math.floor((y0 - r.y) / size);
+  const col0 = Math.floor((x0 - r.x) / size);
+  for (let row = row0; r.y + row * size < y1; row++) {
+    const y = r.y + row * size;
+    for (let col = col0 + ((col0 + row) % 2); r.x + col * size < x1; col += 2) {
+      const x = r.x + col * size;
+      ctx.rect(x, y, Math.min(size, r.x + r.width - x), Math.min(size, r.y + r.height - y));
     }
   }
   ctx.fillStyle = view.checkerB;

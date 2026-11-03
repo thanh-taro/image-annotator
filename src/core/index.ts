@@ -1,8 +1,8 @@
 // MOD-Core — domain types, limits, geometry, frame/padding/canvas maths, pure helpers
 // (specs/40-technical/modules/MOD-Core.md). Pure, synchronous, dependency-free: usable on the main
 // thread and in the effects worker; no DOM, clock or language. Results carry codes and numbers.
-// Types, constants, size tables, the format sniff (F-001) and the canvas/fit maths are real; the
-// rest throws until its feature is built (phase 4).
+// Types, constants, size tables, the format sniff (F-001), the canvas/fit maths and the view maths
+// (F-002) are real; the rest throws until its feature is built (phase 4).
 import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize, Point } from './types';
 
 export * from './types';
@@ -12,6 +12,7 @@ export * from './constants';
 export * from './format';
 export * from './canvas';
 export * from './header';
+export * from './view';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Core ${name}`);
@@ -30,14 +31,6 @@ export function clampFrame(_frame: Frame, _image: Pick<ImageInfo, 'width' | 'hei
 /** F-011.R6: the largest padding size that still fits after a frame change. */
 export function stepDownPadding(_frame: Frame, _padding: Padding): Padding {
   return notImplemented('stepDownPadding');
-}
-
-/** RULE-12 zoom levels (percent). */
-export function zoomIn(_zoom: number): number {
-  return notImplemented('zoomIn');
-}
-export function zoomOut(_zoom: number, _fit: number): number {
-  return notImplemented('zoomOut');
 }
 
 /** F-003.R2: analytic hit-test with a tolerance in image pixels. */

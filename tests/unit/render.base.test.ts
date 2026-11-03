@@ -44,7 +44,7 @@ describe('MOD-Render paintBase', () => {
     paintBase(ctx, scene('transparent'), image, { scale: 0.5, dx: 100, dy: 75 }, view);
     expect(calls).toContain('setTransform(0.5,0,0,0.5,100,75)');
     expect(calls).toContain('rect(0,0,400,300)');
-    expect(calls.indexOf('clip()')).toBeLessThan(calls.indexOf('drawImage(img,0,0)'));
+    expect(calls.indexOf('clip()')).toBeLessThan(calls.indexOf('drawImage(img,0,0,400,300,0,0,400,300)'));
     expect(calls).toContain('imageSmoothingQuality=high');
     expect(calls).not.toContain('fillRect(0,0,400,300)');
   });
@@ -53,7 +53,9 @@ describe('MOD-Render paintBase', () => {
     const { ctx, calls } = recorder();
     paintBase(ctx, scene('blue'), image, { scale: 1, dx: 0, dy: 0 }, view);
     expect(calls).toContain(`fillStyle=${PALETTE_HEX.blue}`);
-    expect(calls.indexOf('fillRect(0,0,400,300)')).toBeLessThan(calls.indexOf('drawImage(img,0,0)'));
+    expect(calls.indexOf('fillRect(0,0,400,300)')).toBeLessThan(
+      calls.indexOf('drawImage(img,0,0,400,300,0,0,400,300)'),
+    );
   });
 
   it('F-001 edge case: the surround, outline and checkerboard are painted before the scene', () => {
@@ -68,6 +70,25 @@ describe('MOD-Render paintBase', () => {
       'fillRect(9,19,402,302)',
     ]);
     expect(calls).toContain('fillRect(10,20,400,300)');
-    expect(calls.indexOf('fillStyle=#eee')).toBeLessThan(calls.indexOf('drawImage(img,0,0)'));
+    expect(calls.indexOf('fillStyle=#eee')).toBeLessThan(calls.indexOf('drawImage(img,0,0,400,300,0,0,400,300)'));
+  });
+
+  it('F-002 crisp pixels when zoomed (architecture A5): the screen layer turns smoothing off on request', () => {
+    const smooth = recorder();
+    paintBase(smooth.ctx, scene('transparent'), image, { scale: 1, dx: 0, dy: 0 }, view);
+    expect(smooth.calls).toContain('imageSmoothingEnabled=true');
+    const crisp = recorder();
+    paintBase(crisp.ctx, scene('transparent'), image, { scale: 2, dx: 0, dy: 0 }, { ...view, crisp: true });
+    expect(crisp.calls).toContain('imageSmoothingEnabled=false');
+  });
+
+  it('F-002 zoomed in, only the image pixels and checker squares on screen are drawn (NFR-02)', () => {
+    const { ctx, calls } = recorder(); // an 800 × 600 context
+    // 800 %, image pixel (100, 50) at the context origin: on screen are pixels 100…200 × 50…125.
+    paintBase(ctx, scene('transparent'), image, { scale: 8, dx: -800, dy: -400 }, view);
+    expect(calls).toContain('drawImage(img,99,49,102,77,99,49,102,77)');
+    const squares = calls.filter((c) => c.startsWith('rect(') && c !== 'rect(0,0,400,300)');
+    expect(squares.length).toBe(((800 / 8) * (600 / 8)) / 2); // half the visible squares, not the whole canvas
+    expect(calls).toContain('fillRect(0,0,800,600)');
   });
 });

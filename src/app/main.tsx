@@ -8,6 +8,7 @@ import { render } from 'preact';
 import './styles/index.css';
 import { language, t } from '../copy';
 import { loadFonts, resolveLanguage, startHost } from '../host';
+import { startKeys } from './keys';
 import { startLoader } from './loader';
 import { Shell } from './Shell';
 
@@ -26,5 +27,6 @@ document.title = t('app.title');
 const root = document.getElementById('app');
 if (root) render(<Shell />, root);
 startLoader(); // F-001: paste, drop, open — listening before the ready signal (F-001.R9)
+startKeys(); // F-002: the View keys and the arrow-key pan (RULE-19)
 startHost();
 void loadFonts();
