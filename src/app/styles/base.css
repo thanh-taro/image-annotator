@@ -22,6 +22,9 @@
     grid-template-columns: minmax(0, 1fr);
     height: 100%;
     min-width: var(--tk-size-min-width);
+    /* Implements: F-015.AC4 — the layout width is set by a ResizeObserver one frame after a resize;
+       clipping here keeps that frame (wide toolbar in a narrow host) from giving the page a scrollbar. */
+    overflow: clip;
   }
 
   .tk-toolbar {
