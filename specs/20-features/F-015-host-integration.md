@@ -1,7 +1,7 @@
 ---
 id: F-015
 title: Fit into the host portal
-status: ready
+status: building
 milestone: M-1
 priority: P0
 personas: [PER-02, PER-01]

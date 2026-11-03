@@ -16,7 +16,7 @@
 | F-012 | Copy and download the result | M-1 | P0 | ready |
 | F-013 | Work from the keyboard | M-1 | P1 | ready |
 | F-014 | Warn before losing work | M-1 | P1 | ready |
-| F-015 | Fit into the host portal | M-1 | P0 | ready |
+| F-015 | Fit into the host portal | M-1 | P0 | building |
 | F-016 | Show the privacy guarantee | M-1 | P1 | ready |
 | F-017 | Work offline | M-1 | P2 | ready |
-| F-018 | Use the portal's language | M-1 | P1 | ready |
+| F-018 | Use the portal's language | M-1 | P1 | building |
