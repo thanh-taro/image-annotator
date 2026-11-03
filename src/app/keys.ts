@@ -35,8 +35,9 @@ function onKeyDown(e: KeyboardEvent): void {
   if (resolution.preventDefault) e.preventDefault();
   const action = resolution.action;
   if (action?.group !== 'view') return;
-  const pan = PAN[action.name];
-  if (pan) viewCommands.panKey(pan);
+  const far = action.name.endsWith('Far'); // RULE-19: Shift+arrow pans 200 px
+  const pan = PAN[far ? action.name.slice(0, -3) : action.name];
+  if (pan) viewCommands.panKey(pan, far);
   else if (action.name === 'zoomIn') viewCommands.zoomIn();
   else if (action.name === 'zoomOut') viewCommands.zoomOut();
   else if (action.name === 'fit') viewCommands.fit();

@@ -82,7 +82,7 @@ export function ZoomControl() {
       </button>
       {off ? (
         <span class="tk-zoom__level" aria-hidden="true">
-          –
+          {t('status.zoom_none')}
         </span>
       ) : (
         <span id="tk-zoom-level" class="tk-zoom__level tk-zoom__level--wide">

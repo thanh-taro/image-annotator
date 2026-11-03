@@ -123,6 +123,16 @@ describe('MOD-Canvas view controller (F-002)', () => {
     expect(centreAfter.y).toBeCloseTo(centreBefore.y);
   });
 
+  it('RULE-19 arrow keys pan 40 screen pixels, Shift+arrow 200', () => {
+    const { c } = controller(3840, 2160, AREA, 24);
+    c.actualSize();
+    const x0 = view(c).x;
+    c.panKey('right');
+    expect(view(c).x).toBe(x0 - 40);
+    c.panKey('right', true);
+    expect(view(c).x).toBe(x0 - 240);
+  });
+
   it('F-002 edge case: a resize keeps the zoom, and refits a fitted view', () => {
     const { c } = controller(3840, 2160, AREA, 24);
     c.setArea({ width: 900, height: 600 }, 24);

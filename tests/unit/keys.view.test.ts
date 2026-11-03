@@ -41,6 +41,9 @@ describe('MOD-Keys view keys (RULE-19)', () => {
     expect(name(key({ key: 'ArrowUp', code: 'ArrowUp' }))).toBe('panUp');
     expect(name(key({ key: 'ArrowDown', code: 'ArrowDown' }))).toBe('panDown');
     expect(resolveKey(key({ key: 'ArrowRight' }), scope()).preventDefault).toBe(true);
+    // RULE-19: Shift+arrow pans further (200 px instead of 40).
+    expect(name(key({ key: 'ArrowRight', shift: true }))).toBe('panRightFar');
+    expect(name(key({ key: 'ArrowUp', shift: true }))).toBe('panUpFar');
     // Not on another control, not with a selection (that moves it, F-008), not with the crop tool.
     expect(resolveKey(key({ key: 'ArrowRight' }), scope({ focus: 'control' }))).toEqual({ preventDefault: false });
     expect(name(key({ key: 'ArrowRight' }), scope({ selection: 'one' }))).toBeUndefined();

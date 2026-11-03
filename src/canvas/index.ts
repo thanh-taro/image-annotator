@@ -12,7 +12,7 @@ const notImplemented = (name: string): never => {
 
 /** The canvas component (CMP-Canvas): the loaded image in a zoomable, pannable view (F-001, F-002). */
 export { Canvas, viewTransform, type CanvasProps } from './Canvas';
-export { PAN_STEP, ViewController, type PanDirection } from './view';
+export { PAN_STEP, PAN_STEP_SHIFT, ViewController, type PanDirection } from './view';
 
 /**
  * The view commands (F-002.R2/R4; CMP-StatusBar and the RULE-19 View keys). With no image shown they
@@ -25,7 +25,7 @@ export const viewCommands = {
   fit: (): void => activeCanvas()?.controller.fit(),
   actualSize: (): void => activeCanvas()?.controller.actualSize(),
   setBottomInset: (px: number): void => activeCanvas()?.setBottomInset(px),
-  panKey: (direction: PanDirection): void => activeCanvas()?.controller.panKey(direction),
+  panKey: (direction: PanDirection, far = false): void => activeCanvas()?.controller.panKey(direction, far),
   holdSpace: (held: boolean): void => activeCanvas()?.holdSpace(held),
 };
 

@@ -31,8 +31,9 @@ export interface WheelInput {
   readonly mod: boolean;
 }
 
-/** Arrow-key pan distance in CSS pixels (F-002.R4; the specs give no distance). */
+/** RULE-19: arrow keys pan 40 screen pixels, 200 with Shift. */
 export const PAN_STEP = 40;
+export const PAN_STEP_SHIFT = 200;
 /** A wheel delta at least this large (pixels) is a mouse-wheel notch, which zooms one RULE-12 step. */
 const NOTCH = 50;
 /** Smooth zoom for trackpad pinches: the zoom is multiplied by e^(−deltaY × this). */
@@ -137,8 +138,9 @@ export class ViewController {
   }
 
   /** F-002.R4 arrow keys with nothing selected (RULE-19): "Right" shows more of the right side. */
-  panKey(direction: PanDirection): void {
-    const d = { left: [PAN_STEP, 0], right: [-PAN_STEP, 0], up: [0, PAN_STEP], down: [0, -PAN_STEP] }[direction];
+  panKey(direction: PanDirection, far = false): void {
+    const n = far ? PAN_STEP_SHIFT : PAN_STEP;
+    const d = { left: [n, 0], right: [-n, 0], up: [0, n], down: [0, -n] }[direction];
     this.panBy(d[0] ?? 0, d[1] ?? 0);
   }
 

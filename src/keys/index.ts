@@ -58,7 +58,7 @@ const PAN: Readonly<Record<string, string>> = {
  * RULE-19 for a key press in a focus scope: the action, and whether the key is kept from the browser.
  * Implements (F-002): View — Mod+= zoom in, Mod+- zoom out (anywhere in the tool), Shift+1 fit and
  * Shift+0 100 % (canvas only, by digit-row position), Space held for Space+drag (canvas only); arrow
- * keys pan with nothing selected and no crop tool (canvas only, F-002.R4). Nothing acts while text is
+ * keys pan with nothing selected and no crop tool (canvas only, F-002.R4; Shift pans further). Nothing acts while text is
  * edited, or while a dialog or menu is open (Esc there is the dialog's or menu's own).
  */
 export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
@@ -74,7 +74,9 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
   if (plain && key.shift && key.code === 'Digit0') return act('view', 'actualSize');
   if (plain && !key.shift && (key.code === 'Space' || key.key === ' ')) return act('view', 'panHold');
   const pan = PAN[key.key];
-  if (pan && plain && !key.shift && scope.selection === 'none' && scope.tool !== 'crop') return act('view', pan);
+  // RULE-19: 40 screen pixels, Shift: 200 (the `…Far` actions).
+  if (pan && plain && scope.selection === 'none' && scope.tool !== 'crop')
+    return act('view', key.shift ? `${pan}Far` : pan);
   return NONE;
 }
 
