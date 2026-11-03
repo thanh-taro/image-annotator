@@ -5,15 +5,24 @@
 // Implements: F-001.R4, F-001.R5, F-001.R7; RULE-01, RULE-02, RULE-18; CMP-Notice progress after 0.5 s.
 import { formatNumber, language, t } from '../copy';
 import { MAX_FILE_BYTES } from '../core';
-import { supportedFormatNames, type DecodedImage, type DecodeResult, type Refusal, type Size } from '../io';
+import {
+  supportedFormatNames,
+  type DecodedImage,
+  type DecodeResult,
+  type InputFile,
+  type Oversize,
+  type Refusal,
+  type Size,
+} from '../io';
 import type { Notice } from './notice';
 
 /** CMP-Notice progress: shown only when the work takes longer than this (UX notes, SCR-Annotator "loading"). */
 export const PROGRESS_DELAY_MS = 500;
 
 export interface LoadPorts {
-  decode(file: File): Promise<DecodeResult>;
-  scaleDown(image: DecodedImage, size: Size): Promise<DecodedImage>;
+  decode(input: InputFile): Promise<DecodeResult>;
+  /** One decode at the offered size (ADR-0023). */
+  scaleDown(image: Oversize): Promise<DecodedImage>;
   /** Frees a decoded image that will not be loaded (NFR-04). */
   discard(image: DecodedImage): void;
   /** CMP-ConfirmDialog; resolves true for the primary action, false for cancel or Esc. */
@@ -32,7 +41,7 @@ export type LoadOutcome = 'loaded' | 'refused' | 'cancelled';
 const error = (id: Notice['id'], text: () => string): Notice => ({ kind: 'error', id, text });
 
 /** The CMP-Notice for a refusal code (COPY-error.*). */
-export function refusalNotice(code: Exclude<Refusal, 'too_large'>): Notice {
+export function refusalNotice(code: Refusal): Notice {
   switch (code) {
     case 'file_too_large':
       return error('error.file_too_large', () =>
@@ -70,33 +79,49 @@ async function withProgress<T>(ports: LoadPorts, work: () => Promise<T>): Promis
   }
 }
 
-/** Checks, decodes and (after the user's choices) loads one file (F-001.R7). */
-export async function loadFile(file: File, opts: { extraFiles: boolean }, ports: LoadPorts): Promise<LoadOutcome> {
+/**
+ * Checks, decodes and (after the user's choices) loads one of the files (F-001.R7). With several
+ * files, the first that passes the checks loads, with COPY-load.first_only; if none passes, the first
+ * file's refusal shows (F-001 edge cases, RULE-01).
+ */
+export async function loadFile(
+  files: readonly InputFile[],
+  opts: { extraFiles: boolean },
+  ports: LoadPorts,
+): Promise<LoadOutcome> {
   ports.notify(null); // a new action replaces an error notice (CMP-Notice)
-  let result: DecodeResult;
-  try {
-    result = await withProgress(ports, () => ports.decode(file));
-  } catch {
-    result = { ok: false, refused: 'decode_failed' };
+  let result: Extract<DecodeResult, { ok: true }> | undefined;
+  let firstRefusal: Refusal | undefined;
+  for (const input of files) {
+    let r: DecodeResult;
+    try {
+      r = await withProgress(ports, () => ports.decode(input));
+    } catch {
+      r = { ok: false, refused: 'decode_failed' };
+    }
+    if (r.ok) {
+      result = r;
+      break;
+    }
+    firstRefusal ??= r.refused;
+  }
+  if (!result) {
+    ports.notify(refusalNotice(firstRefusal ?? 'unsupported_format'));
+    return 'refused';
   }
 
   let image: DecodedImage;
-  if (result.ok) image = result.image;
-  else if (result.refused === 'too_large') {
-    if (!(await ports.confirm('scale-down', result.scaleDownOffer))) {
-      ports.discard(result.image);
-      return 'cancelled';
-    }
-    const { scaleDownOffer, image: big } = result;
+  if (result.image) image = result.image;
+  else {
+    // ADR-0023 §2: the scale-down question comes before any decode; cancelling decodes nothing.
+    const oversize = result;
+    if (!(await ports.confirm('scale-down', oversize.scaleDownOffer))) return 'cancelled';
     try {
-      image = await withProgress(ports, () => ports.scaleDown(big, scaleDownOffer));
+      image = await withProgress(ports, () => ports.scaleDown(oversize));
     } catch {
       ports.notify(refusalNotice('decode_failed'));
       return 'refused';
     }
-  } else {
-    ports.notify(refusalNotice(result.refused));
-    return 'refused';
   }
 
   if (ports.unexported() && !(await ports.confirm('replace'))) {

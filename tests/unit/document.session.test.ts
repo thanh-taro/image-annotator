@@ -56,4 +56,38 @@ describe('MOD-Document session', () => {
     expect(s.history.redo()?.selection).toEqual(['a']);
     expect(s.history.redo()).toBeNull();
   });
+
+  it('F-009.R3 undo restores the selection that went with the change, after a selection change', () => {
+    const s = startSession(image);
+    s.history.apply(touch, ['A']); // draw A, A selected
+    s.history.noteSelection(['B']); // the user clicks B (not a step)
+    s.history.apply(touch, []); // delete B
+    expect(s.history.undo()?.selection).toEqual(['B']);
+    expect(s.history.redo()?.selection).toEqual([]);
+  });
+
+  it('RULE-18 a no-op operation adds no step and does not make the session unexported', () => {
+    const s = startSession(image);
+    s.history.apply((d) => d, ['A']);
+    expect(s.history.canUndo).toBe(false);
+    expect(s.unexported).toBe(false);
+  });
+
+  it('RULE-11 repeated steps with the same key coalesce until another command breaks the chain', () => {
+    const s = startSession(image);
+    const start = s.doc;
+    s.history.apply(touch, ['A'], 'nudge:A');
+    s.history.apply(touch, ['A'], 'nudge:A');
+    expect(s.history.undo()?.doc).toBe(start);
+    expect(s.history.canUndo).toBe(false);
+    s.history.redo();
+    s.history.apply(touch, ['A'], 'nudge:A'); // undo/redo broke the chain: a new step
+    s.history.breakChain();
+    s.history.apply(touch, ['A'], 'nudge:A'); // breakChain: another new step
+    s.history.noteSelection(['A']);
+    s.history.apply(touch, ['A'], 'nudge:A'); // a selection change: another new step
+    let undos = 0;
+    while (s.history.undo()) undos++;
+    expect(undos).toBe(4);
+  });
 });

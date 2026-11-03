@@ -1,19 +1,27 @@
 // MOD-IO — getting files in: paste, drop and the file picker (platform-mapping.md "Load").
 // Only `File` objects are read: pasted HTML, links and web images are never parsed or fetched
 // (F-001.AC15, NFR-01). Keydown Mod+V is never prevented; the browser's `paste` event does the work.
-// Implements: F-001.R1, F-001.R2, F-001.R3, F-001.R4 (input side); RULE-01 (first file only).
+// Implements: F-001.R1, F-001.R2, F-001.R3, F-001.R4 (input side); RULE-01 (several files: MOD-App tries
+// them in order); RULE-15 (the source name is recorded only for picked or dropped files).
 
 export type InputVia = 'paste' | 'drop' | 'pick';
 
-export interface ImageInput {
+export interface InputFile {
   readonly file: File;
+  /** RULE-15: the file name for picked or dropped files; null for pasted ones. */
+  readonly sourceName: string | null;
+}
+
+export interface ImageInput {
+  /** The files in order (folders skipped); at least one. */
+  readonly files: readonly InputFile[];
   readonly via: InputVia;
-  /** More than one file (or folder) arrived; only the first file is used (RULE-01). */
+  /** More than one file (or folder) arrived (COPY-load.first_only once one loads). */
   readonly extraFiles: boolean;
 }
 
 export interface InputHandlers {
-  /** A file to check and load. */
+  /** Files to check and load. */
   file(input: ImageInput): void;
   /** Input without image data: a paste with no image file, or a drop of folders only. */
   noImage(via: 'paste' | 'drop'): void;
@@ -27,8 +35,11 @@ const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,image/bmp,image/avif';
 let handlers: InputHandlers | null = null;
 let picker: HTMLInputElement | null = null;
 
-/** Text is being edited: a paste goes to the field, never loads an image (F-001 edge cases, RULE-19). */
-function isEditing(target: EventTarget | null): boolean {
+/**
+ * Text is being edited (RULE-19): a paste goes to the field and never loads an image (F-001 edge
+ * cases); no Load key acts. The one definition for MOD-App until MOD-Keys owns it (F-013).
+ */
+export function isEditing(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   if (target instanceof HTMLTextAreaElement) return true;
   if (target instanceof HTMLInputElement)
@@ -49,8 +60,8 @@ function clipboardImages(data: DataTransfer | null): File[] {
     .filter((f): f is File => !!f);
 }
 
-/** Dropped files in order, skipping folders; `count` includes the folders. */
-function droppedFiles(data: DataTransfer): { files: File[]; count: number } {
+/** Dropped files in order, skipping folders; `count` includes the folders (F-001 edge cases). */
+export function droppedFiles(data: Pick<DataTransfer, 'items' | 'files'>): { files: File[]; count: number } {
   const items = Array.from(data.items).filter((item) => item.kind === 'file');
   if (!items.length) return { files: Array.from(data.files), count: data.files.length };
   const files: File[] = [];
@@ -76,9 +87,10 @@ export function onImageInput(next: InputHandlers): () => void {
     if (e.defaultPrevented || isEditing(e.target)) return;
     e.preventDefault();
     const images = clipboardImages(e.clipboardData);
-    const [first] = images;
-    if (first) handlers?.file({ file: first, via: 'paste', extraFiles: images.length > 1 });
-    else handlers?.noImage('paste');
+    if (images.length) {
+      const files = images.map((file) => ({ file, sourceName: null }));
+      handlers?.file({ files, via: 'paste', extraFiles: images.length > 1 });
+    } else handlers?.noImage('paste');
   };
   const onDragEnter = (e: DragEvent) => {
     if (!hasFiles(e)) return;
@@ -103,9 +115,13 @@ export function onImageInput(next: InputHandlers): () => void {
     e.preventDefault();
     endDrag();
     const { files, count } = droppedFiles(e.dataTransfer);
-    const [first] = files;
-    if (first) handlers?.file({ file: first, via: 'drop', extraFiles: count > 1 });
-    else handlers?.noImage('drop');
+    if (files.length) {
+      handlers?.file({
+        files: files.map((file) => ({ file, sourceName: file.name || null })),
+        via: 'drop',
+        extraFiles: count > 1,
+      });
+    } else handlers?.noImage('drop');
   };
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') endDrag();
@@ -141,7 +157,7 @@ export function openPicker(): void {
     picker.setAttribute('aria-hidden', 'true');
     picker.addEventListener('change', () => {
       const file = picker?.files?.[0];
-      if (file) handlers?.file({ file, via: 'pick', extraFiles: false });
+      if (file) handlers?.file({ files: [{ file, sourceName: file.name || null }], via: 'pick', extraFiles: false });
       if (picker) picker.value = '';
     });
     document.body.append(picker);

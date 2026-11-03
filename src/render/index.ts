@@ -49,20 +49,22 @@ export function paint(
   notImplemented('paint');
 }
 
-/** Screen-only inputs of the image layer: the checkerboard behind transparent pixels (theme colours). */
+/** Screen-only inputs of the image layer (ADR-0016): the surround and the checkerboard (theme colours). */
 export interface BaseView {
+  /** The surround outside the canvas (style.md "Work area": color.work-area). */
+  readonly surround: string;
   readonly checkerA: string;
   readonly checkerB: string;
   /** One checker square, in context pixels (style.md: size.checker on screen × device pixel ratio). */
   readonly checkerSize: number;
   /** style.md "Work area": a hairline around the canvas so its edge shows on light images. */
-  readonly outline?: { readonly colour: string; readonly width: number };
+  readonly outline: { readonly colour: string; readonly width: number };
 }
 
 /**
- * ADR-0016 image layer: scene steps 1–2 — the background over the canvas, then the image clipped to
- * the frame — over the screen-only checkerboard behind transparent pixels. The surround outside the
- * canvas is left transparent (the work area shows through). `view` is never passed by the export.
+ * ADR-0016 image layer (MOD-Render `paintBase(ctx, doc, image, transform, view)`): the screen-only
+ * surround and the checkerboard behind transparent pixels, then scene steps 1–2 — the background over
+ * the canvas, then the image clipped to the frame. The export never calls it.
  * Implements: F-001.R6 (the image as decoded, oriented, INV-03 sRGB context), RULE-14 (canvas and
  * background; image pixels only inside the frame), F-001 edge case "transparent PNG over a checkerboard".
  */
@@ -71,21 +73,19 @@ export function paintBase(
   scene: Scene,
   image: CanvasImageSource,
   transform: Transform,
-  view?: BaseView,
+  view: BaseView,
 ): void {
   const { scale, dx, dy } = transform;
   const canvas = canvasRect(scene.frame, scene.padding.size);
   const onScreen = screenRect(canvas, transform);
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-  if (view?.outline) {
-    const w = Math.max(1, Math.round(view.outline.width));
-    ctx.fillStyle = view.outline.colour;
-    ctx.fillRect(onScreen.x - w, onScreen.y - w, onScreen.width + 2 * w, onScreen.height + 2 * w);
-    ctx.clearRect(onScreen.x, onScreen.y, onScreen.width, onScreen.height);
-  }
-  if (view) paintChecker(ctx, onScreen, view);
+  ctx.fillStyle = view.surround;
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  const w = Math.max(1, Math.round(view.outline.width));
+  ctx.fillStyle = view.outline.colour;
+  ctx.fillRect(onScreen.x - w, onScreen.y - w, onScreen.width + 2 * w, onScreen.height + 2 * w);
+  paintChecker(ctx, onScreen, view);
 
   ctx.setTransform(scale, 0, 0, scale, dx, dy);
   const background = scene.padding.background;

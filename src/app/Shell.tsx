@@ -11,7 +11,7 @@ import { DropOverlay } from './DropOverlay';
 import { EmptyState } from './EmptyState';
 import { NoticeView } from './NoticeView';
 import { Toolbar } from './Toolbar';
-import { assertive, dialog, dragging, loaded, notice, polite } from './state';
+import { assertive, dialog, doc, dragging, loaded, notice, polite } from './state';
 
 function screenState(): string {
   if (dialog.value) return dialog.value.kind === 'replace' ? 'confirm-replace' : 'confirm-scale-down';
@@ -23,6 +23,7 @@ function screenState(): string {
 
 export function Shell() {
   const current = loaded.value;
+  const scene = doc.value;
   const modal = dialog.value;
   const inert = modal ? true : undefined;
   const info = current?.image.info;
@@ -37,14 +38,14 @@ export function Shell() {
         aria-describedby={info ? 'tk-canvas-summary' : undefined}
         inert={inert}
       >
-        {current && info ? (
+        {current && info && scene ? (
           <>
-            <Canvas image={current.image.bitmap} doc={current.session.doc} theme={theme.value} />
+            <Canvas image={current.image.bitmap} doc={scene} theme={theme.value} />
             <span id="tk-canvas-summary" class="tk-sr">
               {t('a11y.canvas_summary', {
                 width: info.width,
                 height: info.height,
-                count: current.session.doc.annotations.length,
+                count: scene.annotations.length,
               })}
             </span>
           </>
@@ -53,7 +54,9 @@ export function Shell() {
         )}
         {notice.value && <NoticeView notice={notice.value} />}
         <div class="tk-sr" role="status" aria-live="polite">
-          {polite.value}
+          {polite.value.map((m) => (
+            <div key={m.id}>{m.text}</div>
+          ))}
         </div>
         <div class="tk-sr" role="alert">
           {assertive.value}

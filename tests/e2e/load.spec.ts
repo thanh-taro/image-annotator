@@ -1,7 +1,7 @@
 // F-001 Load an image — end to end on the production build (Chromium + WebKit; adapters/tests.md).
 // Paste and drop are dispatched with real fixture files (tests/e2e/support/load.ts); decoding is the
 // engine's own (ADR-0005, ADR-0018). AC9, AC10 and AC14 need unexported changes, which only drawing
-// features can make; they are covered in tests/unit/app.load.test.ts. AC16 and AC17 need MOD-Host's
+// features can make; they are covered in tests/unit/app.load.test.ts and deferred in the build plan. AC16 and AC17 need MOD-Host's
 // focus tracking and ready signal (F-015).
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Request } from '@playwright/test';
@@ -28,6 +28,8 @@ const BMP = fixture('fmt.bmp', 'image/bmp');
 const HEIC = fixture('fmt.heic', 'image/heic');
 const BROKEN = fixture('broken.png', 'image/png');
 const LARGE = fixture('large-6000x3400.png', 'image/png');
+const LARGE_ROTATED = fixture('large-rot6.jpg', 'image/jpeg');
+const TRANSPARENT = fixture('transparent.png', 'image/png');
 const PDF = { name: 'report.pdf', type: 'application/pdf', bytes: Array.from('%PDF-1.7\n%\n', (c) => c.charCodeAt(0)) };
 
 const UNSUPPORTED = /^This file type isn't supported\. Use PNG, JPEG, WebP, GIF,( BMP,)? (or )?(BMP|AVIF)\.$/;
@@ -68,7 +70,9 @@ test.describe('F-001 load an image', () => {
     expect(near(await canvasPixel(page, box.width / 2, box.height / 2), green)).toBe(true);
     expect(near(await canvasPixel(page, left + 3, top + 3), green)).toBe(true);
     expect(near(await canvasPixel(page, left + 2000 * scale - 3, top + 1000 * scale - 3), green)).toBe(true);
-    expect((await canvasPixel(page, left - 6, box.height / 2))[3]).toBe(0); // the work area shows outside
+    // ADR-0016: the surround outside the canvas is color.work-area (light #ECE8F4 or dark #0B0812).
+    const surround = await canvasPixel(page, left - 6, box.height / 2);
+    expect(near(surround, [236, 232, 244, 255], 4) || near(surround, [11, 8, 18, 255], 4)).toBe(true);
   });
 
   test('F-001.AC2 dragging a JPEG shows COPY-load.drop_here; dropping it loads it', async ({ page }) => {
@@ -260,6 +264,93 @@ test.describe('F-001 load an image', () => {
     await page.waitForTimeout(300);
     await expect(summary(page)).toHaveCount(0);
     await expect(noticeText(page)).toHaveCount(0);
+  });
+
+  test('F-001 edge case: a clipboard holding an image and text uses the image', async ({ page }) => {
+    await open(page);
+    await paste(page, [PNG], { 'text/plain': 'a caption' });
+    await expectLoaded(page, 240, 160);
+    await expect(noticeText(page)).toHaveCount(0);
+  });
+
+  test('F-001 edge case: a transparent PNG is shown over the checkerboard', async ({ page }) => {
+    await open(page);
+    await paste(page, [TRANSPARENT]);
+    await expectLoaded(page, 64, 64);
+    const box = await canvasBox(page);
+    const centre = await canvasPixel(page, box.width / 2, box.height / 2);
+    const checker = [
+      [255, 255, 255, 255],
+      [230, 225, 240, 255],
+      [42, 35, 51, 255],
+      [30, 24, 40, 255],
+    ];
+    expect(checker.some((c) => near(centre, c, 4))).toBe(true);
+  });
+
+  test('F-001 edge case: input while a dialog is open is ignored', async ({ page }) => {
+    await open(page);
+    await paste(page, [LARGE]);
+    const dialog = page.getByRole('alertdialog');
+    await expect(dialog).toBeVisible();
+    await paste(page, [PNG]);
+    await drop(page, [JPEG]);
+    await page.waitForTimeout(300);
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
+    await page.waitForTimeout(300);
+    await expect(page.locator('.tk-empty')).toBeVisible();
+    await expect(summary(page)).toHaveCount(0);
+  });
+
+  test('F-001 edge case: input while an image is loading is ignored', async ({ page }) => {
+    await page.addInitScript(() => {
+      // The next decode after the test sets __delayDecode takes 1.5 s.
+      const original = window.createImageBitmap.bind(window);
+      const w = window as unknown as { __delayDecode?: boolean };
+      window.createImageBitmap = ((...args: Parameters<typeof createImageBitmap>) => {
+        if (!w.__delayDecode) return original(...args);
+        w.__delayDecode = false;
+        return new Promise((r) => setTimeout(r, 1500)).then(() => original(...args));
+      }) as typeof createImageBitmap;
+    });
+    await open(page);
+    await page.evaluate(() => ((window as unknown as { __delayDecode?: boolean }).__delayDecode = true));
+    await paste(page, [PNG_WIDE]);
+    await page.waitForTimeout(100);
+    await paste(page, [PNG]);
+    await expectLoaded(page, 2000, 1000);
+    await page.waitForTimeout(300);
+    await expectLoaded(page, 2000, 1000);
+  });
+
+  test('F-001 edge case: in a multi-file drop the first file that passes RULE-01 loads, with first_only', async ({
+    page,
+  }) => {
+    await open(page);
+    await drop(page, [PDF, PNG]);
+    await expectLoaded(page, 240, 160);
+    await expect(noticeText(page)).toHaveText('Opened the first image only.');
+    await expect(page.locator('[role="status"]')).toContainText('Image opened, 240 × 160 px');
+    await expect(page.locator('[role="status"]')).toContainText('Opened the first image only.');
+  });
+
+  test('F-001 edge case: in a multi-file drop where none passes, the first refusal shows', async ({ page }) => {
+    await open(page);
+    await drop(page, [PDF, HEIC]);
+    await expect(noticeText(page)).toHaveText(UNSUPPORTED);
+    await expect(page.locator('.tk-empty')).toBeVisible();
+  });
+
+  test('RULE-03 ADR-0023 an over-limit JPEG with orientation 6 is offered at its upright size', async ({ page }) => {
+    await open(page);
+    await paste(page, [LARGE_ROTATED]); // stored 3400 × 6000, orientation 6
+    const dialog = page.getByRole('alertdialog');
+    await expect(dialog).toContainText('Open it scaled down to 5,441 × 3,083 px?');
+    await dialog.getByRole('button', { name: 'Open scaled down' }).click();
+    await expectLoaded(page, 5441, 3083);
+    const box = await canvasBox(page);
+    expect(near(await canvasPixel(page, box.width / 2, box.height / 2), [51, 102, 204, 255], 24)).toBe(true);
   });
 
   for (const theme of ['dark', 'light'] as const) {

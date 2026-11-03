@@ -11,6 +11,7 @@ export * from './sizes';
 export * from './constants';
 export * from './format';
 export * from './canvas';
+export * from './header';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Core ${name}`);

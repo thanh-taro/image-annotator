@@ -30,12 +30,18 @@ const scene = (background: Scene['padding']['background']): Scene => ({
   padding: { size: 'none', background },
 });
 const image = {} as CanvasImageSource;
-const view = { checkerA: '#fff', checkerB: '#eee', checkerSize: 8 };
+const view = {
+  surround: '#ddd',
+  checkerA: '#fff',
+  checkerB: '#eee',
+  checkerSize: 8,
+  outline: { colour: '#999', width: 1 },
+};
 
 describe('MOD-Render paintBase', () => {
   it('F-001.R6 draws the whole image at the given transform, clipped to the frame, smoothed', () => {
     const { ctx, calls } = recorder();
-    paintBase(ctx, scene('transparent'), image, { scale: 0.5, dx: 100, dy: 75 });
+    paintBase(ctx, scene('transparent'), image, { scale: 0.5, dx: 100, dy: 75 }, view);
     expect(calls).toContain('setTransform(0.5,0,0,0.5,100,75)');
     expect(calls).toContain('rect(0,0,400,300)');
     expect(calls.indexOf('clip()')).toBeLessThan(calls.indexOf('drawImage(img,0,0)'));
@@ -45,18 +51,23 @@ describe('MOD-Render paintBase', () => {
 
   it('RULE-14 a palette background fills the canvas before the image', () => {
     const { ctx, calls } = recorder();
-    paintBase(ctx, scene('blue'), image, { scale: 1, dx: 0, dy: 0 });
+    paintBase(ctx, scene('blue'), image, { scale: 1, dx: 0, dy: 0 }, view);
     expect(calls).toContain(`fillStyle=${PALETTE_HEX.blue}`);
     expect(calls.indexOf('fillRect(0,0,400,300)')).toBeLessThan(calls.indexOf('drawImage(img,0,0)'));
   });
 
-  it('F-001 edge case: a checkerboard is painted under the canvas on screen only', () => {
-    const withView = recorder();
-    paintBase(withView.ctx, scene('transparent'), image, { scale: 1, dx: 10, dy: 20 }, view);
-    expect(withView.calls).toContain('fillRect(10,20,400,300)');
-    expect(withView.calls.indexOf('fillStyle=#eee')).toBeLessThan(withView.calls.indexOf('drawImage(img,0,0)'));
-    const withoutView = recorder();
-    paintBase(withoutView.ctx, scene('transparent'), image, { scale: 1, dx: 10, dy: 20 });
-    expect(withoutView.calls.some((c) => c.startsWith('fillStyle=#'))).toBe(false);
+  it('F-001 edge case: the surround, outline and checkerboard are painted before the scene', () => {
+    const { ctx, calls } = recorder();
+    paintBase(ctx, scene('transparent'), image, { scale: 1, dx: 10, dy: 20 }, view);
+    expect(calls.slice(0, 6)).toEqual([
+      'save()',
+      'setTransform(1,0,0,1,0,0)',
+      'fillStyle=#ddd',
+      'fillRect(0,0,800,600)',
+      'fillStyle=#999',
+      'fillRect(9,19,402,302)',
+    ]);
+    expect(calls).toContain('fillRect(10,20,400,300)');
+    expect(calls.indexOf('fillStyle=#eee')).toBeLessThan(calls.indexOf('drawImage(img,0,0)'));
   });
 });

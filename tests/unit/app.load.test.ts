@@ -6,23 +6,28 @@ import { loadFile, type LoadPorts } from '../../src/app/load';
 import type { Notice } from '../../src/app/notice';
 import type { ImageInfo } from '../../src/core';
 import { startSession, type Session } from '../../src/document';
-import type { DecodedImage, DecodeResult } from '../../src/io/decode';
+import type { DecodedImage, DecodeResult, Oversize } from '../../src/io/decode';
+import type { InputFile } from '../../src/io';
 
 const info = (width: number, height: number): ImageInfo => ({ width, height, sourceName: null, sourceType: 'png' });
 const image = (width: number, height: number) =>
   ({ info: info(width, height), bitmap: { close: vi.fn() } as unknown as ImageBitmap }) satisfies DecodedImage;
 
-function ports(result: DecodeResult, opts: { unexported?: boolean; confirm?: boolean[] } = {}) {
+function ports(
+  result: DecodeResult | DecodeResult[],
+  opts: { unexported?: boolean; exported?: boolean; confirm?: boolean[] } = {},
+) {
+  const results = Array.isArray(result) ? [...result] : [result];
   const answers = [...(opts.confirm ?? [])];
   const notices: (Notice | null)[] = [];
   const asked: string[] = [];
   let session: Session | null = startSession(info(100, 100));
-  if (opts.unexported) session.history.apply((d) => ({ ...d }), []);
+  if (opts.unexported || opts.exported)
+    session.history.apply((d) => ({ ...d, padding: { ...d.padding, size: 'M' } }), []);
+  if (opts.exported) session.markExported();
   const p = {
-    decode: vi.fn(async () => result),
-    scaleDown: vi.fn(async (_img: DecodedImage, size: { width: number; height: number }) =>
-      image(size.width, size.height),
-    ),
+    decode: vi.fn(async (_input: InputFile) => (results.length > 1 ? results.shift() : results[0]) as DecodeResult),
+    scaleDown: vi.fn(async (o: Oversize) => image(o.scaleDownOffer.width, o.scaleDownOffer.height)),
     discard: vi.fn(),
     confirm: vi.fn(async (kind: 'replace' | 'scale-down') => {
       asked.push(kind);
@@ -38,7 +43,16 @@ function ports(result: DecodeResult, opts: { unexported?: boolean; confirm?: boo
   return { p, notices, asked, session: () => session };
 }
 
-const file = new File(['x'], 'x.png');
+const file: InputFile[] = [{ file: new File(['x'], 'x.png'), sourceName: 'x.png' }];
+const files = (n: number): InputFile[] =>
+  Array.from({ length: n }, (_, i) => ({ file: new File(['x'], `${i}.png`), sourceName: `${i}.png` }));
+const oversize = (): DecodeResult => ({
+  ok: true,
+  file: new File(['x'], 'big.png'),
+  sourceName: 'big.png',
+  sourceType: 'png',
+  scaleDownOffer: { width: 5441, height: 3083 },
+});
 const last = (notices: (Notice | null)[]) => notices.filter(Boolean).at(-1)?.id;
 
 describe('MOD-App loadFile', () => {
@@ -47,6 +61,13 @@ describe('MOD-App loadFile', () => {
     expect(await loadFile(file, { extraFiles: false }, t.p)).toBe('loaded');
     expect(t.asked).toEqual([]);
     expect(t.p.replace).toHaveBeenCalledOnce();
+  });
+
+  it('F-001.AC10 right after an export (edits made, then exported) a new image loads without asking', async () => {
+    const t = ports({ ok: true, image: image(300, 200) }, { exported: true });
+    expect(t.session()?.history.canUndo).toBe(true);
+    expect(await loadFile(file, { extraFiles: false }, t.p)).toBe('loaded');
+    expect(t.asked).toEqual([]);
   });
 
   it('F-001.AC9 with unexported changes, confirming replaces with a new session (no annotations, empty history)', async () => {
@@ -78,32 +99,31 @@ describe('MOD-App loadFile', () => {
   });
 
   it('F-001.AC7 an oversize image asks to scale down first; accepting loads it at the offered size', async () => {
-    const big = image(6000, 3400);
-    const t = ports(
-      { ok: false, refused: 'too_large', scaleDownOffer: { width: 5441, height: 3083 }, image: big },
-      { confirm: [true] },
-    );
+    const t = ports(oversize(), { confirm: [true] });
     expect(await loadFile(file, { extraFiles: false }, t.p)).toBe('loaded');
     expect(t.asked).toEqual(['scale-down']);
     expect(t.p.confirm).toHaveBeenCalledWith('scale-down', { width: 5441, height: 3083 });
     expect(t.p.replace.mock.calls[0]?.[0].info).toMatchObject({ width: 5441, height: 3083 });
   });
 
-  it('F-001.AC7 cancelling the scale-down leaves the session unchanged and frees the decoded image', async () => {
-    const big = image(6000, 3400);
-    const t = ports({ ok: false, refused: 'too_large', scaleDownOffer: { width: 5441, height: 3083 }, image: big });
+  it('F-001.AC7 ADR-0023 cancelling the scale-down leaves the session unchanged and decodes nothing', async () => {
+    const t = ports(oversize());
     const before = t.session();
     expect(await loadFile(file, { extraFiles: false }, t.p)).toBe('cancelled');
     expect(t.session()).toBe(before);
-    expect(t.p.discard).toHaveBeenCalledWith(big);
+    expect(t.p.scaleDown).not.toHaveBeenCalled();
+    expect(t.p.discard).not.toHaveBeenCalled();
+  });
+
+  it('F-001.AC7 a scaled decode that fails shows COPY-error.decode_failed', async () => {
+    const t = ports(oversize(), { confirm: [true] });
+    t.p.scaleDown.mockRejectedValueOnce(new Error('x'));
+    expect(await loadFile(file, { extraFiles: false }, t.p)).toBe('refused');
+    expect(last(t.notices)).toBe('error.decode_failed');
   });
 
   it('F-001.R7 the scale-down choice comes before the replace confirmation', async () => {
-    const big = image(6000, 3400);
-    const t = ports(
-      { ok: false, refused: 'too_large', scaleDownOffer: { width: 5441, height: 3083 }, image: big },
-      { unexported: true, confirm: [true, true] },
-    );
+    const t = ports(oversize(), { unexported: true, confirm: [true, true] });
     expect(await loadFile(file, { extraFiles: false }, t.p)).toBe('loaded');
     expect(t.asked).toEqual(['scale-down', 'replace']);
   });
@@ -126,8 +146,30 @@ describe('MOD-App loadFile', () => {
 
   it('F-001.AC12 when several files arrive, the first loads and COPY-load.first_only is shown', async () => {
     const t = ports({ ok: true, image: image(300, 200) });
-    expect(await loadFile(file, { extraFiles: true }, t.p)).toBe('loaded');
+    expect(await loadFile(files(2), { extraFiles: true }, t.p)).toBe('loaded');
+    expect(t.p.decode).toHaveBeenCalledOnce();
+    expect(t.p.decode.mock.calls[0]?.[0].sourceName).toBe('0.png');
     expect(last(t.notices)).toBe('load.first_only');
+  });
+
+  it('F-001 edge case: in a multi-file drop the first file that passes RULE-01 loads, with first_only', async () => {
+    const t = ports([
+      { ok: false, refused: 'unsupported_format' },
+      { ok: true, image: image(300, 200) },
+    ]);
+    expect(await loadFile(files(2), { extraFiles: true }, t.p)).toBe('loaded');
+    expect(t.p.decode).toHaveBeenCalledTimes(2);
+    expect(t.notices.filter(Boolean).map((n) => n?.id)).toEqual(['load.first_only']);
+  });
+
+  it("F-001 edge case: in a multi-file drop where none passes, the first file's refusal shows", async () => {
+    const t = ports([
+      { ok: false, refused: 'file_too_large' },
+      { ok: false, refused: 'unsupported_format' },
+    ]);
+    expect(await loadFile(files(2), { extraFiles: true }, t.p)).toBe('refused');
+    expect(last(t.notices)).toBe('error.file_too_large');
+    expect(t.p.replace).not.toHaveBeenCalled();
   });
 
   it('F-001.AC5 the unsupported-format message names the formats this browser decodes', async () => {

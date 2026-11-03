@@ -4,6 +4,10 @@
 // worker — none of which `vite preview` (the default config's webServer) can provide. Run with:
 //   pnpm exec playwright test -c playwright.host-offline.config.ts --project=chromium
 import { defineConfig, devices } from '@playwright/test';
+import { HOST_PORT_BASE } from './tests/e2e/support/ports';
+
+// One port base for the setup, the workers and the teardown (per worktree; tests/e2e/support/ports.ts).
+process.env['E2E_HOST_PORT_BASE'] = String(HOST_PORT_BASE);
 
 const CI = !!process.env['CI'];
 

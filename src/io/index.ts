@@ -12,13 +12,22 @@ export {
   probeAvif,
   scaleDown,
   supportedFormatNames,
-  withoutSourceName,
   type DecodedImage,
   type DecodeResult,
+  type Oversize,
   type Refusal,
   type Size,
 } from './decode';
-export { onImageInput, openPicker, type ImageInput, type InputHandlers, type InputVia } from './input';
+export {
+  droppedFiles,
+  isEditing,
+  onImageInput,
+  openPicker,
+  type ImageInput,
+  type InputFile,
+  type InputHandlers,
+  type InputVia,
+} from './input';
 
 export type ExportResult =
   | { readonly ok: true; readonly fileName?: string }

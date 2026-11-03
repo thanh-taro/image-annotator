@@ -43,7 +43,11 @@ export function Canvas({ image, doc, theme }: CanvasProps) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    let media: MediaQueryList | undefined;
     const paint = () => {
+      // The previous image's bitmap is closed when a new one loads (NFR-04); its observer may still
+      // fire once before this effect is cleaned up, so a closed (0 × 0) bitmap is skipped.
+      if (image.width === 0) return;
       const box = el.getBoundingClientRect();
       const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
       const width = Math.round(box.width * dpr);
@@ -55,6 +59,7 @@ export function Canvas({ image, doc, theme }: CanvasProps) {
       if (!ctx || !width || !height) return;
       const style = getComputedStyle(el);
       paintBase(ctx, doc, image, fitTransform(doc, box, cssPx(el, '--tk-space-6'), dpr), {
+        surround: style.getPropertyValue('--tk-color-work-area').trim(),
         checkerA: style.getPropertyValue('--tk-color-checker-a').trim(),
         checkerB: style.getPropertyValue('--tk-color-checker-b').trim(),
         checkerSize: cssPx(el, '--tk-size-checker') * dpr,
@@ -64,10 +69,24 @@ export function Canvas({ image, doc, theme }: CanvasProps) {
         },
       });
     };
+    // ADR-0016: the layer depends on the device pixel ratio, which ResizeObserver does not report.
+    const watchDpr = () => {
+      media?.removeEventListener('change', onDpr);
+      media = matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+      media.addEventListener('change', onDpr);
+    };
+    const onDpr = () => {
+      watchDpr();
+      paint();
+    };
     paint();
+    watchDpr();
     const observer = new ResizeObserver(paint);
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      media?.removeEventListener('change', onDpr);
+    };
   }, [image, doc, theme]);
 
   return <canvas ref={ref} class="tk-canvas" aria-hidden="true" />;
