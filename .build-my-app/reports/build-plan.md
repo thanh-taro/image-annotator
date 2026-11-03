@@ -29,7 +29,9 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 | F-018.AC5 | export (F-012) |
 | F-018.AC6 (e2e) | crop size shown (F-010) |
 | F-018.AC7 | every screen state (end of M-1) |
-| F-018.AC10 | text, download, offline (F-005, F-012, F-017) |
+| F-018.AC10 | download, offline (F-012, F-017); text part already in portal-language.spec.ts |
+| F-005.AC6, AC7, AC14, AC15 (export part) | export (F-012); fixme placeholders exist |
+| F-005.AC12 (e2e) | undo (F-009); model-tested |
 | F-016.AC4 (image, annotations and history unchanged) | F-003, F-009 |
 | F-001.AC9, AC10, AC14 (e2e; unit-tested in tests/unit/app.load.test.ts) | unexported changes and export (F-003, F-012) |
 | F-002.AC7 (export equals the view) | F-003, F-012 |
@@ -37,9 +39,12 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 ## Manual checks collected so far
 - Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
 - Real Mod+V paste on WebKit (F-001)
+- WebKit IME and Safari Telex Vietnamese input, real drop of text into the editor (F-005)
 
 ## Notes for later features
 - F-008: a straight (Shift) highlight has a zero-height bounding box; decide how its selection box and handles show (F-004 review m3).
 - Flaky: F-003.AC8 pixel check failed once in F-006's run (passed 16/16 on rerun); watch it.
 - F-013: write the step label for steps (F-006 removed the unused `stepName`).
 - F-008: wire F-006.AC2/AC7 (fixme placeholders exist).
+- F-012: wire the Mod+S `TODO(F-012)` in keys (pending unit test exists).
+- Open design difference (F-005): placeholder opacity 0.5 is a raw value (no opacity token) and the artboard's 120 px editor minimum width is not applied; settle in QA or a token change.
