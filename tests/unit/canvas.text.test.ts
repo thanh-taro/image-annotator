@@ -32,6 +32,7 @@ function setup(tool: ToolName = 'text', annotations: Annotation[] = [], ready = 
       style: DEFAULT_STYLES.text,
       shortSide: 800,
       annotations: state.annotations,
+      canvas: { x: 0, y: 0, width: 1000, height: 800 },
       measure: fake,
       tolerance: 3,
       toImage: (p: Point) => ({ x: p.x / 2, y: p.y / 2 }),
@@ -43,7 +44,12 @@ function setup(tool: ToolName = 'text', annotations: Annotation[] = [], ready = 
   return { text, field, ended, begun, state };
 }
 
-const at = (x: number, y: number, id = 1, button = 0): PointerInput => ({ id, type: 'mouse', button, point: { x, y } });
+const at = (x: number, y: number, id = 1, button = 0, type = 'mouse'): PointerInput => ({
+  id,
+  type,
+  button,
+  point: { x, y },
+});
 const click = (t: TextTool, x: number, y: number, id = 1) => {
   const took = t.down(at(x, y, id));
   t.up(at(x, y, id));
@@ -135,5 +141,37 @@ describe('MOD-Canvas text tool', () => {
     expect(text.down(at(50, 50, 2, 2))).toBe(true);
     expect(ended).toHaveLength(1);
     expect(setup('rectangle').text.down(at(1, 1))).toBe(false);
+  });
+
+  it('F-005.AC16 D-030 a text-tool click outside the canvas creates nothing and edits nothing', () => {
+    const { text, begun, field } = setup();
+    // Screen (-20, 100) is image (-10, 50), left of the canvas; (2200, 100) right of it.
+    expect(click(text, -20, 100)).toBe(true);
+    click(text, 2200, 100);
+    click(text, 100, 1700);
+    expect(begun).toEqual([]);
+    expect(field.shown).toBe(false);
+  });
+
+  it('F-005 edge case a press that moves before release places one text at the press point', () => {
+    const { text, begun } = setup();
+    text.down(at(200, 100));
+    text.move();
+    text.up(at(400, 300));
+    expect(begun).toEqual([{ id: null, anchor: { x: 100, y: 50 } }]);
+  });
+
+  it('CMP-Canvas a touch ends the edit on release; a second finger (pinch or pan) keeps it open', () => {
+    const { text, ended } = setup();
+    click(text, 200, 100);
+    expect(text.down(at(600, 400, 5, 0, 'touch'))).toBe(true);
+    expect(ended).toHaveLength(0);
+    text.cancel(); // the second finger turns the gesture into a pinch
+    text.up(at(600, 400, 5, 0, 'touch'));
+    expect(text.active).toBe(true);
+    text.down(at(600, 400, 6, 0, 'touch'));
+    text.up(at(600, 400, 6, 0, 'touch'));
+    expect(ended).toMatchObject([{ reason: 'press' }]);
+    expect(text.active).toBe(false);
   });
 });

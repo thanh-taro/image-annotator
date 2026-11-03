@@ -411,12 +411,12 @@
     word-spacing: 0;
     text-indent: 0;
     text-transform: none;
-    tab-size: 8;
   }
   .tk-text-editor[data-open] {
     display: block;
   }
-  /* CMP-TextEditor design: the placeholder at 50 % in the current colour, hidden on the first key. */
+  /* CMP-TextEditor design: the placeholder at 50 % in the current colour, hidden on the first key. The
+     50 % is the artboard's value; tokens.json has no opacity scale yet (reported with F-005's review). */
   .tk-text-editor::placeholder {
     color: var(--tk-text-colour);
     opacity: 0.5;

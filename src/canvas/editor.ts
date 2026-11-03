@@ -4,8 +4,8 @@
 // text is kept composed (NFC) back to the last starter and within 2,000 code points of the composed
 // text: on `beforeinput` for typing, pasting and dropping, at `compositionend` for input methods. Only
 // an insertion whose result differs from the plain one is redone, through `execCommand('insertText')`,
-// so the field's own undo keeps working. Focus leaving for anything but the tool's editing controls
-// ends the edit (F-005.R3).
+// so the field's own undo keeps working. Focus moving anywhere other than the field or CMP-StylePanel
+// ends the edit (F-005.R3) — watched on the document, so it also ends when focus goes on from the panel.
 // Implements: F-005.R2 (keys and editing as in any text field, new lines, paste and drop as plain text
 // cut at 2,000), F-005.R3, RULE-08 (limit, composed form), ADR-0009 §2/§3, ADR-0020, CMP-TextEditor
 // "Accessibility" (a multi-line text field that takes focus when editing starts).
@@ -23,6 +23,8 @@ export interface FieldHooks {
 
 /** The input types that insert text, and what a line break inserts. */
 const LINE_BREAKS = new Set(['insertLineBreak', 'insertParagraph']);
+/** Input-method input types (Chromium and WebKit): checked once, at compositionend (ADR-0009 §3). */
+const COMPOSITION = new Set(['insertCompositionText', 'insertFromComposition', 'deleteCompositionText']);
 
 /** Binds the field's events; returns the TextField the text tool drives, and a function that unbinds. */
 export function bindTextField(ta: HTMLTextAreaElement, hooks: FieldHooks): { field: TextField; stop(): void } {
@@ -41,8 +43,7 @@ export function bindTextField(ta: HTMLTextAreaElement, hooks: FieldHooks): { fie
   };
 
   const onBeforeInput = (e: InputEvent) => {
-    if (applying || e.isComposing || !e.inputType.startsWith('insert') || e.inputType === 'insertCompositionText')
-      return;
+    if (applying || e.isComposing || COMPOSITION.has(e.inputType) || !e.inputType.startsWith('insert')) return;
     let data = e.data ?? e.dataTransfer?.getData('text/plain') ?? null;
     if (data === null && LINE_BREAKS.has(e.inputType)) data = '\n';
     if (data === null) return;
@@ -71,28 +72,28 @@ export function bindTextField(ta: HTMLTextAreaElement, hooks: FieldHooks): { fie
 
   const onInput = () => hooks.onInput();
 
+  const open = () => ta.dataset['open'] !== undefined;
+  const keeps = (el: Element | null) => !!el && (el === ta || hooks.keepsEdit(el));
   const stillEditing = () => {
-    // A window that lost focus keeps the edit (focus comes back to the field with the window).
-    if (!document.hasFocus()) return;
-    const now = document.activeElement;
-    if (now === ta || (now && hooks.keepsEdit(now))) return;
-    hooks.onFocusLeft();
+    // A window that lost focus keeps the edit (focus comes back with the window).
+    if (!open() || !document.hasFocus()) return;
+    if (!keeps(document.activeElement)) hooks.onFocusLeft();
   };
+  // Focus arriving anywhere else (from the field or from the panel) ends the edit.
+  const onFocusIn = (e: FocusEvent) => {
+    if (open() && !keeps(e.target instanceof Element ? e.target : null)) hooks.onFocusLeft();
+  };
+  // Focus leaving for nothing (a click on something that takes no focus, or the window was left):
+  // decide once focus has settled.
   const onFocusOut = (e: FocusEvent) => {
-    const to = e.relatedTarget instanceof Element ? e.relatedTarget : null;
-    if (to) {
-      if (!hooks.keepsEdit(to)) hooks.onFocusLeft();
-      return;
-    }
-    // No new focus target (a click on something that takes no focus, or the window was left): decide
-    // once focus has settled.
-    setTimeout(stillEditing, 0);
+    if (open() && !e.relatedTarget) setTimeout(stillEditing, 0);
   };
 
   ta.addEventListener('beforeinput', onBeforeInput);
   ta.addEventListener('compositionend', onCompositionEnd);
   ta.addEventListener('input', onInput);
-  ta.addEventListener('focusout', onFocusOut);
+  document.addEventListener('focusin', onFocusIn);
+  document.addEventListener('focusout', onFocusOut);
 
   const field: TextField = {
     open(value, caret) {
@@ -116,7 +117,8 @@ export function bindTextField(ta: HTMLTextAreaElement, hooks: FieldHooks): { fie
       ta.removeEventListener('beforeinput', onBeforeInput);
       ta.removeEventListener('compositionend', onCompositionEnd);
       ta.removeEventListener('input', onInput);
-      ta.removeEventListener('focusout', onFocusOut);
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
     },
   };
 }

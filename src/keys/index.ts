@@ -126,6 +126,7 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
   // F-005.R2 / RULE-19: while a text is edited only Esc (and Mod+S, F-012) keep their meaning; every
   // other key edits the text as in any text field, and undo/redo act within it.
   if (scope.focus === 'textAnnotation') {
+    // TODO(F-012): Mod+S downloads while a text is edited (RULE-19); tests/unit/keys.text.test.ts has it pending.
     return !key.mod && !key.alt && key.key === 'Escape' ? act('edit', 'escape') : NONE;
   }
   if (scope.focus === 'text' || scope.focus === 'dialog') return NONE;

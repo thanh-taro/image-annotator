@@ -496,6 +496,99 @@ test.describe('F-005 add text', () => {
     await expect(summary(page)).toHaveText(count(1));
   });
 
+  test('F-005.R3 RULE-19 with focus moved from the text into the style panel, focus going on ends the edit', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'WebKit’s default Tab order skips the panel’s radio buttons');
+    await open(page);
+    await startText(page, 200, 150);
+    await page.keyboard.type('Bug');
+    await page.keyboard.press('Shift+Tab'); // into the panel: the edit stays open
+    await expect(page.getByRole('complementary', { name: 'Style' }).locator(':focus')).toHaveCount(1);
+    await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+    // On through the panel's groups to the toolbar: the edit ends there, the text is kept.
+    const panelFocus = page.getByRole('complementary', { name: 'Style' }).locator(':focus');
+    for (let i = 0; i < 4 && (await panelFocus.count()) > 0; i++) {
+      await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+      await page.keyboard.press('Shift+Tab');
+    }
+    await expect(page.getByRole('toolbar', { name: 'Tools and actions' }).locator(':focus')).toHaveCount(1);
+    await expect(editor(page)).toBeHidden();
+    await expect(summary(page)).toHaveText(count(1));
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    // The canvas is a Tab stop again.
+    await expect(workArea(page)).toHaveAttribute('tabindex', '0');
+  });
+
+  test('F-005.R3 RULE-19 Esc with focus in the style panel ends the edit and returns focus to the canvas', async ({
+    page,
+  }) => {
+    await open(page);
+    await startText(page, 200, 150);
+    await page.keyboard.type('Bug');
+    await page.getByRole('complementary', { name: 'Style' }).getByRole('radio', { name: 'Blue', exact: true }).focus();
+    await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+    await page.keyboard.press('Escape');
+    await expect(editor(page)).toBeHidden();
+    await expect(summary(page)).toHaveText(count(1));
+    await expect(workArea(page)).toBeFocused();
+    await expect(workArea(page)).toHaveAttribute('tabindex', '0');
+  });
+
+  test('F-005.AC16 with the text tool a click outside the canvas creates nothing and edits nothing', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Text (T)').click();
+    // At 100 % the 1000 px image is centred in the 1200 px work area: x < 0 is the surround.
+    await clickImage(page, -50, 300);
+    await clickImage(page, 1050, 300);
+    await expect(editor(page)).toBeHidden();
+    await expect(summary(page)).toHaveText(count(0));
+    await expect(state(page)).toHaveAttribute('data-state', 'default');
+  });
+
+  test('F-005.AC15 a clipboard paste of decomposed "Đường" is kept composed, as 5 characters', async ({
+    page,
+    browserName,
+    context,
+  }) => {
+    test.skip(browserName !== 'chromium', 'a real clipboard paste is automated on Chromium only');
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await open(page);
+    await startText(page, 200, 150);
+    await page.evaluate((s) => navigator.clipboard.writeText(s), '\u0110u\u031bo\u031b\u0300ng');
+    await page.keyboard.press('ControlOrMeta+V');
+    await expect(editor(page)).toHaveValue('Đường');
+    expect(await editor(page).evaluate((el) => Array.from((el as HTMLTextAreaElement).value).length)).toBe(5);
+  });
+
+  test('ADR-0009 §3 ADR-0020 input-method text is composed (NFC) and kept within 2,000 at compositionend', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName !== 'chromium',
+      'input methods are automated through CDP on Chromium only (WebKit: manual QA)',
+    );
+    await open(page);
+    await startText(page, 200, 150);
+    const cdp = await page.context().newCDPSession(page);
+    const compose = async (text: string) => {
+      await cdp.send('Input.imeSetComposition', { text, selectionStart: text.length, selectionEnd: text.length });
+      await cdp.send('Input.insertText', { text });
+    };
+    await compose('Tie\u0302\u0301');
+    await expect(editor(page)).toHaveValue('Tiế');
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.insertText('a'.repeat(1999));
+    await compose('xyz');
+    const value = await editor(page).evaluate((el) => (el as HTMLTextAreaElement).value);
+    expect(Array.from(value)).toHaveLength(2000);
+    expect(value.endsWith('ax')).toBe(true);
+  });
+
   // Export (F-012) is not built: these turn on with it.
   test.fixme('F-005.AC6 white text on a white area exports with a black outline at least 1 pixel wide (needs F-012)', async () => {});
   test.fixme('F-005.AC7 an exported text matches the 100 % view in position, line breaks and size within 2 pixels (needs F-012)', async () => {});

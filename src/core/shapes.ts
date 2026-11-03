@@ -6,7 +6,8 @@
 // or simplification: the specs ask for neither). Pure; coordinates are image pixels.
 // Implements: F-003.R1/R2/R4/R5, F-004.R1/R3/R4, RULE-04 (highlight width), RULE-05 (default size, dots),
 // RULE-06 (constrain), ADR-0004 §3, F-006.R1 (step badges hit as filled), F-008.R3 (steps and text have
-// no handles), RULE-08 (a text's box fits its content; it needs a TextMeasure, ADR-0020).
+// no handles), RULE-08 (a text's box fits its content). MOD-Core: `hitTest`, `hitTopmost` and `boundsOf`
+// take a required TextMeasure (text widths are measured by the caller in the tool's face, ADR-0020).
 // Spec gap (reported with F-003's review): MOD-Core's public surface lists `hitTest(annotation, point,
 // tolerance)`, `boundsOf(annotation)`, `constrain(drag, kind)` and `defaultAnnotationAt(point, kind,
 // sizes)`. Here stroke widths need the image's shorter side (RULE-04), so they take `shortSide`, and
@@ -238,17 +239,11 @@ export function shapeBox(a: Annotation): Box {
   throw new Error(`shapeBox: ${a.kind} arrives with its feature`);
 }
 
-/** A text's box needs its lines measured in the tool's face (MOD-Core has no DOM, ADR-0020). */
-function needMeasure(measure: TextMeasure | undefined): TextMeasure {
-  if (!measure) throw new Error('text geometry needs a TextMeasure');
-  return measure;
-}
-
 /**
  * The box covering a shape's visible mark, including its stroke and arrowhead. A text's is its box
  * (RULE-08, ADR-0020), measured with `measure`.
  */
-export function boundsOf(a: Annotation, shortSide: number, measure?: TextMeasure): Box {
+export function boundsOf(a: Annotation, shortSide: number, measure: TextMeasure): Box {
   const stroke = strokePixels(a.style, shortSide);
   const hw = stroke / 2;
   if (isBoxAnnotation(a)) {
@@ -271,7 +266,7 @@ export function boundsOf(a: Annotation, shortSide: number, measure?: TextMeasure
     return { x: b.x - reach, y: b.y - reach, width: b.width + 2 * reach, height: b.height + 2 * reach };
   }
   if (isStepAnnotation(a)) return stepBox(a, shortSide);
-  if (isTextAnnotation(a)) return textLayout(a, shortSide, needMeasure(measure)).box;
+  if (isTextAnnotation(a)) return textLayout(a, shortSide, measure).box;
   throw new Error(`boundsOf: ${(a as Annotation).kind} arrives with its feature`);
 }
 
@@ -382,10 +377,10 @@ function inTriangle(p: Point, [a, b, c]: readonly [Point, Point, Point]): boolea
  * True when `p` hits the visible mark of `a`, within `tolerance` image pixels (CMP-Canvas: the caller
  * passes HIT_TOLERANCE_PX / zoom, so it grows when zoomed out). Filled shapes hit inside too.
  */
-export function hitTest(a: Annotation, p: Point, tolerance: number, shortSide: number, measure?: TextMeasure): boolean {
+export function hitTest(a: Annotation, p: Point, tolerance: number, shortSide: number, measure: TextMeasure): boolean {
   // F-005: a text is hit anywhere on its box.
-  if (isTextAnnotation(a)) return hitsText(a, p, tolerance, shortSide, needMeasure(measure));
-  const bb = boundsOf(a, shortSide);
+  if (isTextAnnotation(a)) return hitsText(a, p, tolerance, shortSide, measure);
+  const bb = boundsOf(a, shortSide, measure);
   if (p.x < bb.x - tolerance || p.y < bb.y - tolerance) return false;
   if (p.x > bb.x + bb.width + tolerance || p.y > bb.y + bb.height + tolerance) return false;
   const stroke = strokePixels(a.style, shortSide);
@@ -434,7 +429,7 @@ export function hitTopmost(
   p: Point,
   tolerance: number,
   shortSide: number,
-  measure?: TextMeasure,
+  measure: TextMeasure,
 ): Annotation | undefined {
   for (let i = list.length - 1; i >= 0; i--) {
     const a = list[i] as Annotation;

@@ -16,6 +16,9 @@ import {
   type Point,
 } from '../../src/core';
 
+/** These kinds need no text measuring (only text does, ADR-0020). */
+const noMeasure = (): number => 0;
+
 const S = 800; // the shorter side of a 1000 × 800 image: stroke M = 5, L = 10, highlight L = 30
 const pen = DEFAULT_STYLES.pen;
 const marker = DEFAULT_STYLES.highlight;
@@ -134,11 +137,11 @@ describe('MOD-Core strokes and highlights', () => {
   });
 
   it('ADR-0004 §3 a pen stroke’s bounds are its points’ box grown by half the stroke (round caps)', () => {
-    expect(boundsOf(stroke(zigzag), S)).toEqual({ x: 97.5, y: 97.5, width: 205, height: 105 });
+    expect(boundsOf(stroke(zigzag), S, noMeasure)).toEqual({ x: 97.5, y: 97.5, width: 205, height: 105 });
   });
 
   it('ADR-0004 §3 a highlight’s bounds also cover the corners of its square ends', () => {
-    const b = boundsOf(highlight(zigzag), S);
+    const b = boundsOf(highlight(zigzag), S, noMeasure);
     const reach = 15 * Math.SQRT2;
     expect(b.x).toBeCloseTo(100 - reach, 9);
     expect(b.y).toBeCloseTo(100 - reach, 9);
@@ -149,19 +152,19 @@ describe('MOD-Core strokes and highlights', () => {
   it('ADR-0004 §3 CMP-Canvas a press hits the visible mark of a stroke within the tolerance, not its box', () => {
     const a = stroke(zigzag);
     // On the curve near the first sample, and on the midpoint between two samples (on the curve).
-    expect(hitTest(a, { x: 101, y: 102 }, 0, S)).toBe(true);
-    expect(hitTest(a, { x: 175, y: 150 }, 0, S)).toBe(true);
+    expect(hitTest(a, { x: 101, y: 102 }, 0, S, noMeasure)).toBe(true);
+    expect(hitTest(a, { x: 175, y: 150 }, 0, S, noMeasure)).toBe(true);
     // Inside the box but between the zig-zag's teeth: a miss, unless the tolerance reaches it.
-    expect(hitTest(a, { x: 150, y: 120 }, 0, S)).toBe(false);
-    expect(hitTest(a, { x: 200, y: 180 }, 0, S)).toBe(false);
+    expect(hitTest(a, { x: 150, y: 120 }, 0, S, noMeasure)).toBe(false);
+    expect(hitTest(a, { x: 200, y: 180 }, 0, S, noMeasure)).toBe(false);
     // Half the stroke (2.5) plus the tolerance from the midpoint (175, 150) along its normal: the curve's
     // tangent there runs from (150, 200) to (200, 100), so the normal is (2, 1) / √5.
     const n = { x: 2 / Math.sqrt(5), y: 1 / Math.sqrt(5) };
     const off = (d: number) => ({ x: 175 + n.x * d, y: 150 + n.y * d });
-    expect(hitTest(a, off(2.4), 0, S)).toBe(true);
-    expect(hitTest(a, off(2.6), 0, S)).toBe(false);
-    expect(hitTest(a, off(8.4), 6, S)).toBe(true);
-    expect(hitTest(a, off(8.6), 6, S)).toBe(false);
+    expect(hitTest(a, off(2.4), 0, S, noMeasure)).toBe(true);
+    expect(hitTest(a, off(2.6), 0, S, noMeasure)).toBe(false);
+    expect(hitTest(a, off(8.4), 6, S, noMeasure)).toBe(true);
+    expect(hitTest(a, off(8.6), 6, S, noMeasure)).toBe(false);
   });
 
   it('ADR-0004 §3 a highlight hits within half its wide mark; a dot hits around its point', () => {
@@ -169,12 +172,12 @@ describe('MOD-Core strokes and highlights', () => {
       { x: 100, y: 100 },
       { x: 400, y: 100 },
     ]);
-    expect(hitTest(h, { x: 250, y: 114 }, 0, S)).toBe(true);
-    expect(hitTest(h, { x: 250, y: 116 }, 0, S)).toBe(false);
+    expect(hitTest(h, { x: 250, y: 114 }, 0, S, noMeasure)).toBe(true);
+    expect(hitTest(h, { x: 250, y: 116 }, 0, S, noMeasure)).toBe(false);
     const dot = stroke([{ x: 50, y: 50 }]);
-    expect(hitTest(dot, { x: 52, y: 51 }, 0, S)).toBe(true);
-    expect(hitTest(dot, { x: 50, y: 60 }, 0, S)).toBe(false);
-    expect(hitTest(dot, { x: 50, y: 60 }, 8, S)).toBe(true);
+    expect(hitTest(dot, { x: 52, y: 51 }, 0, S, noMeasure)).toBe(true);
+    expect(hitTest(dot, { x: 50, y: 60 }, 0, S, noMeasure)).toBe(false);
+    expect(hitTest(dot, { x: 50, y: 60 }, 8, S, noMeasure)).toBe(true);
   });
 
   it('F-004.AC4 RULE-09 a Shift highlight that ends back at its press point is a dot, not an empty run', () => {
@@ -192,10 +195,10 @@ describe('MOD-Core strokes and highlights', () => {
       { x: 400, y: 100 },
     ]);
     // Half the width is 15: the square end runs to x = 85 and covers its corner (86, 114).
-    expect(hitTest(h, { x: 86, y: 114 }, 0, S)).toBe(true);
-    expect(hitTest(h, { x: 414, y: 86 }, 0, S)).toBe(true);
-    expect(hitTest(h, { x: 84, y: 114 }, 0, S)).toBe(false);
-    expect(hitTest(h, { x: 84, y: 116 }, 2, S)).toBe(true); // the tolerance grows the square
+    expect(hitTest(h, { x: 86, y: 114 }, 0, S, noMeasure)).toBe(true);
+    expect(hitTest(h, { x: 414, y: 86 }, 0, S, noMeasure)).toBe(true);
+    expect(hitTest(h, { x: 84, y: 114 }, 0, S, noMeasure)).toBe(false);
+    expect(hitTest(h, { x: 84, y: 116 }, 2, S, noMeasure)).toBe(true); // the tolerance grows the square
     // A diagonal highlight's end square is turned with its run.
     const d = highlight([
       { x: 100, y: 100 },
@@ -203,11 +206,11 @@ describe('MOD-Core strokes and highlights', () => {
     ]);
     const u = Math.SQRT1_2;
     const corner = { x: 100 - 14 * u + 14 * u, y: 100 - 14 * u - 14 * u }; // back 14 along, 14 across
-    expect(hitTest(d, corner, 0, S)).toBe(true);
+    expect(hitTest(d, corner, 0, S, noMeasure)).toBe(true);
     const dot = highlight([{ x: 50, y: 50 }]);
-    expect(hitTest(dot, { x: 64, y: 36 }, 0, S)).toBe(true);
-    expect(hitTest(dot, { x: 66, y: 50 }, 0, S)).toBe(false);
+    expect(hitTest(dot, { x: 64, y: 36 }, 0, S, noMeasure)).toBe(true);
+    expect(hitTest(dot, { x: 66, y: 50 }, 0, S, noMeasure)).toBe(false);
     // The pen's ends stay round.
-    expect(hitTest(stroke([{ x: 50, y: 50 }]), { x: 52.3, y: 52.3 }, 0, S)).toBe(false);
+    expect(hitTest(stroke([{ x: 50, y: 50 }]), { x: 52.3, y: 52.3 }, 0, S, noMeasure)).toBe(false);
   });
 });

@@ -20,6 +20,7 @@ import { t } from '../copy';
 import {
   canvasRect,
   CRISP_ZOOM,
+  EDITOR_CARET_ROOM_PX,
   DEFAULT_STYLES,
   EDITOR_EXTRA_EM,
   HIT_TOLERANCE_PX,
@@ -139,9 +140,6 @@ function overlayLook(el: Element, dpr: number): OverlayLook {
 
 /** Finished blur/pixelate patches (MOD-Effects, F-007); none yet. */
 const NO_PATCHES: Patches = new Map();
-
-/** SP-text: the field is this much wider than its text, so the caret after the last letter never scrolls it. */
-const CARET_ROOM_PX = 2;
 
 /** The document with the edited text in it: replacing the existing one, or a new one on top (F-005.R2). */
 function withText(scene: Doc, text: TextAnnotation | null, isNew: boolean): Doc {
@@ -269,6 +267,7 @@ export function Canvas({
         style: current,
         shortSide: Math.min(img.width, img.height),
         annotations: scene.annotations,
+        canvas: canvasRect(scene.frame, scene.padding.size),
         measure: measureLine,
         tolerance: HIT_TOLERANCE_PX / (now.zoom / 100),
         toImage: (p: Point) => toImage(now, p),
@@ -295,7 +294,7 @@ export function Canvas({
       s.top = `${Math.round(v.y * ratio) / ratio + a.anchor.y * z - top}px`;
       s.font = textFont(L.size * z);
       s.lineHeight = `${L.lineHeight * z}px`;
-      s.width = `${Math.ceil(width) + CARET_ROOM_PX}px`;
+      s.width = `${Math.ceil(width) + EDITOR_CARET_ROOM_PX}px`;
       // ADR-0020: 0.2 em taller than the lines, so the field never scrolls inside.
       s.height = `${L.lines.length * L.lineHeight * z + Math.ceil(EDITOR_EXTRA_EM * L.size * z)}px`;
       s.setProperty('--tk-text-colour', paletteColour(a.style.color));
@@ -503,6 +502,8 @@ export function Canvas({
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     el.addEventListener('wheel', onWheel, { passive: false });
+    // F-002.R3 over the text being edited too: the field sits above the canvas (F-005 review m2).
+    ta.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('pointerdown', onPointerDown);
     el.addEventListener('pointermove', onPointerMove);
     el.addEventListener('pointerup', onPointerEnd);
@@ -517,6 +518,7 @@ export function Canvas({
       observer.disconnect();
       media?.removeEventListener('change', onDpr);
       el.removeEventListener('wheel', onWheel);
+      ta.removeEventListener('wheel', onWheel);
       el.removeEventListener('pointerdown', onPointerDown);
       el.removeEventListener('pointermove', onPointerMove);
       el.removeEventListener('pointerup', onPointerEnd);

@@ -39,6 +39,11 @@ export const ASCENT_EM = 1.066;
 export const DESCENT_EM = 0.3;
 /** ADR-0020: the editing field is this many em taller than the lines, so it never scrolls. */
 export const EDITOR_EXTRA_EM = 0.2;
+/**
+ * SP-text (ADR-0020): the editing field is this many CSS pixels wider than its text, so a caret after the
+ * last letter never scrolls it (a measurement of the spike, not a design value).
+ */
+export const EDITOR_CARET_ROOM_PX = 2;
 /** RULE-08: the text outline is max(1, 0.08 × text size) pixels wide. */
 export const TEXT_OUTLINE_FACTOR = 0.08;
 export const TEXT_OUTLINE_MIN = 1;

@@ -11,7 +11,7 @@ import { isEditing } from '../io';
 import { resolveKey, type Scope } from '../keys';
 import { editSelectedText, escape, placeAtCentre, setTool } from './drawing';
 import { isMac } from './platform';
-import { dialog, doc, selection, tool } from './state';
+import { dialog, doc, selection, textEditing, tool } from './state';
 
 /** Where focus is, for RULE-19's scope. The canvas region is the work area while an image is shown. */
 function focusScope(e: KeyboardEvent): Scope['focus'] {
@@ -33,6 +33,20 @@ function textSelected(): boolean {
 function onKeyDown(e: KeyboardEvent): void {
   // Keys that compose a character in an input method belong to it (Esc there cancels the composition).
   if (e.defaultPrevented || e.isComposing) return;
+  // F-005.R3 / RULE-19 Esc: with focus moved from the text into CMP-StylePanel, Esc still ends the edit
+  // (the panel closes its narrow sheet first, and stops the key there).
+  if (
+    textEditing.value &&
+    e.key === 'Escape' &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.altKey &&
+    e.target instanceof Element &&
+    e.target.closest('.tk-body__panel')
+  ) {
+    e.preventDefault();
+    return escape();
+  }
   const mod = isMac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
   const resolution = resolveKey(
     { key: e.key, code: e.code, mod, shift: e.shiftKey, alt: e.altKey, mac: isMac },

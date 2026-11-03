@@ -8,7 +8,9 @@
 // Implements: F-005.R1 (a click on empty canvas places a text with its top-left corner at the click and
 // edits it; a click on an existing text edits that text), F-005.R3 (a press outside the text only ends
 // the edit), F-005.R4 (double-click with the select tool, Enter on a selected text), RULE-19 (Enter with
-// the text tool: a text at the centre of the view, editing), ADR-0009 §4 (nothing before the fonts).
+// the text tool: a text at the centre of the view, editing), ADR-0009 §4 (nothing before the fonts),
+// D-030 / F-005.AC16 (a text-tool click outside the canvas does nothing), CMP-Canvas "Behavior" (two
+// fingers pan and zoom: a touch ends the edit only when it is released as a one-finger tap).
 import {
   caretIndexAt,
   DEFAULT_STYLES,
@@ -16,6 +18,7 @@ import {
   isTextAnnotation,
   textAt,
   type Annotation,
+  type Box,
   type Point,
   type Style,
   type TextAnnotation,
@@ -32,6 +35,8 @@ export interface TextSetup {
   readonly style: Style;
   readonly shortSide: number;
   readonly annotations: readonly Annotation[];
+  /** The canvas (frame plus padding, RULE-14) in image pixels: D-030, clicks outside it do nothing. */
+  readonly canvas: Box;
   readonly measure: TextMeasure;
   /** CMP-Canvas: the hit tolerance in image pixels (HIT_TOLERANCE_PX / zoom). */
   readonly tolerance: number;
@@ -68,6 +73,8 @@ export class TextTool implements ToolInput {
   private press: { readonly id: number; readonly point: Point } | null = null;
   /** The press that ended an edit: its release does nothing more (F-005.AC10). */
   private swallowed: number | null = null;
+  /** A touch while editing: it ends the edit on release, unless a second finger turns it into a pinch. */
+  private endingTouch: number | null = null;
 
   constructor(
     private readonly setup: () => TextSetup | null,
@@ -96,8 +103,11 @@ export class TextTool implements ToolInput {
   down(input: PointerInput): boolean {
     // F-005.R3 / AC10: a press anywhere on the canvas while editing only ends the edit.
     if (this.edit) {
-      this.end('press');
-      this.swallowed = input.id;
+      if (input.type === 'touch') this.endingTouch = input.id;
+      else {
+        this.end('press');
+        this.swallowed = input.id;
+      }
       return true;
     }
     if (input.button !== 0 || !this.fonts.ready) return false;
@@ -112,6 +122,11 @@ export class TextTool implements ToolInput {
   }
 
   up(input: PointerInput): void {
+    if (this.endingTouch === input.id) {
+      this.endingTouch = null;
+      this.end('press');
+      return;
+    }
     if (this.swallowed === input.id) {
       this.swallowed = null;
       return;
@@ -122,6 +137,8 @@ export class TextTool implements ToolInput {
     const s = this.setup();
     if (!s || s.tool !== 'text') return;
     const p = s.toImage(press.point);
+    // D-030 / F-005.AC16: a click outside the canvas (in the surround) does nothing.
+    if (!inside(p, s.canvas)) return;
     // F-005.R1 / AC11: a click on an existing text edits it (caret where clicked); else a new text there.
     const hit = this.textAt(s, p);
     if (hit) this.begin(hit, hit.anchor, caretIndexAt(hit, p, s.shortSide, s.measure));
@@ -130,8 +147,9 @@ export class TextTool implements ToolInput {
 
   /** The gesture ends with no result (a second finger, pointercancel). An open edit stays open. */
   cancel(): boolean {
-    const had = this.press !== null;
+    const had = this.press !== null || this.endingTouch !== null;
     this.press = null;
+    this.endingTouch = null;
     return had;
   }
 
@@ -190,3 +208,5 @@ export class TextTool implements ToolInput {
     return undefined;
   }
 }
+
+const inside = (p: Point, b: Box): boolean => p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;

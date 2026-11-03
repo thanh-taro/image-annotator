@@ -43,6 +43,8 @@ describe('MOD-Keys text editing (RULE-19)', () => {
       expect(resolveKey(k, editing), k.key).toEqual({ preventDefault: false });
   });
 
+  it.todo('RULE-19 while a text is edited Mod+S still downloads (F-012)');
+
   it('F-005.AC13 RULE-19 T picks the text tool; Enter with it places (starts a text at the centre)', () => {
     expect(named(key({ key: 't', code: 'KeyT' }))).toBe('tool:text');
     expect(named(key({ key: 'Enter', code: 'Enter' }), scope({ tool: 'text' }))).toBe('canvas:place');

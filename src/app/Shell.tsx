@@ -36,6 +36,7 @@ import {
   type Layout,
 } from './state';
 import { isDrawingTool } from '../core';
+import { isEditing } from '../io';
 
 /** D-014 layout widths, measured on the tool's own width (the frame when embedded). */
 const layoutOf = (width: number): Layout => (width >= 1000 ? 'wide' : width >= 800 ? 'compact' : 'narrow');
@@ -48,7 +49,8 @@ const inPanel = (target: Element) => !!target.closest('.tk-body__panel');
  * to the edited text and leaves focus in the field (keyboard users reach the panel with Shift+Tab).
  */
 function keepEditorFocus(e: MouseEvent): void {
-  if (textEditing.value && e.button === 0) e.preventDefault();
+  // Text and number fields in the panel (F-008 position fields) still take focus on a press.
+  if (textEditing.value && e.button === 0 && !isEditing(e.target)) e.preventDefault();
 }
 
 function screenState(): string {

@@ -20,6 +20,9 @@ import {
   type Style,
 } from '../../src/core';
 
+/** These kinds need no text measuring (only text does, ADR-0020). */
+const noMeasure = (): number => 0;
+
 const red: Style = DEFAULT_STYLES.rectangle;
 const S = 800; // the shorter side of a 1000 × 800 image
 
@@ -80,8 +83,8 @@ describe('MOD-Core shapes', () => {
     const half = strokePixels(red, S) / 2;
     for (const zoom of [0.1, 8]) {
       const tol = HIT_TOLERANCE_PX / zoom;
-      expect(hitTest(line, { x: 200, y: 100 + half + 5 / zoom }, tol, S)).toBe(true);
-      expect(hitTest(line, { x: 200, y: 100 + half + 8 / zoom }, tol, S)).toBe(false);
+      expect(hitTest(line, { x: 200, y: 100 + half + 5 / zoom }, tol, S, noMeasure)).toBe(true);
+      expect(hitTest(line, { x: 200, y: 100 + half + 8 / zoom }, tol, S, noMeasure)).toBe(false);
     }
   });
 
@@ -89,15 +92,15 @@ describe('MOD-Core shapes', () => {
     const box = { x: 100, y: 100, width: 200, height: 100 };
     const outline: Annotation = { id: 'r', kind: 'rectangle', style: red, box };
     const filled: Annotation = { ...outline, style: { ...red, fill: 'translucent' } };
-    expect(hitTest(outline, { x: 200, y: 150 }, 1, S)).toBe(false);
-    expect(hitTest(outline, { x: 101, y: 150 }, 1, S)).toBe(true);
-    expect(hitTest(filled, { x: 200, y: 150 }, 1, S)).toBe(true);
+    expect(hitTest(outline, { x: 200, y: 150 }, 1, S, noMeasure)).toBe(false);
+    expect(hitTest(outline, { x: 101, y: 150 }, 1, S, noMeasure)).toBe(true);
+    expect(hitTest(filled, { x: 200, y: 150 }, 1, S, noMeasure)).toBe(true);
     const ellipse: Annotation = { id: 'e', kind: 'ellipse', style: red, box };
-    expect(hitTest(ellipse, { x: 100, y: 150 }, 1, S)).toBe(true);
-    expect(hitTest(ellipse, { x: 102, y: 102 }, 1, S)).toBe(false);
+    expect(hitTest(ellipse, { x: 100, y: 150 }, 1, S, noMeasure)).toBe(true);
+    expect(hitTest(ellipse, { x: 102, y: 102 }, 1, S, noMeasure)).toBe(false);
     const arrow: Annotation = { id: 'a', kind: 'arrow', style: red, tail: { x: 0, y: 0 }, head: { x: 100, y: 0 } };
-    expect(hitTest(arrow, { x: 85, y: 6 }, 0.5, S)).toBe(true); // inside the 15 px wide head
-    expect(boundsOf(arrow, S).height).toBeCloseTo(15 + 5); // the head plus half the stroke on each side
+    expect(hitTest(arrow, { x: 85, y: 6 }, 0.5, S, noMeasure)).toBe(true); // inside the 15 px wide head
+    expect(boundsOf(arrow, S, noMeasure).height).toBeCloseTo(15 + 5); // the head plus half the stroke on each side
   });
 
   it('F-008.R3 handles: eight on a box, end points on a line; Shift resize keeps the aspect ratio (RULE-06)', () => {
