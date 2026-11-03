@@ -54,7 +54,7 @@
     "build": {
       "title": "4 Implementation",
       "status": "in_progress",
-      "step": "4 wave 3: F-004 built, in review round 1",
+      "step": "4 wave 3: F-006 building",
       "gate": {
         "status": "pending",
         "at": null,
@@ -526,6 +526,21 @@
       "answer": "accept: documented known gap for M-1; revisit after launch",
       "asked": "2026-11-02T08:15:54+00:00",
       "answered": "2026-11-02T08:16:10+00:00"
+    },
+    {
+      "id": "D-029",
+      "question": "Step badges: thin contrast outline, or none?",
+      "options": [
+        "outline",
+        "none"
+      ],
+      "recommendation": "outline",
+      "kind": "design",
+      "phase": "build",
+      "status": "answered",
+      "answer": "none: badges as designed (owner)",
+      "asked": "2026-11-03T11:59:57+00:00",
+      "answered": "2026-11-03T11:59:57+00:00"
     }
   ],
   "loops": {
@@ -571,22 +586,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-10-27T04:28:10+00:00",
-      "event": "set autonomy"
-    },
-    {
-      "at": "2026-10-27T04:28:10+00:00",
-      "event": "set environment"
-    },
-    {
-      "at": "2026-10-27T04:28:10+00:00",
-      "event": "set idea"
-    },
-    {
-      "at": "2026-10-27T04:28:11+00:00",
-      "event": "setup step: setup: G0 checks"
-    },
     {
       "at": "2026-10-27T04:28:20+00:00",
       "event": "phase setup -> gate"
@@ -1370,9 +1369,25 @@
     {
       "at": "2026-11-03T07:35:09+00:00",
       "event": "build step: 4 wave 3: F-004 built, in review round 1"
+    },
+    {
+      "at": "2026-11-03T11:39:45+00:00",
+      "event": "F-004 merged and shipped; stray preview server from the finished builder blocked the e2e port once (killed)"
+    },
+    {
+      "at": "2026-11-03T11:39:46+00:00",
+      "event": "build step: 4 wave 3: F-006 building"
+    },
+    {
+      "at": "2026-11-03T11:59:57+00:00",
+      "event": "decision D-029 opened: Step badges: thin contrast outline, or none?"
+    },
+    {
+      "at": "2026-11-03T11:59:57+00:00",
+      "event": "decision D-029 answered: none: badges as designed (owner)"
     }
   ],
-  "updated": "2026-11-03T07:35:09+00:00",
+  "updated": "2026-11-03T11:59:57+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

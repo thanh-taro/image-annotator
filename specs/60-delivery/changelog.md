@@ -58,3 +58,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-004 gaps: RULE-09 highlight ends are square and a Shift highlight is a straight run; MOD-Core stores stroke points as sampled.
 - F-006 gaps: RULE-07 pill width; a press that moves with the step tool places one step at the press point.
 - RULE-07: step badges have no outline (D-029, owner; ADR-0009's "outline rules (RULE-07)" therefore means none).
+- F-006 review: RULE-07 numbers several duplicated steps in drawing order.
