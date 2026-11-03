@@ -20,7 +20,7 @@ function cssPx(el: Element, name: string): number {
   return parseFloat(getComputedStyle(el).getPropertyValue(name)) || 0;
 }
 
-/** RULE-12 fit: the canvas (frame plus padding) centred in the view, inside the view margin. */
+/** RULE-12 fit: the canvas (frame plus padding) centred in the view; style.md "Work area": Fit leaves space.6. */
 export function fitTransform(
   doc: Doc,
   view: { width: number; height: number },

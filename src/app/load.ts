@@ -52,6 +52,7 @@ export function refusalNotice(code: Exclude<Refusal, 'too_large'>): Notice {
 export const noImageNotice: Notice = error('load.no_image_in_clipboard', () => t('load.no_image_in_clipboard'));
 
 const loadingNotice: Notice = { kind: 'progress', id: 'load.loading', text: () => t('load.loading') };
+/** CMP-Notice: COPY-load.first_only is a success notice. */
 const firstOnlyNotice: Notice = { kind: 'success', id: 'load.first_only', text: () => t('load.first_only') };
 
 /** Runs `work`, showing COPY-load.loading if it takes longer than 0.5 s and clearing it after. */

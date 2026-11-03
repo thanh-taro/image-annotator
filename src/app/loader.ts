@@ -100,13 +100,13 @@ export function startLoader(): () => void {
   void probeAvif();
   const stop = onImageInput({
     file(input) {
-      // Input that arrives while a dialog is open or a load is running is ignored (RULE-19: a dialog
-      // makes the rest of the tool inert).
+      // F-001 edge case: input that arrives while an image is loading or a dialog is open is ignored.
       if (busy || dialog.value) return;
       void run(input);
     },
     noImage(via) {
       if (busy || dialog.value) return;
+      // F-001 edge case: a drop that holds no files (only folders) is refused as unsupported.
       setNotice(via === 'paste' ? noImageNotice : refusalNotice('unsupported_format'));
     },
     dragging(active) {

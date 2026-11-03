@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, type Page } from '@playwright/test';
+import { expect, type Frame, type Page } from '@playwright/test';
 
 const FIXTURES = fileURLToPath(new URL('../../fixtures/', import.meta.url));
 
@@ -33,7 +33,7 @@ export interface BigSpec {
 type AnySpec = FileSpec | BigSpec;
 
 /** Dispatches a `paste` event at the focused element with these files and string items. */
-export async function paste(page: Page, files: AnySpec[], strings: Record<string, string> = {}): Promise<void> {
+export async function paste(page: Page | Frame, files: AnySpec[], strings: Record<string, string> = {}): Promise<void> {
   await page.evaluate(
     ({ files, strings }) => {
       const dt = new DataTransfer();
