@@ -2,8 +2,8 @@
 // (specs/40-technical/modules/MOD-Core.md). Pure, synchronous, dependency-free: usable on the main
 // thread and in the effects worker; no DOM, clock or language. Results carry codes and numbers.
 // Types, constants, size tables, the format sniff (F-001), the canvas/fit maths and the view maths
-// (F-002) are real; the rest throws until its feature is built (phase 4).
-import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize, Point } from './types';
+// (F-002), the tools and shape geometry (F-003) are real; the rest throws until its feature is built.
+import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize } from './types';
 
 export * from './types';
 export * from './limits';
@@ -13,6 +13,8 @@ export * from './format';
 export * from './canvas';
 export * from './header';
 export * from './view';
+export * from './tools';
+export * from './shapes';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Core ${name}`);
@@ -33,25 +35,8 @@ export function stepDownPadding(_frame: Frame, _padding: Padding): Padding {
   return notImplemented('stepDownPadding');
 }
 
-/** F-003.R2: analytic hit-test with a tolerance in image pixels. */
-export function hitTest(_annotation: Annotation, _point: Point, _tolerance: number): boolean {
-  return notImplemented('hitTest');
-}
-export function boundsOf(_annotation: Annotation): Box {
-  return notImplemented('boundsOf');
-}
 export function marqueeHits(_annotations: readonly Annotation[], _box: Box): readonly string[] {
   return notImplemented('marqueeHits');
-}
-
-/** RULE-06 constraint of a drag (Shift held). */
-export function constrain(_from: Point, _to: Point, _kind: Annotation['kind']): Point {
-  return notImplemented('constrain');
-}
-
-/** RULE-05 default annotation for a click. */
-export function defaultAnnotationAt(_point: Point, _kind: Annotation['kind'], _shortSide: number): Annotation {
-  return notImplemented('defaultAnnotationAt');
 }
 
 /** INV-02: the redaction box extended outward to whole pixels. */

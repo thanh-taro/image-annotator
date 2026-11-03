@@ -1,8 +1,10 @@
-// MOD-App — SCR-Annotator (layout regions 1, 2 and 4; style.md "Regions"). F-001 builds the empty
-// state, the image fitted in the work area, the drop overlay, notices and the confirm dialog; the style
-// panel (region 3) and the status-bar contents arrive with their features.
-// Implements: SCR-Annotator states empty, default (image fitted), dragging-file, loading, error;
-// F-001.R6, F-001.R8; CMP-ConfirmDialog "the rest of the tool is inert".
+// MOD-App — SCR-Annotator (layout regions 1–4; style.md "Regions"). F-001 builds the empty state, the
+// image fitted in the work area, the drop overlay, notices and the confirm dialog; F-003 the tools and
+// the style panel (region 3: docked on the right, or the narrow summary bar and sheet of D-019), which
+// comes before the canvas in reading order (SCR-Annotator "Accessibility").
+// Implements: SCR-Annotator states empty, default (image fitted), selecting, dragging-file, loading,
+// error; F-001.R6, F-001.R8; CMP-ConfirmDialog "the rest of the tool is inert"; D-014 layout widths.
+import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
 import { Canvas } from '../canvas';
 import { theme } from '../host';
@@ -11,15 +13,36 @@ import { DropOverlay } from './DropOverlay';
 import { EmptyState } from './EmptyState';
 import { NoticeView } from './NoticeView';
 import { PrivacyStatus } from './PrivacyStatus'; // F-016
+import { createAnnotation } from './drawing';
+import { StylePanel } from './StylePanel';
 import { Toolbar } from './Toolbar';
 import { ZoomControl } from './ZoomControl';
-import { assertive, dialog, doc, dragging, loaded, notice, polite, view } from './state';
+import {
+  assertive,
+  currentStyles,
+  dialog,
+  doc,
+  dragging,
+  layout,
+  loaded,
+  notice,
+  polite,
+  selection,
+  tool,
+  view,
+  type Layout,
+} from './state';
+import { isDrawingTool } from '../core';
+
+/** D-014 layout widths, measured on the tool's own width (the frame when embedded). */
+const layoutOf = (width: number): Layout => (width >= 1000 ? 'wide' : width >= 800 ? 'compact' : 'narrow');
 
 function screenState(): string {
   if (dialog.value) return dialog.value.kind === 'replace' ? 'confirm-replace' : 'confirm-scale-down';
   if (dragging.value) return 'dragging-file';
   if (notice.value?.kind === 'progress') return 'loading';
   if (notice.value?.kind === 'error') return 'error';
+  if (loaded.value && selection.value.length) return 'selecting';
   return loaded.value ? 'default' : 'empty';
 }
 
@@ -29,50 +52,81 @@ export function Shell() {
   const modal = dialog.value;
   const inert = modal ? true : undefined;
   const info = current?.image.info;
+  const active = tool.value;
+  const root = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const measure = () => {
+      const next = layoutOf(el.getBoundingClientRect().width);
+      if (layout.value !== next) layout.value = next;
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   return (
-    <div class="tk-annotator" data-screen="SCR-Annotator" data-state={screenState()}>
+    <div
+      ref={root}
+      class="tk-annotator"
+      data-screen="SCR-Annotator"
+      data-state={screenState()}
+      data-layout={layout.value}
+    >
       <header class="tk-toolbar" inert={inert}>
         <Toolbar />
       </header>
-      <main
-        class="tk-work-area"
-        aria-label={t('a11y.canvas')}
-        aria-describedby={info ? 'tk-canvas-summary' : undefined}
-        // CMP-Canvas: one focusable region while an image is shown (RULE-19 canvas keys, F-002.R4); its
-        // role becomes the annotation list's with F-013.
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- CMP-Canvas "Accessibility"
-        tabIndex={current ? 0 : undefined}
-        inert={inert}
-      >
-        {current && info && scene ? (
-          <>
-            <Canvas
-              image={current.image.bitmap}
-              doc={scene}
-              theme={theme.value}
-              onView={(next) => (view.value = next)}
-            />
-            <span id="tk-canvas-summary" class="tk-sr">
-              {t('a11y.canvas_summary', {
-                width: info.width,
-                height: info.height,
-                count: scene.annotations.length,
-              })}
-            </span>
-          </>
-        ) : (
-          <EmptyState />
+      <div class="tk-body">
+        {current && (
+          <div class="tk-body__panel" inert={inert}>
+            <StylePanel />
+          </div>
         )}
-        {notice.value && <NoticeView notice={notice.value} />}
-        <div class="tk-sr" role="status" aria-live="polite">
-          {polite.value.map((m) => (
-            <div key={m.id}>{m.text}</div>
-          ))}
-        </div>
-        <div class="tk-sr" role="alert">
-          {assertive.value}
-        </div>
-      </main>
+        <main
+          class="tk-work-area"
+          aria-label={t('a11y.canvas')}
+          aria-describedby={info ? 'tk-canvas-summary' : undefined}
+          // CMP-Canvas: one focusable region while an image is shown (RULE-19 canvas keys, F-002.R4); its
+          // role becomes the annotation list's with F-013.
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- CMP-Canvas "Accessibility"
+          tabIndex={current ? 0 : undefined}
+          inert={inert}
+        >
+          {current && info && scene ? (
+            <>
+              <Canvas
+                image={current.image.bitmap}
+                doc={scene}
+                theme={theme.value}
+                onView={(next) => (view.value = next)}
+                tool={active}
+                style={isDrawingTool(active) ? currentStyles.value[active] : undefined}
+                selection={selection.value}
+                onCreate={createAnnotation}
+              />
+              <span id="tk-canvas-summary" class="tk-sr">
+                {t('a11y.canvas_summary', {
+                  width: info.width,
+                  height: info.height,
+                  count: scene.annotations.length,
+                })}
+              </span>
+            </>
+          ) : (
+            <EmptyState />
+          )}
+          {notice.value && <NoticeView notice={notice.value} />}
+          <div class="tk-sr" role="status" aria-live="polite">
+            {polite.value.map((m) => (
+              <div key={m.id}>{m.text}</div>
+            ))}
+          </div>
+          <div class="tk-sr" role="alert">
+            {assertive.value}
+          </div>
+        </main>
+      </div>
       <footer class="tk-status-bar" inert={inert}>
         {/* F-016: privacy statement, details and source link (start of CMP-StatusBar). */}
         <PrivacyStatus />

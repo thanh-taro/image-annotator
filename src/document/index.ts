@@ -1,8 +1,16 @@
 // MOD-Document — immutable session document, edit operations, history, unexported state
 // (specs/40-technical/modules/MOD-Document.md, ADR-0008). Imports MOD-Core only; no DOM.
-// The session, its history and the RULE-18 change epoch are built (F-001); the edit operations throw
-// until F-003…F-011 build them.
-import { HISTORY_STEPS, type Annotation, type Colour, type Frame, type ImageInfo, type PaddingSize } from '../core';
+// The session, its history and the RULE-18 change epoch are built (F-001); `add` and `restyle` (F-003);
+// the other edit operations throw until F-004…F-011 build them.
+import {
+  HISTORY_STEPS,
+  type Annotation,
+  type Colour,
+  type Frame,
+  type ImageInfo,
+  type PaddingSize,
+  type Style,
+} from '../core';
 
 /** The session's editable state: frozen plain objects with structural sharing. */
 export interface Doc {
@@ -20,7 +28,36 @@ const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Document ${name}`);
 };
 
-export const add = (_annotation: Annotation): Op => notImplemented('add');
+const freezeAnnotation = (a: Annotation): Annotation => {
+  const out = { ...a, style: Object.freeze({ ...a.style }) } as Annotation;
+  return Object.freeze(out);
+};
+
+/** F-003: adds an annotation on top (painter's order); every other object is shared (ADR-0008 §1). */
+export const add =
+  (annotation: Annotation): Op =>
+  (doc) =>
+    Object.freeze({ ...doc, annotations: Object.freeze([...doc.annotations, freezeAnnotation(annotation)]) });
+
+/**
+ * RULE-04: changes the style of these annotations (one step for a multi-selection, RULE-11). Only the
+ * fields in `patch` change; an annotation whose style already matches is kept as is, and when nothing
+ * changes the document itself is returned (no step, ADR-0008).
+ */
+export const restyle =
+  (ids: Selection, patch: Partial<Style>): Op =>
+  (doc) => {
+    const wanted = new Set(ids);
+    const keys = Object.keys(patch) as (keyof Style)[];
+    let changed = false;
+    const annotations = doc.annotations.map((a) => {
+      if (!wanted.has(a.id) || keys.every((k) => a.style[k] === patch[k])) return a;
+      changed = true;
+      return freezeAnnotation({ ...a, style: { ...a.style, ...patch } });
+    });
+    return changed ? Object.freeze({ ...doc, annotations: Object.freeze(annotations) }) : doc;
+  };
+
 export const update = (_id: string, _patch: Partial<Annotation>): Op => notImplemented('update');
 export const remove = (_ids: Selection): Op => notImplemented('remove');
 export const duplicate = (_ids: Selection): Op => notImplemented('duplicate');
@@ -60,6 +97,8 @@ export interface Session {
   readonly history: History;
   markExported(): void;
   readonly unexported: boolean;
+  /** A new annotation id, unique within the session (ENT-Annotation `id`); never reused, even after undo. */
+  newId(): string;
 }
 
 interface Step {
@@ -94,6 +133,7 @@ export function startSession(image: ImageInfo): Session {
   let chain: string | undefined; // coalescing key of the top step, while nothing else happened
   let epoch = 0;
   let exportedEpoch = 0;
+  let ids = 0;
 
   const history: History = {
     apply(op, selection, coalesceKey) {
@@ -164,6 +204,10 @@ export function startSession(image: ImageInfo): Session {
     },
     get unexported() {
       return epoch !== exportedEpoch;
+    },
+    newId() {
+      ids++;
+      return `a${ids}`;
     },
   };
 }

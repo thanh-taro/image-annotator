@@ -1,12 +1,16 @@
 // MOD-App — the keyboard adapter for the keys built so far: reads each key press, the focus scope and
 // the platform into MOD-Keys' pure `resolveKey`, keeps the key from the browser when RULE-19 says so,
-// and runs the action. F-002 dispatches the View group and the arrow-key pan; F-013 completes the map.
-// Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected), F-002.R2/R4.
+// and runs the action. F-002 dispatches the View group and the arrow-key pan; F-003 the Tools keys,
+// Enter and Esc; F-013 completes the map.
+// Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected, Tools keys, Enter, Esc),
+// F-002.R2/R4, F-003.R5.
 import { viewCommands } from '../canvas';
+import type { ToolName } from '../core';
 import { isEditing } from '../io';
 import { resolveKey, type Scope } from '../keys';
+import { escape, placeAtCentre, setTool } from './drawing';
 import { isMac } from './platform';
-import { dialog } from './state';
+import { dialog, selection, tool } from './state';
 
 /** Where focus is, for RULE-19's scope. The canvas region is the work area while an image is shown. */
 function focusScope(e: KeyboardEvent): Scope['focus'] {
@@ -22,12 +26,19 @@ function onKeyDown(e: KeyboardEvent): void {
   const mod = isMac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
   const resolution = resolveKey(
     { key: e.key, code: e.code, mod, shift: e.shiftKey, alt: e.altKey, mac: isMac },
-    // The tool and selection arrive with F-003/F-008; until then nothing can be selected.
-    { focus: focusScope(e), tool: 'select', selection: 'none' },
+    {
+      focus: focusScope(e),
+      tool: tool.value,
+      selection: selection.value.length === 0 ? 'none' : selection.value.length === 1 ? 'one' : 'many',
+    },
   );
   if (resolution.preventDefault) e.preventDefault();
   const action = resolution.action;
-  if (!action || action.group !== 'view') return;
+  if (!action) return;
+  if (action.kind === 'named' && action.group === 'tool') return setTool(action.name as ToolName);
+  if (action.kind === 'named' && action.group === 'canvas' && action.name === 'place') return placeAtCentre();
+  if (action.kind === 'named' && action.group === 'edit' && action.name === 'escape') return escape();
+  if (action.group !== 'view') return;
   if (action.kind === 'pan') viewCommands.panView(action.dx, action.dy);
   else if (action.name === 'zoomIn') viewCommands.zoomIn();
   else if (action.name === 'zoomOut') viewCommands.zoomOut();

@@ -1,8 +1,9 @@
 // MOD-Canvas — view, pointer and touch input, tool state machine, handles, crop, text overlay
 // (specs/40-technical/modules/MOD-Canvas.md, ADR-0004, ADR-0009, ADR-0016, ADR-0020, ADR-0022).
 // <Canvas> shows the loaded image (F-001, ./Canvas.tsx) in a view that zooms and pans (F-002,
-// ./view.ts); the drawing commands are built with F-003…F-008 and F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
-import type { AnnotationKind, Point } from '../core';
+// ./view.ts); shapes are drawn with ./draw.ts (F-003); the other drawing commands are built with
+// F-004…F-008 and F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
+import type { Point } from '../core';
 import { activeCanvas } from './Canvas';
 
 const notImplemented = (name: string): never => {
@@ -13,6 +14,8 @@ const notImplemented = (name: string): never => {
 export { Canvas, viewTransform, type CanvasProps } from './Canvas';
 export { ViewController, type WheelInput } from './view';
 export { InputController, type PanCursor, type PointerInput, type ToolInput } from './input';
+export { DRAFT_ID, DrawTool, shapeKindOf, type DrawSetup } from './draw';
+export { DragLayers, type DragFrame } from './drag';
 
 /**
  * The view commands (F-002.R2/R4; CMP-StatusBar and the RULE-19 View keys). With no image shown they
@@ -33,12 +36,14 @@ export const viewCommands = {
 };
 
 export const canvasCommands = {
-  placeAtCentre: (_tool: AnnotationKind): void => notImplemented('canvasCommands.placeAtCentre'),
+  /** RULE-19 Enter (F-003.R5): the active tool's default annotation at the centre of the view; true if placed. */
+  placeAtCentre: (): boolean => activeCanvas()?.placeAtCentre() ?? false,
+  /** RULE-19 Esc: cancels the current drag; true if there was one (nothing is created). */
+  cancelDrag: (): boolean => activeCanvas()?.cancelDrag() ?? false,
   nudge: (_dx: number, _dy: number): void => notImplemented('canvasCommands.nudge'),
   altResize: (_dx: number, _dy: number): void => notImplemented('canvasCommands.altResize'),
   selectNext: (): void => notImplemented('canvasCommands.selectNext'),
   selectPrevious: (): void => notImplemented('canvasCommands.selectPrevious'),
-  cancelDrag: (): void => notImplemented('canvasCommands.cancelDrag'),
   beginTextEdit: (): void => notImplemented('canvasCommands.beginTextEdit'),
   endTextEdit: (): void => notImplemented('canvasCommands.endTextEdit'),
 };
