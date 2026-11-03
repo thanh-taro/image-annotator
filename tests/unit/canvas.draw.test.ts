@@ -209,4 +209,23 @@ describe('MOD-Canvas drawing tool', () => {
     draw.up(at(300, 220, { shift: true }));
     expect(created[0]).toMatchObject({ kind: 'ellipse', box: { width: 200, height: 200 } });
   });
+
+  it('F-003 edge case a cancelled one-finger drawing leaves no touch behind: the next one-finger drag draws', () => {
+    const { draw, created } = setup('rectangle');
+    const view = new ViewController();
+    view.setArea({ width: 1200, height: 800 }, 24);
+    view.setContent({ x: 0, y: 0, width: 1000, height: 800 }, true);
+    const before = view.view;
+    const input = new InputController(view, () => {}, draw);
+    input.down(at(100, 100, { id: 1, type: 'touch' }));
+    input.move(at(200, 200, { id: 1, type: 'touch' }));
+    input.cancel(at(200, 200, { id: 1, type: 'touch' }));
+    expect(created).toEqual([]);
+    input.down(at(100, 100, { id: 2, type: 'touch' }));
+    input.move(at(300, 200, { id: 2, type: 'touch' }));
+    input.up(at(300, 200, { id: 2, type: 'touch' }));
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ kind: 'rectangle', box: { x: 100, y: 100, width: 200, height: 100 } });
+    expect(view.view).toEqual(before); // no pan or zoom
+  });
 });

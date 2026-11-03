@@ -133,6 +133,7 @@ export class InputController {
    */
   cancel(input: PointerInput): void {
     if (input.id === this.toolPointer) {
+      this.touches.delete(input.id); // a cancelled finger is gone: later one-finger drags draw again
       this.toolPointer = null;
       this.tool?.cancel?.();
       this.tool?.up(input); // the cancelled gesture is closed; nothing is created
