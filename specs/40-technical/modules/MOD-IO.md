@@ -32,6 +32,8 @@ is unexported (F-014.R1).
 
 ## Implements
 F-001.R1/R2/R3/R4/R5/R6/R7, F-012.R1/R2/R3/R5/R6/R7, F-014.R1/R2, F-017.R1; INV-02, INV-03,
-INV-04; RULE-01, RULE-02, RULE-03, RULE-15; NFR-01, NFR-03, NFR-04. Decided by ADR-0005, ADR-0007, ADR-0018, ADR-0019, ADR-0021, ADR-0022.
+INV-04; RULE-01, RULE-02, RULE-03, RULE-15; NFR-01, NFR-03, NFR-04. Decided by ADR-0005, ADR-0007, ADR-0018, ADR-0019, ADR-0021, ADR-0022, ADR-0023.
 
 SP-large-image outcome (ADR-0022): after encoding, the export canvas is freed (width and height set to 0) whether the export succeeded or failed. RULE-02 is enforced here and in MOD-Core, never left to the browser.
+
+F-001 review outcome (ADR-0023): load order is size → magic bytes → header dimensions → scale-down question → one decode → replace confirmation.

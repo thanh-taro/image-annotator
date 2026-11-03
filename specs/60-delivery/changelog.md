@@ -51,3 +51,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 ## 2026-11-03 — Build (phase 4)
 - F-001 gaps found while building: F-001 edge cases (a folder-only drop is refused; input during a load or dialog is ignored); CMP-Notice lists COPY-load.first_only as a success notice; style.md sets the Fit margin to `space.6`.
 - F-016 gaps: CMP-StatusBar accessibility describes the privacy popover; new token `size.popover` (360 px).
+- F-001 review: ADR-0023 (amends ADR-0005) reads image dimensions from the header before decoding, so an over-limit image is never fully decoded. F-001 edge case: from several files, the first supported one loads.

@@ -66,6 +66,7 @@ CMP-Notice; decoding longer than 0.5 s shows COPY-load.loading.
 - Animated GIF → first frame only (RULE-01), no message.
 - Transparent PNG → transparency kept (shown over a checkerboard on screen, transparent in export).
 - A drop that holds no files (only folders) → refused with COPY-error.unsupported_format.
+- A drop or paste with several files → the first file that passes RULE-01 loads, with COPY-load.first_only; if none passes, the first file's refusal message shows.
 - A paste, drop or open that arrives while an image is loading or a dialog is open → ignored.
 
 ## Open questions

@@ -36,13 +36,13 @@ the PNG chunk whitelist (ADR-0007); and the text metrics constants (ADR-0009).
 - `hitTest(annotation, point, tolerance)`, `boundsOf(annotation)`, `marqueeHits(box)`,
   `constrain(drag, kind)`, `defaultAnnotationAt(point, kind, sizes)`, `redactionBox(box)`.
 - `renumberSteps(annotations)` (RULE-07); `redactionCount(annotations, canvas)` (RULE-20).
-- `downloadName(sourceName, localTime)` (RULE-15); `stripPngChunks(bytes)` (ADR-0007); `toNFC(before, inserted)` (RULE-08, ADR-0020).
+- `downloadName(sourceName, localTime)` (RULE-15); `stripPngChunks(bytes)` (ADR-0007); `toNFC(before, inserted)` (RULE-08, ADR-0020); `readImageHeader(bytes)` (RULE-02, ADR-0023).
 
 ## Implements
 F-002.R1/R2, F-003.R2/R4/R5, F-004.R3/R4, F-006.R2/R5, F-007.R1, F-010.R1, F-011.R1/R5/R6,
 F-012.R2/R3; INV-02, INV-03, INV-05; RULE-01, RULE-02, RULE-04, RULE-05, RULE-06, RULE-07, RULE-08,
 RULE-10 (sizes), RULE-12, RULE-13, RULE-14, RULE-15, RULE-20; NFR-08. Decided by ADR-0004,
-ADR-0005, ADR-0007, ADR-0019, ADR-0020, ADR-0022.
+ADR-0005, ADR-0007, ADR-0019, ADR-0020, ADR-0022, ADR-0023.
 
 SP-png-export outcome (ADR-0019): `stripPngChunks` also fails closed on unknown critical chunks, non-consecutive IDAT, CRC mismatches and bytes after IEND.
 
