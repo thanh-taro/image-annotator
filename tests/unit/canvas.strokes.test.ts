@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_STYLES, type Annotation, type Point, type ToolName } from '../../src/core';
 import { DRAFT_ID, DrawTool, drawKindOf } from '../../src/canvas/draw';
-import { InputController, type PointerInput } from '../../src/canvas/input';
+import { InputController, pointerInput, type PointerInput } from '../../src/canvas/input';
 import { ViewController } from '../../src/canvas/view';
 
 type Path = Extract<Annotation, { points: readonly Point[] }>;
@@ -232,5 +232,66 @@ describe('MOD-Canvas pen and highlight tools', () => {
     expect(drawKindOf('rectangle')).toBe('rectangle');
     expect(drawKindOf('select')).toBeNull();
     expect(drawKindOf('crop')).toBeNull();
+  });
+
+  it('ADR-0022 NFR-02 a gesture asks for the drag layers at pointerdown, before the 4 px threshold', () => {
+    let prepared = 0;
+    const draw = new DrawTool(
+      () => ({ tool: 'pen', style: DEFAULT_STYLES.pen, shortSide: 800, toImage: (p: Point) => p }),
+      () => {},
+      () => {},
+      () => prepared++,
+    );
+    draw.down(at(10, 10));
+    expect(prepared).toBe(1);
+    expect(draw.preview).toBeNull();
+    draw.move(at(30, 10));
+    expect(prepared).toBe(1);
+    draw.up(at(30, 10));
+    // A tool that does not draw asks for nothing.
+    const none = new DrawTool(
+      () => ({ tool: 'select', style: DEFAULT_STYLES.pen, shortSide: 800, toImage: (p: Point) => p }),
+      () => {},
+      () => {},
+      () => prepared++,
+    );
+    none.down(at(10, 10));
+    expect(prepared).toBe(1);
+  });
+
+  it('F-004.R1 a pointer event maps to the canvas once, with its coalesced samples where the browser has them', () => {
+    const event = {
+      pointerId: 7,
+      pointerType: 'pen',
+      button: -1,
+      clientX: 130,
+      clientY: 60,
+      shiftKey: true,
+      altKey: false,
+      getCoalescedEvents: () => [
+        { clientX: 110, clientY: 50 },
+        { clientX: 120, clientY: 55 },
+        { clientX: 130, clientY: 60 },
+      ],
+    };
+    const origin = { x: 100, y: 40 };
+    expect(pointerInput(event, origin, true)).toEqual({
+      id: 7,
+      type: 'pen',
+      button: -1,
+      point: { x: 30, y: 20 },
+      shift: true,
+      alt: false,
+      samples: [
+        { x: 10, y: 10 },
+        { x: 20, y: 15 },
+        { x: 30, y: 20 },
+      ],
+    });
+    // Down and up events, and browsers without coalesced events, carry no samples.
+    expect(pointerInput(event, origin, false)).not.toHaveProperty('samples');
+    const { getCoalescedEvents: _, ...plain } = event;
+    expect(pointerInput(plain, origin, true)).not.toHaveProperty('samples');
+    expect(pointerInput({ ...event, getCoalescedEvents: () => [] }, origin, true)).not.toHaveProperty('samples');
   });
 });

@@ -237,6 +237,9 @@ function paintSelection(ctx: Ctx, scene: Scene, transform: Transform, ids: reado
   ctx.rect(c.x, c.y, c.width, c.height);
   ctx.clip();
   for (const a of selected) {
+    // TODO(F-008): a straight (e.g. Shift) highlight's points box has zero height, so its outline is a
+    // line through the band and the n/s handles stack; F-008 decides the box, scaling H from 0 and
+    // which of overlapping handles a press picks (review F-004 round 1, finding 4).
     if (!single || !isLineAnnotation(a)) {
       const b = shapeBox(a);
       const x = X(b.x);

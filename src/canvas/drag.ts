@@ -3,7 +3,9 @@
 // and those above the highest dragged one on a transparent layer (upper layer). Each frame copies the
 // lower layer, draws the dragged annotations and any undragged ones between them in drawing order, then
 // copies the upper layer. While drawing, the new annotation is on top, so only the lower layer is used.
-// The layers are rebuilt when an image-layer input changes, and dropped when the drag ends.
+// The layers are rebuilt when an image-layer input changes, and dropped when the drag ends. They are
+// built at pointerdown (`prepare`, before the RULE-05 threshold), so the first visible drag frame only
+// composites (NFR-02); a gesture that ends as a click or is cancelled releases them.
 // (F-007 adds: with a solid redaction dragged, blur and pixelate above it are drawn each frame.)
 // Implements: ADR-0022, NFR-02.
 import { paintAnnotations, type Patches, type Scene, type SceneImage, type Transform } from '../render';
@@ -95,12 +97,15 @@ export class DragLayers {
       this.upper.height = 0;
       this.upper = null;
     }
+    // NFR-02: Chromium records canvas work and rasterises it when the layer is first drawn, which
+    // would land on the first drag frame. Reading one pixel makes it rasterise now, at pointerdown.
+    lc.getImageData(0, 0, 1, 1);
     this.builds++;
     return true;
   }
 
-  /** Paints one drag frame into `ctx`: lower layer, the middle annotations, upper layer. */
-  paint(ctx: Surface2D, f: DragFrame): void {
+  /** Builds the layers for `f` unless they are fresh; false if a context is unavailable. */
+  private ensure(f: DragFrame): boolean {
     const key: Key = {
       base: f.base,
       baseVersion: f.baseVersion,
@@ -110,10 +115,24 @@ export class DragLayers {
       width: f.width,
       height: f.height,
     };
-    if (this.stale(key)) {
-      if (!this.build(f)) return;
-      this.key = key;
-    }
+    if (!this.stale(key)) return true;
+    if (!this.build(f)) return false;
+    this.key = key;
+    return true;
+  }
+
+  /**
+   * ADR-0022 / NFR-02: builds the layers a drag about to start will use (called at pointerdown for a
+   * draw — lo = n, hi = n − 1 — and, from F-008, for a move or resize with its lo and hi), drawing
+   * nothing. The first drag frame then finds them fresh. `f.middle` is not read.
+   */
+  prepare(f: DragFrame): boolean {
+    return this.ensure(f);
+  }
+
+  /** Paints one drag frame into `ctx`: lower layer, the middle annotations, upper layer. */
+  paint(ctx: Surface2D, f: DragFrame): void {
+    if (!this.ensure(f)) return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (this.lower) ctx.drawImage(this.lower, 0, 0);
     paintAnnotations(ctx, f.middle, f.image, f.transform, f.patches);

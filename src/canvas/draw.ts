@@ -41,13 +41,6 @@ export interface DrawSetup {
 /** The id a shape has while it is drawn; MOD-App gives it its session id when it is created. */
 export const DRAFT_ID = 'draft';
 
-/** The shape kind a tool draws, or null for tools that are not shape tools. */
-export function shapeKindOf(tool: ToolName): ShapeKind | null {
-  if (!isDrawingTool(tool)) return null;
-  const kind = TOOL_KIND[tool];
-  return isShapeKind(kind) ? kind : null;
-}
-
 /** The kinds a pointer drag draws: the shapes (F-003) and the paths (F-004). */
 export type DragKind = ShapeKind | PathAnnotation['kind'];
 
@@ -87,6 +80,8 @@ export class DrawTool implements ToolInput {
     private readonly onPreview: () => void,
     /** A finished shape (F-003.R1/R5); its id is DRAFT_ID until MOD-App adds it to the document. */
     private readonly onCreate: (draft: Annotation) => void,
+    /** ADR-0022 / NFR-02: a gesture started; build the drag layers now, before the 4 px threshold. */
+    private readonly onPrepare: () => void = () => {},
   ) {}
 
   /** True while a gesture is in progress (pointer down, not cancelled). */
@@ -115,6 +110,7 @@ export class DrawTool implements ToolInput {
       dragging: false,
       cancelled: false,
     };
+    this.onPrepare();
     return true;
   }
 
@@ -179,10 +175,8 @@ export class DrawTool implements ToolInput {
     const g = this.gesture;
     if (!g || g.cancelled) return false;
     g.cancelled = true;
-    if (this.preview) {
-      this.preview = null;
-      this.onPreview();
-    }
+    this.preview = null;
+    this.onPreview(); // repaint: the preview goes and the prepared drag layers are released
     return true;
   }
 }

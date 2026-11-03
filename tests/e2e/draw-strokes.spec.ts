@@ -262,4 +262,43 @@ test.describe('F-004 draw strokes and highlights', () => {
       .analyze();
     expect(results.violations).toEqual([]);
   });
+
+  test('CMP-Toolbar narrow at 320 px with an image: the tool row scrolls, the page does not, Highlight is reachable', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 760 });
+    await page.goto('/');
+    await page.evaluate(async () => {
+      const c = new OffscreenCanvas(400, 300);
+      const ctx = c.getContext('2d');
+      if (!ctx) throw new Error('no 2d context');
+      ctx.fillStyle = '#c8c8c8';
+      ctx.fillRect(0, 0, 400, 300);
+      const blob = await c.convertToBlob({ type: 'image/png' });
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'small.png', { type: 'image/png' }));
+      document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    });
+    await expect(summary(page)).toHaveText('400 × 300 px canvas, 0 annotations');
+    const sizes = () =>
+      page.evaluate(() => {
+        const strip = document.querySelector('.tk-tools__strip') as HTMLElement;
+        return {
+          page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          strip: strip.scrollWidth - strip.clientWidth,
+          scrolled: strip.scrollLeft,
+        };
+      });
+    const before = await sizes();
+    expect(before.page).toBeLessThanOrEqual(0);
+    expect(before.strip).toBeGreaterThan(0);
+    await toolButton(page, 'Select (V)').focus();
+    await page.keyboard.press('End');
+    await expect(toolButton(page, 'Highlight (H)')).toBeFocused();
+    await expect(toolButton(page, 'Highlight (H)')).toHaveAttribute('aria-checked', 'true');
+    await expect(toolButton(page, 'Highlight (H)')).toBeInViewport({ ratio: 1 });
+    const after = await sizes();
+    expect(after.scrolled).toBeGreaterThan(0);
+    expect(after.page).toBeLessThanOrEqual(0);
+  });
 });

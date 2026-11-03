@@ -11,7 +11,7 @@
 // sizes)`. Here stroke widths need the image's shorter side (RULE-04), so they take `shortSide`, and
 // `constrain` takes the drag's two points. Hit-testing and handles are used by F-008.
 import { DEFAULT_SIZE_FACTOR } from './constants';
-import { HIGHLIGHT_PER_STROKE, styleSizes } from './sizes';
+import { styleSizes } from './sizes';
 import type { Annotation, AnnotationKind, Box, Point, Style } from './types';
 
 export type BoxAnnotation = Extract<Annotation, { readonly box: Box }>;
@@ -41,8 +41,10 @@ export const strokePixels = (style: Style, shortSide: number): number => styleSi
  * RULE-04: the width of an annotation's mark in pixels — the stroke size, or for a highlight 3 × the
  * stroke size of its size.
  */
-export const markWidth = (a: Annotation, shortSide: number): number =>
-  a.kind === 'highlight' ? HIGHLIGHT_PER_STROKE * strokePixels(a.style, shortSide) : strokePixels(a.style, shortSide);
+export function markWidth(a: Annotation, shortSide: number): number {
+  const sizes = styleSizes(shortSide, a.style.strokeSize);
+  return a.kind === 'highlight' ? sizes.highlight : sizes.stroke;
+}
 
 /** RULE-05: the default size of a click-placed shape (20 % of the shorter side, rounded). */
 export const defaultSize = (shortSide: number): number => Math.round(DEFAULT_SIZE_FACTOR * shortSide);
@@ -127,7 +129,10 @@ export function pathFromDrag(
   const first = points[0];
   const last = points[points.length - 1];
   if (shift && kind === 'highlight' && first && last) {
-    return { id, kind, style, points: [{ ...first }, constrain(first, last, kind)] };
+    const end = constrain(first, last, kind);
+    // RULE-09: a run that ends back at its press point is a highlight dot, never an empty run.
+    const run = end.x === first.x && end.y === first.y ? [{ ...first }] : [{ ...first }, end];
+    return { id, kind, style, points: run };
   }
   return { id, kind, style, points: points.map((p) => ({ ...p })) };
 }
@@ -314,6 +319,33 @@ export function distanceToQuad(p: Point, { from: a, control: c, to: b }: QuadPie
   return best;
 }
 
+/**
+ * RULE-09: whether `p` is within the square end of a highlight at either end point — a square of side
+ * 2 × `half` centred on the end and turned with the path's tangent there (axis-aligned for a dot).
+ */
+function hitsSquareEnds(p: Point, points: readonly Point[], pieces: readonly QuadPiece[], half: number): boolean {
+  const inSquare = (c: Point, dir: Point) => {
+    const l = Math.hypot(dir.x, dir.y);
+    const ux = l ? dir.x / l : 1;
+    const uy = l ? dir.y / l : 0;
+    const dx = p.x - c.x;
+    const dy = p.y - c.y;
+    return Math.abs(dx * ux + dy * uy) <= half && Math.abs(-dx * uy + dy * ux) <= half;
+  };
+  const first = pieces[0];
+  const last = pieces[pieces.length - 1];
+  if (!first || !last) return false;
+  if (points.length === 1) return inSquare(first.from, { x: 1, y: 0 });
+  // The tangent at each end: towards the control point, or along the piece when they coincide.
+  const away = (a: Point, b: Point, c: Point) => (a.x !== b.x || a.y !== b.y ? b : c);
+  const start = away(first.from, first.control, first.to);
+  const end = away(last.to, last.control, last.from);
+  return (
+    inSquare(first.from, { x: start.x - first.from.x, y: start.y - first.from.y }) ||
+    inSquare(last.to, { x: last.to.x - end.x, y: last.to.y - end.y })
+  );
+}
+
 function distanceToBoxOutline(p: Point, b: Box): number {
   const x2 = b.x + b.width;
   const y2 = b.y + b.height;
@@ -366,7 +398,10 @@ export function hitTest(a: Annotation, p: Point, tolerance: number, shortSide: n
   if (isPathAnnotation(a)) {
     // F-004: the visible mark is the curve widened by half the mark's width (a highlight is 3 × wider).
     const half = tolerance + markWidth(a, shortSide) / 2;
-    for (const piece of strokePieces(a.points)) if (distanceToQuad(p, piece) <= half) return true;
+    const pieces = strokePieces(a.points);
+    for (const piece of pieces) if (distanceToQuad(p, piece) <= half) return true;
+    // RULE-09: a highlight's ends and dot are square, so their corners count too.
+    if (a.kind === 'highlight') return hitsSquareEnds(p, a.points, pieces, half);
     return false;
   }
   return false;

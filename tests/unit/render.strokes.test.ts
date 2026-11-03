@@ -162,4 +162,38 @@ describe('MOD-Render paint strokes and highlights', () => {
     expect(made[0]).toContain('globalAlpha=0.4'); // the committed highlight is in the lower layer
     expect(out.calls.filter((c) => c === `strokeStyle=${PALETTE_HEX.red}`)).toHaveLength(5);
   });
+
+  it('ADR-0022 NFR-02 prepare() builds the layers at pointerdown, so the first drag frame only composites', () => {
+    const made: string[][] = [];
+    const create = (): Surface => {
+      const r = recorder();
+      made.push(r.calls);
+      return { width: 1, height: 1, getContext: () => r.ctx } as unknown as Surface;
+    };
+    const layers = new DragLayers(create);
+    const doc = scene([marker()]);
+    const base = {} as CanvasImageSource;
+    const f = (middle: Annotation[]) => ({
+      base,
+      baseVersion: 1,
+      scene: doc,
+      image,
+      transform: T,
+      patches: new Map(),
+      width: 1000,
+      height: 800,
+      lo: 1,
+      hi: 0,
+      middle: { ...doc, annotations: middle },
+    });
+    expect(layers.prepare(f([]))).toBe(true);
+    expect(layers.builds).toBe(1);
+    expect(made[0]).toContain('getImageData(0,0,1,1)'); // rasterised now, not on the first drag frame
+    expect(layers.prepare(f([]))).toBe(true); // already fresh: no second build
+    expect(layers.builds).toBe(1);
+    const out = recorder();
+    layers.paint(out.ctx, f([pen()]));
+    expect(layers.builds).toBe(1);
+    expect(out.calls).not.toContain('globalAlpha=0.4'); // the committed highlight comes from the layer
+  });
 });

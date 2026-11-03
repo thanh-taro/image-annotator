@@ -2,7 +2,7 @@
 // RULE-06 Shift, RULE-19 Esc, and the hand-off from the input controller (a pinch cancels the gesture).
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_STYLES, type Annotation, type LineAnnotation, type Point, type ToolName } from '../../src/core';
-import { DRAFT_ID, DrawTool, shapeKindOf } from '../../src/canvas/draw';
+import { DRAFT_ID, DrawTool, drawKindOf } from '../../src/canvas/draw';
 import { InputController, type PointerInput } from '../../src/canvas/input';
 import { ViewController } from '../../src/canvas/view';
 
@@ -130,9 +130,9 @@ describe('MOD-Canvas drawing tool', () => {
   it('F-003.R6 the select tool does not draw; only the primary button starts a shape', () => {
     expect(setup('select').draw.down(at(0, 0))).toBe(false);
     expect(setup('rectangle').draw.down(at(0, 0, { button: 2 }))).toBe(false);
-    expect(shapeKindOf('arrow')).toBe('arrow');
-    expect(shapeKindOf('pen')).toBeNull();
-    expect(shapeKindOf('crop')).toBeNull();
+    expect(drawKindOf('arrow')).toBe('arrow');
+    expect(drawKindOf('select')).toBeNull();
+    expect(drawKindOf('crop')).toBeNull();
   });
 
   it('CMP-Canvas a second finger turns a one-finger drawing into a pinch: nothing is created', () => {

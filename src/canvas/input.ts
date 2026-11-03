@@ -23,6 +23,37 @@ export interface PointerInput {
   readonly samples?: readonly Point[];
 }
 
+/** The parts of a DOM PointerEvent that `pointerInput` reads (a structural type, so it is testable). */
+export interface PointerEventLike {
+  readonly pointerId: number;
+  readonly pointerType: string;
+  readonly button: number;
+  readonly clientX: number;
+  readonly clientY: number;
+  readonly shiftKey: boolean;
+  readonly altKey: boolean;
+  getCoalescedEvents?(): readonly { readonly clientX: number; readonly clientY: number }[];
+}
+
+/**
+ * A pointer event as the canvas reads it, relative to the canvas's top-left corner `origin` (client
+ * px, read once per event). With `withSamples` (moves), it carries the browser's coalesced samples
+ * (F-004.R1), when there are any.
+ */
+export function pointerInput(e: PointerEventLike, origin: Point, withSamples: boolean): PointerInput {
+  const at = (c: { clientX: number; clientY: number }): Point => ({ x: c.clientX - origin.x, y: c.clientY - origin.y });
+  const input: PointerInput = {
+    id: e.pointerId,
+    type: e.pointerType,
+    button: e.button,
+    point: at(e),
+    shift: e.shiftKey,
+    alt: e.altKey,
+  };
+  const coalesced = withSamples && typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
+  return coalesced.length ? { ...input, samples: coalesced.map(at) } : input;
+}
+
 /** What a drawing tool receives (F-003…F-010); the view takes the pointer first. */
 export interface ToolInput {
   down(input: PointerInput): boolean;

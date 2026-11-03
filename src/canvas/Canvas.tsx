@@ -25,7 +25,7 @@ import type { Doc } from '../document';
 import { paint as paintScene, type BaseView, type OverlayLook, type Patches, type Transform } from '../render';
 import { DragLayers } from './drag';
 import { DRAFT_ID, DrawTool, drawKindOf } from './draw';
-import { InputController } from './input';
+import { InputController, pointerInput } from './input';
 import { ImageLayer } from './layer';
 import { ViewController } from './view';
 
@@ -167,6 +167,8 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       },
       () => schedule(),
       (draft) => live.current.onCreate?.(draft),
+      // ADR-0022 / NFR-02: the next frame builds the drag layers, so the first drag frame only composites.
+      () => schedule(),
     );
 
     const paint = () => {
@@ -192,26 +194,29 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       if (!source) return;
       const transform = viewTransform(v, ratio);
       const preview = draw.preview;
+      // ADR-0022: while drawing, the new shape is on top, so only the lower layer is used.
+      const n = scene.annotations.length;
+      const dragFrame = {
+        base: source,
+        baseVersion: layer.rebuilds,
+        scene,
+        image: img,
+        transform,
+        patches: NO_PATCHES,
+        width,
+        height,
+        lo: n,
+        hi: n - 1,
+        middle: { ...scene, annotations: preview ? [preview] : [] },
+      };
       if (preview) {
-        // ADR-0022: while drawing, the new shape is on top, so only the lower layer is used.
-        const n = scene.annotations.length;
-        drag.paint(ctx, {
-          base: source,
-          baseVersion: layer.rebuilds,
-          scene,
-          image: img,
-          transform,
-          patches: NO_PATCHES,
-          width,
-          height,
-          lo: n,
-          hi: n - 1,
-          middle: { ...scene, annotations: [preview] },
-        });
+        drag.paint(ctx, dragFrame);
         return;
       }
-      drag.release();
       paintScene(ctx, scene, img, transform, NO_PATCHES, { selection: selected, look: themed(th, ratio).look }, source);
+      // NFR-02: a gesture is pressed but not yet a drag: build the layers now (nothing new is drawn).
+      if (draw.active) drag.prepare(dragFrame);
+      else drag.release();
     };
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(paint);
@@ -252,14 +257,11 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
 
     // F-002.R4 Space+drag (mouse and pen) and two touch fingers (CMP-Canvas), routed by ./input.ts.
     const input = new InputController(view, (cursor) => (el.dataset['pan'] = cursor), draw);
-    const read = (e: PointerEvent) => ({
-      id: e.pointerId,
-      type: e.pointerType,
-      button: e.button,
-      point: local(e),
-      shift: e.shiftKey,
-      alt: e.altKey,
-    });
+    // The canvas position is read once per event (not once per coalesced sample).
+    const read = (e: PointerEvent, withSamples = false) => {
+      const r = el.getBoundingClientRect();
+      return pointerInput(e, { x: r.left, y: r.top }, withSamples);
+    };
     const onPointerDown = (e: PointerEvent) => {
       // RULE-19: the canvas keys (Enter, Esc, tool letters) need the canvas region to have focus; the
       // default focus move is lost to preventDefault below, so the region is focused here.
@@ -269,10 +271,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       el.setPointerCapture(e.pointerId);
     };
     // F-004.R1: every position the browser sampled since the last move (where it reports them).
-    const onPointerMove = (e: PointerEvent) => {
-      const coalesced = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
-      input.move(coalesced.length ? { ...read(e), samples: coalesced.map(local) } : read(e));
-    };
+    const onPointerMove = (e: PointerEvent) => input.move(read(e, true));
     const onPointerEnd = (e: PointerEvent) => input.up(read(e));
     const onPointerCancel = (e: PointerEvent) => input.cancel(read(e));
     // RULE-06: Shift pressed or released mid-drag constrains the preview at once, without a move.

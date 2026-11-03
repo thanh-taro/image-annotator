@@ -14,7 +14,7 @@ const notImplemented = (name: string): never => {
 export { Canvas, viewTransform, type CanvasProps } from './Canvas';
 export { ViewController, type WheelInput } from './view';
 export { InputController, type PanCursor, type PointerInput, type ToolInput } from './input';
-export { DRAFT_ID, DrawTool, drawKindOf, shapeKindOf, type DragKind, type DrawSetup } from './draw';
+export { DRAFT_ID, DrawTool, drawKindOf, type DragKind, type DrawSetup } from './draw';
 export { DragLayers, type DragFrame } from './drag';
 
 /**

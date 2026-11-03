@@ -176,4 +176,38 @@ describe('MOD-Core strokes and highlights', () => {
     expect(hitTest(dot, { x: 50, y: 60 }, 0, S)).toBe(false);
     expect(hitTest(dot, { x: 50, y: 60 }, 8, S)).toBe(true);
   });
+
+  it('F-004.AC4 RULE-09 a Shift highlight that ends back at its press point is a dot, not an empty run', () => {
+    const back: Point[] = [
+      { x: 100, y: 100 },
+      { x: 120, y: 104 },
+      { x: 100, y: 100 },
+    ];
+    expect(pathFromDrag('highlight', 'd', marker, back, true)).toMatchObject({ points: [{ x: 100, y: 100 }] });
+  });
+
+  it('ADR-0004 §3 RULE-09 a press on the square corner of a highlight’s end or dot hits it', () => {
+    const h = highlight([
+      { x: 100, y: 100 },
+      { x: 400, y: 100 },
+    ]);
+    // Half the width is 15: the square end runs to x = 85 and covers its corner (86, 114).
+    expect(hitTest(h, { x: 86, y: 114 }, 0, S)).toBe(true);
+    expect(hitTest(h, { x: 414, y: 86 }, 0, S)).toBe(true);
+    expect(hitTest(h, { x: 84, y: 114 }, 0, S)).toBe(false);
+    expect(hitTest(h, { x: 84, y: 116 }, 2, S)).toBe(true); // the tolerance grows the square
+    // A diagonal highlight's end square is turned with its run.
+    const d = highlight([
+      { x: 100, y: 100 },
+      { x: 300, y: 300 },
+    ]);
+    const u = Math.SQRT1_2;
+    const corner = { x: 100 - 14 * u + 14 * u, y: 100 - 14 * u - 14 * u }; // back 14 along, 14 across
+    expect(hitTest(d, corner, 0, S)).toBe(true);
+    const dot = highlight([{ x: 50, y: 50 }]);
+    expect(hitTest(dot, { x: 64, y: 36 }, 0, S)).toBe(true);
+    expect(hitTest(dot, { x: 66, y: 50 }, 0, S)).toBe(false);
+    // The pen's ends stay round.
+    expect(hitTest(stroke([{ x: 50, y: 50 }]), { x: 52.3, y: 52.3 }, 0, S)).toBe(false);
+  });
 });
