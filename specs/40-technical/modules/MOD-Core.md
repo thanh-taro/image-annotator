@@ -33,8 +33,9 @@ the PNG chunk whitelist (ADR-0007); and the text metrics constants (ADR-0009).
 - `canvasRect(frame, padding)`, `paddingPixels(frame, size)`, `availablePaddings(frame)`,
   `clampFrame(frame, image)`, `stepDownPadding(frame, padding)` (RULE-13, RULE-14).
 - `zoomIn/zoomOut/fitZoom(content, viewport)` (RULE-12).
-- `hitTest(annotation, point, tolerance)`, `boundsOf(annotation)`, `marqueeHits(box)`,
-  `constrain(drag, kind)`, `defaultAnnotationAt(point, kind, sizes)`, `redactionBox(box)`.
+- `hitTest(annotation, point, tolerance, shortSide)`, `boundsOf(annotation, shortSide)` (stroke
+  widths depend on the image's shorter side, RULE-04), `marqueeHits(box)`, `constrain(from, to, kind)`,
+  `defaultAnnotationAt(point, kind, shortSide, …)`, `redactionBox(box)`.
 - `renumberSteps(annotations)` (RULE-07); `redactionCount(annotations, canvas)` (RULE-20).
 - `downloadName(sourceName, localTime)` (RULE-15); `stripPngChunks(bytes)` (ADR-0007); `toNFC(before, inserted)` (RULE-08, ADR-0020); `readImageHeader(bytes)` (RULE-02, ADR-0023).
 
