@@ -99,14 +99,13 @@ const HOST_PAGE = `<!doctype html>
   // F-018: a language settings message (RULE-16, RULE-17), and any raw payload for the ignore cases.
   window.__sendLanguage = (value) =>
     frame.contentWindow.postMessage({ type: 'taro:language', value }, window.__toolOrigin);
-  window.__postRaw = (data) => frame.contentWindow.postMessage(data, window.__toolOrigin);
-  // F-015.AC5: a sibling frame (same origin as the host, not the tool's parent) sends a language message.
-  window.__fromSibling = (value) => {
+  // F-015.AC5, F-018.AC4: a sibling frame (same origin as the host, not the tool's parent) sends \`data\`.
+  window.__fromSibling = (data) => {
     const sib = document.createElement('iframe');
     sib.style.display = 'none';
     document.body.appendChild(sib);
     sib.contentWindow.eval(
-      'parent.frames[0].postMessage({ type: "taro:language", value: ' + JSON.stringify(value) + ' }, ' +
+      'parent.frames[0].postMessage(' + JSON.stringify(data) + ', ' +
         JSON.stringify(window.__toolOrigin) + ')',
     );
   };
