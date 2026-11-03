@@ -2,7 +2,7 @@
 
 | ID | Title | Milestone | Priority | Status |
 |---|---|---|---|---|
-| F-001 | Load an image | M-1 | P0 | ready |
+| F-001 | Load an image | M-1 | P0 | shipped |
 | F-002 | Zoom and pan the view | M-1 | P0 | ready |
 | F-003 | Draw shapes | M-1 | P0 | ready |
 | F-004 | Draw strokes and highlights | M-1 | P0 | ready |

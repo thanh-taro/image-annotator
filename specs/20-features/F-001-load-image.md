@@ -1,7 +1,7 @@
 ---
 id: F-001
 title: Load an image
-status: ready
+status: shipped
 milestone: M-1
 priority: P0
 personas: [PER-01]
