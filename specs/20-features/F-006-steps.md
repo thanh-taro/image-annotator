@@ -1,7 +1,7 @@
 ---
 id: F-006
 title: Add numbered steps
-status: ready
+status: building
 milestone: M-1
 priority: P1
 personas: [PER-01]

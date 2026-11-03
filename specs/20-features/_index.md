@@ -7,7 +7,7 @@
 | F-003 | Draw shapes | M-1 | P0 | shipped |
 | F-004 | Draw strokes and highlights | M-1 | P0 | shipped |
 | F-005 | Add text | M-1 | P0 | ready |
-| F-006 | Add numbered steps | M-1 | P1 | ready |
+| F-006 | Add numbered steps | M-1 | P1 | building |
 | F-007 | Redact part of the image | M-1 | P0 | ready |
 | F-008 | Select and edit annotations | M-1 | P0 | ready |
 | F-009 | Undo and redo | M-1 | P0 | ready |
