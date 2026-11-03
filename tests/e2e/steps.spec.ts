@@ -66,8 +66,33 @@ async function deselect(page: Page) {
   await workArea(page).focus();
   await page.keyboard.press('Escape');
   await expect(page.locator('[data-screen="SCR-Annotator"]')).not.toHaveAttribute('data-state', 'selecting');
-  await frame(page);
-  await frame(page);
+  await settled(page);
+}
+
+/**
+ * Waits until the display canvas has repainted after the last change: its pixels are the same over
+ * three consecutive frames (the repaint follows a signal change by a frame or two, more under load).
+ */
+async function settled(page: Page) {
+  await page.locator('canvas.tk-canvas').evaluate(async (el) => {
+    const c = el as HTMLCanvasElement;
+    const ctx = c.getContext('2d', { colorSpace: 'srgb' });
+    const sum = () => {
+      const d = ctx?.getImageData(0, 0, c.width, c.height).data ?? new Uint8ClampedArray();
+      let h = 0;
+      for (let i = 0; i < d.length; i += 4) h = (h * 31 + (d[i] ?? 0) + (d[i + 1] ?? 0) * 7 + (d[i + 2] ?? 0) * 13) | 0;
+      return h;
+    };
+    const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+    let last = sum();
+    let same = 0;
+    for (let i = 0; i < 120 && same < 3; i++) {
+      await frame();
+      const now = sum();
+      same = now === last ? same + 1 : 0;
+      last = now;
+    }
+  });
 }
 
 /**
@@ -119,24 +144,55 @@ async function readStep(page: Page, cx: number, cy: number, colour: string, ink:
   );
 }
 
+/**
+ * The display canvas pixels of the image box (x0, y0)–(x0 + w, y0 + h) at 100 %, read in one call (one
+ * round trip, so polling stays fast under parallel load). `at(x, y)` gives the pixel at an image point.
+ */
+async function region(page: Page, x0: number, y0: number, w: number, h: number) {
+  const s = screen(x0, y0);
+  const data = await page.locator('canvas.tk-canvas').evaluate(
+    (el, { s, w, h }) => {
+      const c = el as HTMLCanvasElement;
+      const k = c.width / c.getBoundingClientRect().width;
+      const ctx = c.getContext('2d', { colorSpace: 'srgb' });
+      // Sampled at each CSS pixel, like canvasPixel.
+      const out: number[] = [];
+      const img = ctx?.getImageData(
+        Math.round(s.x * k),
+        Math.round(s.y * k),
+        Math.round(w * k) + 1,
+        Math.round(h * k) + 1,
+      );
+      if (!img) return out;
+      for (let y = 0; y <= h; y++)
+        for (let x = 0; x <= w; x++) {
+          const i = (Math.round(y * k) * img.width + Math.round(x * k)) * 4;
+          out.push(img.data[i] ?? 0, img.data[i + 1] ?? 0, img.data[i + 2] ?? 0, img.data[i + 3] ?? 0);
+        }
+      return out;
+    },
+    { s, w, h },
+  );
+  return (x: number, y: number) => {
+    const i = ((y - y0) * (w + 1) + (x - x0)) * 4;
+    return data.slice(i, i + 4);
+  };
+}
+
 /** The badge's extent on the row through its centre: the run from the first to the last badge pixel. */
 async function rowExtent(page: Page, cx: number, cy: number, colour: number[]) {
+  const at = await region(page, cx - 40, cy, 80, 0);
   const xs: number[] = [];
-  for (let x = cx - 40; x <= cx + 40; x++) {
-    const p = await canvasPixel(page, screen(x, cy).x, screen(x, cy).y);
-    if (near(p, colour, 40)) xs.push(x);
-  }
+  for (let x = cx - 40; x <= cx + 40; x++) if (near(at(x, cy), colour, 40)) xs.push(x);
   return xs.length ? (xs.at(-1) ?? 0) - (xs[0] ?? 0) + 1 : 0;
 }
 
-/** Pixels inside the badge (within radius 20 of the centre) near `colour`. */
+/** Pixels inside the badge (a grid around the centre, within the digits' box) near `colour`. */
 async function inkPixels(page: Page, cx: number, cy: number, colour: number[]) {
+  const at = await region(page, cx - 10, cy - 14, 20, 28);
   let n = 0;
   for (let dy = -14; dy <= 14; dy += 2)
-    for (let dx = -10; dx <= 10; dx += 2) {
-      const p = await canvasPixel(page, screen(cx + dx, cy + dy).x, screen(cx + dx, cy + dy).y);
-      if (near(p, colour, 30)) n++;
-    }
+    for (let dx = -10; dx <= 10; dx += 2) if (near(at(cx + dx, cy + dy), colour, 30)) n++;
   return n;
 }
 
@@ -178,23 +234,35 @@ test.describe('F-006 numbered steps', () => {
     await toolButton(page, 'Step (N)').click();
     const swatch = (name: string) =>
       page.getByRole('complementary', { name: 'Style' }).getByRole('radio', { name, exact: true });
-    const spots = { Yellow: [200, 200], Red: [400, 200], Orange: [600, 200], Green: [800, 200] } as const;
-    for (const [name, [x, y]] of Object.entries(spots)) {
+    const spots = [
+      ['Yellow', HEX.yellow, 200],
+      ['Red', HEX.red, 400],
+      ['Orange', HEX.orange, 600],
+      ['Green', HEX.green, 800],
+    ] as const;
+    const state = page.locator('[data-screen="SCR-Annotator"]');
+    // Inside the badge, left of the digits: the badge's own colour once it is painted.
+    const rim = (x: number) => canvasPixel(page, screen(x - 24, 200).x, screen(x - 24, 200).y);
+    for (const [i, [name, hex, x]] of spots.entries()) {
       // With nothing selected the colour becomes the step tool's current style, not the last step's.
-      if ((await page.locator('[data-screen="SCR-Annotator"]').getAttribute('data-state')) === 'selecting')
-        await deselect(page);
+      await expect(state).not.toHaveAttribute('data-state', 'selecting');
       await swatch(name).check();
-      await clickImage(page, x, y);
+      await expect(swatch(name)).toBeChecked();
+      await clickImage(page, x, 200);
+      // Wait for the step itself (counted, selected, painted in its colour) before the next one.
+      await expect(summary(page)).toHaveText(count(i + 1));
+      await expect(state).toHaveAttribute('data-state', 'selecting');
+      await expect.poll(async () => near(await rim(x), rgb(hex)), `${name} badge painted`).toBe(true);
+      await deselect(page);
     }
-    await deselect(page);
     const black = rgb(HEX.black);
     const white = rgb(HEX.white);
-    expect(await inkPixels(page, 200, 200, black), 'yellow: black digits').toBeGreaterThan(3);
+    await expect.poll(() => inkPixels(page, 200, 200, black), 'yellow: black digits').toBeGreaterThan(3);
     expect(await inkPixels(page, 200, 200, white), 'yellow: no white digits').toBe(0);
-    expect(await inkPixels(page, 400, 200, white), 'red: white digits').toBeGreaterThan(3);
+    await expect.poll(() => inkPixels(page, 400, 200, white), 'red: white digits').toBeGreaterThan(3);
     expect(await inkPixels(page, 400, 200, black), 'red: no black digits').toBe(0);
-    expect(await inkPixels(page, 600, 200, black), 'orange: black digits').toBeGreaterThan(3);
-    expect(await inkPixels(page, 800, 200, black), 'green: black digits').toBeGreaterThan(3);
+    await expect.poll(() => inkPixels(page, 600, 200, black), 'orange: black digits').toBeGreaterThan(3);
+    await expect.poll(() => inkPixels(page, 800, 200, black), 'green: black digits').toBeGreaterThan(3);
     // Each badge shows its number in the pairing colour (a 1, 2, 3, 4 in creation order).
     expect((await readStep(page, 200, 200, HEX.yellow, HEX.black, ['1', '2'])).label).toBe('1');
     expect((await readStep(page, 400, 200, HEX.red, HEX.white, ['1', '2'])).label).toBe('2');

@@ -267,12 +267,12 @@ test.describe('F-003 draw shapes', () => {
     await page.keyboard.press('Enter');
     await expect(summary(page)).toHaveText(count(1));
     await expect(page.locator('[role="status"]')).toContainText('Arrow added');
-    await frame(page);
     // Default arrow (RULE-05): 160 px pointing right, centred on the view's centre, image (500, 400).
-    expect(near(await pixel(page, 500, 400), RED)).toBe(true);
+    // The canvas repaints within a few frames of the change, so the pixels are polled.
+    await expect.poll(async () => near(await pixel(page, 500, 400), RED)).toBe(true);
     // Selected: white handles with the handle border at its tail (420, 400) and head (580, 400).
     for (const x of [420, 580]) {
-      expect(near(await pixel(page, x, 400), WHITE, 8), `handle ${x}`).toBe(true);
+      await expect.poll(async () => near(await pixel(page, x, 400), WHITE, 8), `handle ${x}`).toBe(true);
       expect(near(await pixel(page, x - 5, 400), HANDLE_BORDER, 8), `border ${x}`).toBe(true);
     }
     await expect(page.locator('[data-screen="SCR-Annotator"]')).toHaveAttribute('data-state', 'selecting');
