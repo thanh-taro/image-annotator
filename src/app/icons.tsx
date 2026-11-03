@@ -14,6 +14,7 @@ import {
   Download,
   Highlighter,
   Image,
+  ListOrdered,
   LoaderCircle,
   Minus,
   MousePointer2,
@@ -48,6 +49,8 @@ const SOURCES = {
   // F-004: the pen and highlight tools.
   pen: Pen,
   highlight: Highlighter,
+  // F-006: the step tool (lucide has no numbered circle; the ordered list stands for numbered steps).
+  step: ListOrdered,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
   chevronUp: ChevronUp,

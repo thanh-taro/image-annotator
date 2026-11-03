@@ -263,7 +263,7 @@ test.describe('F-004 draw strokes and highlights', () => {
     expect(results.violations).toEqual([]);
   });
 
-  test('CMP-Toolbar narrow at 320 px with an image: the tool row scrolls, the page does not, Highlight is reachable', async ({
+  test('CMP-Toolbar narrow at 320 px with an image: the tool row scrolls, the page does not, the last tool is reachable', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 760 });
@@ -293,10 +293,10 @@ test.describe('F-004 draw strokes and highlights', () => {
     expect(before.page).toBeLessThanOrEqual(0);
     expect(before.strip).toBeGreaterThan(0);
     await toolButton(page, 'Select (V)').focus();
-    await page.keyboard.press('End');
-    await expect(toolButton(page, 'Highlight (H)')).toBeFocused();
-    await expect(toolButton(page, 'Highlight (H)')).toHaveAttribute('aria-checked', 'true');
-    await expect(toolButton(page, 'Highlight (H)')).toBeInViewport({ ratio: 1 });
+    await page.keyboard.press('End'); // the last built tool (F-006)
+    await expect(toolButton(page, 'Step (N)')).toBeFocused();
+    await expect(toolButton(page, 'Step (N)')).toHaveAttribute('aria-checked', 'true');
+    await expect(toolButton(page, 'Step (N)')).toBeInViewport({ ratio: 1 });
     const after = await sizes();
     expect(after.scrolled).toBeGreaterThan(0);
     expect(after.page).toBeLessThanOrEqual(0);

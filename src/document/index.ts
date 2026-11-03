@@ -1,9 +1,14 @@
 // MOD-Document — immutable session document, edit operations, history, unexported state
 // (specs/40-technical/modules/MOD-Document.md, ADR-0008). Imports MOD-Core only; no DOM.
 // The session, its history and the RULE-18 change epoch are built (F-001); `add` and `restyle` (F-003);
-// the other edit operations throw until F-004…F-011 build them.
+// step numbering in `add`, `remove` and `duplicate` (F-006, RULE-07; F-008 wires them to the keys and
+// the panel); the other edit operations throw until F-005…F-011 build them.
 import {
+  DUPLICATE_OFFSET,
   HISTORY_STEPS,
+  moved,
+  nextStepNumber,
+  renumberSteps,
   type Annotation,
   type Colour,
   type Frame,
@@ -33,11 +38,53 @@ const freezeAnnotation = (a: Annotation): Annotation => {
   return Object.freeze(out);
 };
 
-/** F-003: adds an annotation on top (painter's order); every other object is shared (ADR-0008 §1). */
+/**
+ * F-003: adds an annotation on top (painter's order); every other object is shared (ADR-0008 §1).
+ * F-006.R1 / RULE-07: a step gets the next number, whatever number its draft carries.
+ */
 export const add =
   (annotation: Annotation): Op =>
-  (doc) =>
-    Object.freeze({ ...doc, annotations: Object.freeze([...doc.annotations, freezeAnnotation(annotation)]) });
+  (doc) => {
+    const a = annotation.kind === 'step' ? { ...annotation, number: nextStepNumber(doc.annotations) } : annotation;
+    return Object.freeze({ ...doc, annotations: Object.freeze([...doc.annotations, freezeAnnotation(a)]) });
+  };
+
+/**
+ * F-008.R5 delete, as one step (RULE-11). F-006.R2 / RULE-07: the later steps are renumbered so the
+ * numbers stay consecutive; undo restores the snapshot with the earlier numbers (ADR-0008). Deleting
+ * nothing that exists returns the document itself (no step).
+ */
+export const remove =
+  (ids: Selection): Op =>
+  (doc) => {
+    const gone = new Set(ids);
+    const kept = doc.annotations.filter((a) => !gone.has(a.id));
+    if (kept.length === doc.annotations.length) return doc;
+    const annotations = renumberSteps(kept).map((a) => (Object.isFrozen(a) ? a : freezeAnnotation(a)));
+    return Object.freeze({ ...doc, annotations: Object.freeze(annotations) });
+  };
+
+/**
+ * F-008.R5 duplicate, as one step (RULE-11): copies of the annotations named in `ids`, in drawing order,
+ * offset DUPLICATE_OFFSET image pixels right and down (RULE-19), on top; `newIds[i]` is the id of the
+ * copy of `ids[i]` (MOD-App takes them from Session.newId). F-006.R5 / RULE-07: a copied step is a new
+ * step and gets the next number.
+ */
+export const duplicate =
+  (ids: Selection, newIds: readonly string[]): Op =>
+  (doc) => {
+    const idOf = new Map(ids.map((id, i) => [id, newIds[i]]));
+    const copies: Annotation[] = [];
+    let next = nextStepNumber(doc.annotations);
+    for (const a of doc.annotations) {
+      const id = idOf.get(a.id);
+      if (id === undefined) continue;
+      const copy = { ...moved(a, DUPLICATE_OFFSET, DUPLICATE_OFFSET), id } as Annotation;
+      copies.push(freezeAnnotation(copy.kind === 'step' ? { ...copy, number: next++ } : copy));
+    }
+    if (!copies.length) return doc;
+    return Object.freeze({ ...doc, annotations: Object.freeze([...doc.annotations, ...copies]) });
+  };
 
 /**
  * RULE-04: changes the style of these annotations (one step for a multi-selection, RULE-11). Only the
@@ -59,8 +106,6 @@ export const restyle =
   };
 
 export const update = (_id: string, _patch: Partial<Annotation>): Op => notImplemented('update');
-export const remove = (_ids: Selection): Op => notImplemented('remove');
-export const duplicate = (_ids: Selection): Op => notImplemented('duplicate');
 export const reorder = (_ids: Selection, _direction: 'forward' | 'backward'): Op => notImplemented('reorder');
 export const setFrame = (_frame: Frame): Op => notImplemented('setFrame');
 export const setPadding = (_size: PaddingSize): Op => notImplemented('setPadding');

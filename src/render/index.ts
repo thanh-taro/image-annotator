@@ -3,7 +3,7 @@
 // never reads language, theme or view state beyond the transform it is given (INV-05).
 // The palette constants are generated from the tokens (scripts/gen-tokens.mjs). `paintBase` is built
 // (F-001); `paint` draws rectangles, ellipses, lines and arrows and the selection overlay (F-003), pen
-// strokes and highlights (F-004); the other kinds join with F-005…F-007. Promoted from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022).
+// strokes and highlights (F-004), step badges (F-006); the other kinds join with F-005 and F-007. Promoted from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022).
 import {
   ARROW_HEAD_LENGTH,
   arrowHead,
@@ -14,6 +14,7 @@ import {
   strokePieces,
   isLineAnnotation,
   shapeBox,
+  stepBadge,
   strokePixels,
   TRANSLUCENT_FILL_OPACITY,
   type Annotation,
@@ -22,6 +23,7 @@ import {
   type Frame,
   type Padding,
   type PathAnnotation,
+  type StepAnnotation,
 } from '../core';
 import { PALETTE_HEX } from './palette.gen';
 
@@ -77,7 +79,7 @@ type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
  * image layer, ADR-0016) it copies that layer instead of scene steps 1–2; the export never passes one
  * and gets the background and the image clipped to the frame from the image itself. Then the
  * annotations in painter's order, clipped to the canvas (RULE-14), then the screen-only overlays.
- * Implements: F-003.R1/R2/R3, F-004.R1/R2, RULE-09, NFR-08.
+ * Implements: F-003.R1/R2/R3, F-004.R1/R2, F-006.R3/R4, RULE-07, RULE-09, NFR-08.
  */
 export function paint(
   ctx: Ctx,
@@ -97,7 +99,7 @@ export function paint(
   ctx.restore();
   paintAnnotations(ctx, scene, image, transform, patches);
   if (overlays?.look && overlays.selection?.length)
-    paintSelection(ctx, scene, transform, overlays.selection, overlays.look);
+    paintSelection(ctx, scene, transform, overlays.selection, overlays.look, Math.min(image.width, image.height));
 }
 
 /**
@@ -182,10 +184,33 @@ function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
     case 'highlight':
       drawPath(ctx, a, markWidth(a, shortSide));
       return;
+    case 'step':
+      drawStep(ctx, a, shortSide);
+      return;
     default:
-      // Text, steps and redactions are drawn by F-005…F-007.
+      // Text and redactions are drawn by F-005 and F-007.
       return;
   }
+}
+
+/**
+ * F-006.R3/R4, RULE-07, ADR-0009: a filled circle in the step's colour (from three digits a pill of the
+ * same height), with its number as plain digits in the contrast pairing, in the tool's face at the
+ * step's text size, centred. Sizes are image pixels, so the display at any zoom and the export draw the
+ * same glyph (NFR-08); the digits are centred from the font's own metrics, not `textBaseline: middle`.
+ */
+function drawStep(ctx: Ctx, a: StepAnnotation, shortSide: number): void {
+  const b = stepBadge(a, shortSide);
+  const r = b.height / 2;
+  ctx.fillStyle = paletteColour(a.style.color);
+  if (b.width > b.height) ctx.roundRect(b.centre.x - b.width / 2, b.centre.y - r, b.width, b.height, r);
+  else ctx.arc(b.centre.x, b.centre.y, r, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.font = b.font;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = paletteColour(contrastPair(a.style.color));
+  ctx.fillText(b.label, b.centre.x, b.baseline);
 }
 
 /**
@@ -221,7 +246,14 @@ function drawPath(ctx: Ctx, a: PathAnnotation, width: number): void {
  * outline with eight handles, or a line's two end handles — and an outline on each of several, clipped
  * to the canvas. Drawn in context pixels, so handles keep their size at every zoom.
  */
-function paintSelection(ctx: Ctx, scene: Scene, transform: Transform, ids: readonly string[], look: OverlayLook): void {
+function paintSelection(
+  ctx: Ctx,
+  scene: Scene,
+  transform: Transform,
+  ids: readonly string[],
+  look: OverlayLook,
+  shortSide: number,
+): void {
   const { scale, dx, dy } = transform;
   const X = (x: number) => dx + x * scale;
   const Y = (y: number) => dy + y * scale;
@@ -241,7 +273,7 @@ function paintSelection(ctx: Ctx, scene: Scene, transform: Transform, ids: reado
     // line through the band and the n/s handles stack; F-008 decides the box, scaling H from 0 and
     // which of overlapping handles a press picks (review F-004 round 1, finding 4).
     if (!single || !isLineAnnotation(a)) {
-      const b = shapeBox(a);
+      const b = shapeBox(a, shortSide);
       const x = X(b.x);
       const y = Y(b.y);
       ctx.lineWidth = look.lineWidth + 2;

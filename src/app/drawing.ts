@@ -2,7 +2,7 @@
 // shows. Creating a shape is one undo step that selects it (RULE-11, F-003.R6); a style change applies
 // to the selection as one step and becomes the current style of its tools, else it is the active tool's
 // current style and no step (RULE-04, RULE-11). Tool changes and placing are announced (NFR-06).
-// Implements: F-003.R3/R6, F-004.R1/R2 (the pen and highlight tools), RULE-04, RULE-11, RULE-19 (Esc chain), CMP-Toolbar "Behavior",
+// Implements: F-003.R3/R6, F-004.R1/R2 (the pen and highlight tools), F-006.R1 (the step tool), RULE-04, RULE-11, RULE-19 (Esc chain), CMP-Toolbar "Behavior",
 // CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed).
 import { canvasCommands } from '../canvas';
 import { t, type MessageId } from '../copy';
@@ -16,6 +16,7 @@ import {
   type DrawingTool,
   type Fill,
   type Size,
+  type StepAnnotation,
   type Style,
   type ToolName,
 } from '../core';
@@ -23,7 +24,16 @@ import { add, restyle, type Doc, type Selection } from '../document';
 import { announcePolite, commit, currentStyles, doc, loaded, selection, sheetOpen, tool } from './state';
 
 /** The tools built so far, in CMP-Toolbar order; the others join with their features (F-005…F-010). */
-export const BUILT_TOOLS: readonly ToolName[] = ['select', 'rectangle', 'ellipse', 'arrow', 'line', 'pen', 'highlight'];
+export const BUILT_TOOLS: readonly ToolName[] = [
+  'select',
+  'rectangle',
+  'ellipse',
+  'arrow',
+  'line',
+  'pen',
+  'highlight',
+  'step',
+];
 
 const TOOL_COPY = {
   select: 'tool.select',
@@ -68,6 +78,19 @@ export function createAnnotation(draft: Annotation): void {
   const annotation = { ...draft, id } as Annotation;
   commit(l.session.history.apply(add(annotation), [id]));
   announcePolite(t('a11y.placed', { kind: toolLabel(toolOf(annotation.kind)) }));
+}
+
+/**
+ * CMP-Canvas "Accessibility": a step's name in the annotations list (COPY-a11y.step_annotation; F-013
+ * builds the list), with its centre in whole image pixels. RULE-07: the number is plain digits in every
+ * language, so it is passed as text (never formatted with a grouping separator).
+ */
+export function stepName(step: StepAnnotation): string {
+  return t('a11y.step_annotation', {
+    number: String(step.number),
+    x: Math.round(step.centre.x),
+    y: Math.round(step.centre.y),
+  });
 }
 
 /** The style choices CMP-StylePanel offers (RULE-04). */

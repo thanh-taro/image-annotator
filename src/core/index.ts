@@ -2,7 +2,7 @@
 // (specs/40-technical/modules/MOD-Core.md). Pure, synchronous, dependency-free: usable on the main
 // thread and in the effects worker; no DOM, clock or language. Results carry codes and numbers.
 // Types, constants, size tables, the format sniff (F-001), the canvas/fit maths and the view maths
-// (F-002), the tools and shape geometry (F-003) are real; the rest throws until its feature is built.
+// (F-002), the tools and shape geometry (F-003), step numbering (F-006) are real; the rest throws until its feature is built.
 import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize } from './types';
 
 export * from './types';
@@ -15,6 +15,7 @@ export * from './header';
 export * from './view';
 export * from './tools';
 export * from './shapes';
+export * from './steps';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Core ${name}`);
@@ -42,11 +43,6 @@ export function marqueeHits(_annotations: readonly Annotation[], _box: Box): rea
 /** INV-02: the redaction box extended outward to whole pixels. */
 export function redactionBox(_box: Box): Box {
   return notImplemented('redactionBox');
-}
-
-/** RULE-07: steps renumbered 1…n in creation order. */
-export function renumberSteps(_annotations: readonly Annotation[]): readonly Annotation[] {
-  return notImplemented('renumberSteps');
 }
 
 /** RULE-20: redactions whose box overlaps the canvas. */

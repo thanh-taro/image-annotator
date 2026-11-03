@@ -5,15 +5,16 @@
 // rebuilds only when its inputs change. On it MOD-Render `paint` draws the annotations and the selection
 // handles; while a shape, stroke or highlight is drawn (./draw.ts) the split drag layers (./drag.ts,
 // ADR-0022) hold the rest. Pointer moves pass their coalesced samples on, so strokes follow the
-// pointer's full path (F-004.R1).
+// pointer's full path (F-004.R1). The step tool (F-006) places a step per click or on Enter. Drawing
+// is accepted only once the tool's face is ready (ADR-0009 §4, ./fonts.ts), and the canvas repaints
+// then, so step numbers never show in a fallback face.
 // The accessible list arrives with F-013.
-// Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, F-004.R1/R2/R4, RULE-12, CMP-Canvas "Behavior" (two fingers pan
+// Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, F-004.R1/R2/R4, F-006.R1/R4, ADR-0009 §4, RULE-12, CMP-Canvas "Behavior" (two fingers pan
 // and zoom) and "drawing" / "selected", architecture A5 (crisp from 200 %), ADR-0016, ADR-0022.
 import { useEffect, useRef } from 'preact/hooks';
 import {
   canvasRect,
   CRISP_ZOOM,
-  defaultAnnotationAt,
   toImage,
   type Annotation,
   type Point,
@@ -24,7 +25,8 @@ import {
 import type { Doc } from '../document';
 import { paint as paintScene, type BaseView, type OverlayLook, type Patches, type Transform } from '../render';
 import { DragLayers } from './drag';
-import { DRAFT_ID, DrawTool, drawKindOf } from './draw';
+import { defaultAt, DrawTool, placeKindOf } from './draw';
+import { fontGate } from './fonts';
 import { InputController, pointerInput } from './input';
 import { ImageLayer } from './layer';
 import { ViewController } from './view';
@@ -150,10 +152,12 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
 
     // F-003/F-004: the shape, pen and highlight tools (./draw.ts) take one-finger, mouse and pen drags
     // the view does not take.
+    // ADR-0009 §4: no drawing until the tool's face is ready; then repaint in it.
+    const fonts = fontGate();
     const draw = new DrawTool(
       () => {
         const { image: img, tool: active, style: current } = live.current;
-        if (!view.view || !current) return null;
+        if (!view.view || !current || !fonts.ready) return null;
         return {
           tool: active,
           style: current,
@@ -215,13 +219,14 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       }
       paintScene(ctx, scene, img, transform, NO_PATCHES, { selection: selected, look: themed(th, ratio).look }, source);
       // NFR-02: a gesture is pressed but not yet a drag: build the layers now (nothing new is drawn).
-      if (draw.active) drag.prepare(dragFrame);
+      if (draw.dragging) drag.prepare(dragFrame);
       else drag.release();
     };
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(paint);
     };
     live.current.schedule = schedule;
+    const stopFonts = fonts.onReady(schedule);
     live.current.onViewChanged = () => draw.viewChanged();
 
     const measure = () => {
@@ -306,13 +311,13 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       },
       cancelDrag: () => draw.cancel(),
       placeAtCentre() {
-        // RULE-19 Enter / F-003.R5 / F-004.R4: the default shape, or a pen or highlight dot (RULE-05), at
-        // the centre of the view.
+        // RULE-19 Enter / F-003.R5 / F-004.R4 / F-006.R4: the default shape, a pen or highlight dot
+        // (RULE-05), or the next step, at the centre of the view.
         const { image: img, tool: active, style: current } = live.current;
-        const kind = drawKindOf(active);
+        const kind = placeKindOf(active);
         const centre = view.centreImage();
-        if (!kind || !current || !centre) return false;
-        live.current.onCreate?.(defaultAnnotationAt(centre, kind, Math.min(img.width, img.height), DRAFT_ID, current));
+        if (!kind || !current || !centre || !fonts.ready) return false;
+        live.current.onCreate?.(defaultAt(centre, kind, Math.min(img.width, img.height), current));
         return true;
       },
     };
@@ -331,6 +336,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     for (const g of GESTURES) el.addEventListener(g, onGesture, { passive: false });
     return () => {
       cancelAnimationFrame(raf);
+      stopFonts();
       observer.disconnect();
       media?.removeEventListener('change', onDpr);
       el.removeEventListener('wheel', onWheel);
