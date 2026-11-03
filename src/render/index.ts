@@ -7,12 +7,14 @@
 import {
   ARROW_HEAD_LENGTH,
   arrowHead,
+  boundsOf,
   canvasRect,
   handlesOf,
   HIGHLIGHT_OPACITY,
   markWidth,
   strokePieces,
   isLineAnnotation,
+  isStepAnnotation,
   shapeBox,
   stepBadge,
   strokePixels,
@@ -273,7 +275,8 @@ function paintSelection(
     // line through the band and the n/s handles stack; F-008 decides the box, scaling H from 0 and
     // which of overlapping handles a press picks (review F-004 round 1, finding 4).
     if (!single || !isLineAnnotation(a)) {
-      const b = shapeBox(a, shortSide);
+      // F-006: a step's outline is its badge (no stroke), which needs the image's shorter side.
+      const b = isStepAnnotation(a) ? boundsOf(a, shortSide) : shapeBox(a);
       const x = X(b.x);
       const y = Y(b.y);
       ctx.lineWidth = look.lineWidth + 2;

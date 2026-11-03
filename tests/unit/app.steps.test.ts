@@ -1,10 +1,8 @@
 // MOD-App step commands (F-006): the step tool is offered, a placed step gets the next number, is
-// selected and announced (NFR-06), the panel offers colour and size (no fill), and steps are named
-// with COPY-a11y.step_annotation (CMP-Canvas "Accessibility").
+// selected and announced (NFR-06), and the panel offers colour and size (no fill).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BUILT_TOOLS, createAnnotation, panelModel, setStyle, setTool, stepName } from '../../src/app/drawing';
+import { BUILT_TOOLS, createAnnotation, panelModel, setStyle, setTool } from '../../src/app/drawing';
 import { currentStyles, doc, loaded, polite, selection, startNewSession, tool } from '../../src/app/state';
-import { language } from '../../src/copy';
 import { DEFAULT_STYLES, type StepAnnotation } from '../../src/core';
 import type { DecodedImage } from '../../src/io';
 
@@ -23,7 +21,6 @@ const steps = () => (doc.value?.annotations ?? []).flatMap((a) => (a.kind === 's
 
 describe('MOD-App steps', () => {
   beforeEach(() => {
-    language.value = 'en-US';
     tool.value = 'select';
     currentStyles.value = DEFAULT_STYLES;
     startNewSession(image());
@@ -70,14 +67,5 @@ describe('MOD-App steps', () => {
     createAnnotation(draft());
     setStyle({ strokeSize: 'S' });
     expect(steps()).toEqual([1, 2]);
-  });
-
-  it('CMP-Canvas "Accessibility" a step is named with COPY-a11y.step_annotation (its number and centre)', () => {
-    const step = { ...draft(120.4, 80.6), number: 3 } as const;
-    expect(stepName(step)).toBe('Step 3 at 120, 81');
-    language.value = 'vi-VN';
-    expect(stepName(step)).toBe('Bước 3 tại 120, 81');
-    // RULE-07: step numbers are plain digits in every language (no grouping separator).
-    expect(stepName({ ...step, number: 1234 })).toBe('Bước 1234 tại 120, 81');
   });
 });

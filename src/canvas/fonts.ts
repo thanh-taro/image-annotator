@@ -42,6 +42,23 @@ export class FontGate {
   }
 }
 
+/**
+ * ADR-0009 §4 wiring of the canvas element: while the gate is closed the canvas shows a busy cursor
+ * (`data-fonts="loading"`, drawing.css); when it opens, the mark goes and the canvas repaints in the
+ * tool's face. Returns a function that stops listening.
+ */
+export function connectFontGate(
+  gate: FontGate,
+  el: { readonly dataset: Record<string, string | undefined> },
+  repaint: () => void,
+): () => void {
+  if (!gate.ready) el.dataset['fonts'] = 'loading';
+  return gate.onReady(() => {
+    delete el.dataset['fonts'];
+    repaint();
+  });
+}
+
 let shared: FontGate | null = null;
 
 /** The page's gate: `document.fonts.ready`, then the canvas face with its digits (already loaded at startup). */

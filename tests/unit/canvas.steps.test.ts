@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_STYLES, type Annotation, type Point, type ToolName } from '../../src/core';
 import { DRAFT_ID, DrawTool, placeKindOf } from '../../src/canvas/draw';
-import { FontGate } from '../../src/canvas/fonts';
+import { connectFontGate, FontGate } from '../../src/canvas/fonts';
 import type { PointerInput } from '../../src/canvas/input';
 
 function setup(tool: ToolName = 'step', ready = () => true) {
@@ -68,20 +68,53 @@ describe('MOD-Canvas step tool', () => {
     expect(placeKindOf('crop')).toBeNull();
   });
 
-  it('ADR-0009 §4 the canvas accepts drawing only once the fonts are ready', async () => {
+  it('ADR-0009 §4 the canvas accepts drawing only once the fonts are ready (press and Enter)', async () => {
     let resolve = () => {};
     const gate = new FontGate(new Promise<void>((r) => (resolve = r)));
-    let changes = 0;
-    gate.onReady(() => changes++);
-    const { draw, created } = setup('step', () => gate.ready);
+    const created: Annotation[] = [];
+    const setupFn = () => ({
+      tool: 'step' as const,
+      style: DEFAULT_STYLES.step,
+      shortSide: 800,
+      toImage: (p: Point) => p,
+    });
+    // The gate as Canvas.tsx wires it: DrawTool's fonts argument, connectFontGate on the element.
+    const draw = new DrawTool(
+      setupFn,
+      () => {},
+      (a) => created.push(a),
+      () => {},
+      gate,
+    );
+    const el = { dataset: {} as Record<string, string | undefined> };
+    let repaints = 0;
+    connectFontGate(gate, el, () => repaints++);
+    expect(el.dataset['fonts']).toBe('loading'); // busy cursor (drawing.css)
     expect(draw.down(at(10, 10))).toBe(false);
+    expect(draw.placeAt({ x: 500, y: 400 })).toBe(false);
+    expect(created).toEqual([]);
     resolve();
     await gate.settled;
-    expect(gate.ready).toBe(true);
-    expect(changes).toBe(1);
+    expect(el.dataset['fonts']).toBeUndefined();
+    expect(repaints).toBe(1);
     expect(draw.down(at(10, 10))).toBe(true);
     draw.up(at(10, 10));
-    expect(created).toHaveLength(1);
+    expect(draw.placeAt({ x: 500, y: 400 })).toBe(true);
+    expect(created.map((a) => (a.kind === 'step' ? a.centre : null))).toEqual([
+      { x: 10, y: 10 },
+      { x: 500, y: 400 },
+    ]);
+  });
+
+  it('ADR-0009 §4 a gate that is already open marks nothing busy and repaints once', () => {
+    const gate = new FontGate(Promise.resolve());
+    return gate.settled.then(() => {
+      const el = { dataset: {} as Record<string, string | undefined> };
+      let repaints = 0;
+      connectFontGate(gate, el, () => repaints++);
+      expect(el.dataset['fonts']).toBeUndefined();
+      expect(repaints).toBe(1);
+    });
   });
 
   it('ADR-0009 §4 a font load that fails still opens the canvas (fallback face) rather than blocking it', async () => {

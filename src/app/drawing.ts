@@ -16,7 +16,6 @@ import {
   type DrawingTool,
   type Fill,
   type Size,
-  type StepAnnotation,
   type Style,
   type ToolName,
 } from '../core';
@@ -78,19 +77,6 @@ export function createAnnotation(draft: Annotation): void {
   const annotation = { ...draft, id } as Annotation;
   commit(l.session.history.apply(add(annotation), [id]));
   announcePolite(t('a11y.placed', { kind: toolLabel(toolOf(annotation.kind)) }));
-}
-
-/**
- * CMP-Canvas "Accessibility": a step's name in the annotations list (COPY-a11y.step_annotation; F-013
- * builds the list), with its centre in whole image pixels. RULE-07: the number is plain digits in every
- * language, so it is passed as text (never formatted with a grouping separator).
- */
-export function stepName(step: StepAnnotation): string {
-  return t('a11y.step_annotation', {
-    number: String(step.number),
-    x: Math.round(step.centre.x),
-    y: Math.round(step.centre.y),
-  });
 }
 
 /** The style choices CMP-StylePanel offers (RULE-04). */

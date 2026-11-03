@@ -3,8 +3,8 @@
 // creation order, renumbering after a delete, the pill from three digits, plain digits).
 // Creation order is the order of the numbers themselves: numbers are always 1…n in creation order, so
 // sorting the steps by number recovers it after any delete or reorder, with no extra field.
-// Digit metrics are Manrope's at weight 600 (ADR-0009), measured once in Chromium and WebKit (both
-// give the same values): the digits are 0.72 em tall and at most 0.642 em wide.
+// Digit metrics are Manrope's at weight 600 (ADR-0009), measured once with measureText in Chromium and
+// WebKit (both give the same values): the digits are 0.72 em tall, and each has its own advance.
 import { TEXT_WEIGHT } from './constants';
 import { styleSizes } from './sizes';
 import type { Annotation, Box, Point, Style } from './types';
@@ -12,9 +12,12 @@ import type { Annotation, Box, Point, Style } from './types';
 export type StepAnnotation = Extract<Annotation, { readonly kind: 'step' }>;
 export const isStepAnnotation = (a: Annotation): a is StepAnnotation => a.kind === 'step';
 
-/** Manrope 600: the height of the digits (they sit on the baseline) and the widest digit's advance, in em. */
+/** Manrope 600: the height of the digits (they sit on the baseline), in em. */
 export const STEP_DIGIT_HEIGHT_EM = 0.72;
-export const STEP_DIGIT_ADVANCE_EM = 0.642;
+/** Manrope 600: the advance of each digit 0…9, in em (the digits are proportional). */
+export const STEP_DIGIT_ADVANCE_EM: readonly number[] = [
+  0.642, 0.422, 0.587, 0.572, 0.602, 0.583, 0.621, 0.523, 0.602, 0.621,
+];
 /** RULE-07: from this many digits the badge is a pill instead of a circle. */
 export const STEP_PILL_DIGITS = 3;
 
@@ -69,16 +72,23 @@ export interface StepBadge {
 }
 
 /**
+ * RULE-07: a pill's width — the sum of its digits' advances plus one text size, rounded to the nearest
+ * whole pixel (rules.md preamble), never narrower than the circle (`diameter`).
+ */
+export function stepPillWidth(label: string, textSize: number, diameter: number): number {
+  let em = 0;
+  for (const ch of label) em += STEP_DIGIT_ADVANCE_EM[ch.charCodeAt(0) - 48] ?? 0;
+  return Math.max(diameter, Math.round(em * textSize + textSize));
+}
+
+/**
  * RULE-04 / RULE-07: a filled circle of 2 × the text size, or from three digits a pill of the same
- * height whose width is the digits' width plus one text size, never narrower than the circle.
+ * height (stepPillWidth).
  */
 export function stepBadge(a: StepAnnotation, shortSide: number): StepBadge {
   const { text, stepDiameter } = styleSizes(shortSide, a.style.strokeSize);
   const label = String(Math.trunc(a.number));
-  const width =
-    label.length >= STEP_PILL_DIGITS
-      ? Math.max(stepDiameter, Math.ceil(label.length * STEP_DIGIT_ADVANCE_EM * text + text))
-      : stepDiameter;
+  const width = label.length >= STEP_PILL_DIGITS ? stepPillWidth(label, text, stepDiameter) : stepDiameter;
   return {
     centre: a.centre,
     width,

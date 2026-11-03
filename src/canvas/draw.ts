@@ -101,7 +101,21 @@ export class DrawTool implements ToolInput {
     private readonly onCreate: (draft: Annotation) => void,
     /** ADR-0022 / NFR-02: a gesture started; build the drag layers now, before the 4 px threshold. */
     private readonly onPrepare: () => void = () => {},
+    /** ADR-0009 §4: nothing is drawn or placed until the tool's face is ready (./fonts.ts). */
+    private readonly fonts: { readonly ready: boolean } = { ready: true },
   ) {}
+
+  /**
+   * RULE-19 Enter / F-003.R5 / F-004.R4 / F-006.R4: the active tool's default annotation (a shape, a pen
+   * or highlight dot, or the next step) at `centre` (image pixels). Returns true if one was placed.
+   */
+  placeAt(centre: Point | null): boolean {
+    const s = this.fonts.ready ? this.setup() : null;
+    const kind = s && placeKindOf(s.tool);
+    if (!s || !kind || !centre) return false;
+    this.onCreate(defaultAt(centre, kind, s.shortSide, s.style));
+    return true;
+  }
 
   /** True while a gesture is in progress (pointer down, not cancelled). */
   get active(): boolean {
@@ -115,7 +129,7 @@ export class DrawTool implements ToolInput {
 
   down(input: PointerInput): boolean {
     // A cancelled gesture whose pointer is still down (or was taken by a pinch) gives way to a new one.
-    if (this.active || input.button !== 0) return false;
+    if (this.active || input.button !== 0 || !this.fonts.ready) return false;
     const s = this.setup();
     const kind = s && placeKindOf(s.tool);
     if (!s || !kind) return false;

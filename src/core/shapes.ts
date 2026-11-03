@@ -226,14 +226,13 @@ function pointsBox(points: readonly Point[]): Box {
 }
 
 /**
- * The geometry box of a shape, without its stroke (handles sit on it; for paths, the points' box; for a
- * step, its badge, whose size needs the image's shorter side, RULE-04).
+ * The geometry box of a shape, without its stroke (handles sit on it; for paths, the points' box). A
+ * step's box is its badge, whose size needs the image's shorter side: use `boundsOf` (RULE-04).
  */
-export function shapeBox(a: Annotation, shortSide?: number): Box {
+export function shapeBox(a: Annotation): Box {
   if (isBoxAnnotation(a)) return normalizeBox(a.box);
   if (isLineAnnotation(a)) return boxBetween(a.tail, a.head);
   if (isPathAnnotation(a)) return pointsBox(a.points);
-  if (isStepAnnotation(a) && shortSide !== undefined) return stepBox(a, shortSide);
   throw new Error(`shapeBox: ${a.kind} arrives with its feature`);
 }
 

@@ -235,6 +235,27 @@ test.describe('F-006 numbered steps', () => {
     expect(r.fallback, 'differs from a fallback face').toBeGreaterThan(r.diff * 2);
   });
 
+  test('RULE-07 a pill is as wide as the number’s measured width plus one text size (within 1 px)', async ({
+    page,
+  }) => {
+    await open(page);
+    // MOD-Core's pill widths at text size 32 (tests/unit/core.steps.test.ts) against the browser's own
+    // measurement of the tool's face.
+    const measured = await page.evaluate(() => {
+      const c = new OffscreenCanvas(1, 1).getContext('2d');
+      if (!c) throw new Error('no 2d context');
+      c.font = '600 32px Manrope';
+      return ['100', '111', '888'].map((label) => c.measureText(label).width + 32);
+    });
+    const core = [87, 73, 90];
+    measured.forEach((w, i) => expect(Math.abs(w - (core[i] ?? 0)), `${w}`).toBeLessThanOrEqual(1));
+  });
+
+  // Delete and duplicate are wired to keys and the panel by F-008; their model tests are in
+  // tests/unit/document.steps.test.ts. F-008 turns these on.
+  test.fixme('F-006.AC2 deleting step 2 of 1, 2, 3 leaves 1 and 2; undo restores 1, 2, 3 (wired by F-008)', async () => {});
+  test.fixme('F-006.AC7 duplicating step 1 of 1, 2, 3 makes step 4 (wired by F-008)', async () => {});
+
   test('NFR-06 axe finds no violations with steps placed and one selected', async ({ page }) => {
     await open(page);
     await toolButton(page, 'Step (N)').click();

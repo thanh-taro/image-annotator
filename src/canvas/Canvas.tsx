@@ -25,8 +25,8 @@ import {
 import type { Doc } from '../document';
 import { paint as paintScene, type BaseView, type OverlayLook, type Patches, type Transform } from '../render';
 import { DragLayers } from './drag';
-import { defaultAt, DrawTool, placeKindOf } from './draw';
-import { fontGate } from './fonts';
+import { DrawTool } from './draw';
+import { connectFontGate, fontGate } from './fonts';
 import { InputController, pointerInput } from './input';
 import { ImageLayer } from './layer';
 import { ViewController } from './view';
@@ -157,7 +157,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     const draw = new DrawTool(
       () => {
         const { image: img, tool: active, style: current } = live.current;
-        if (!view.view || !current || !fonts.ready) return null;
+        if (!view.view || !current) return null;
         return {
           tool: active,
           style: current,
@@ -173,6 +173,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       (draft) => live.current.onCreate?.(draft),
       // ADR-0022 / NFR-02: the next frame builds the drag layers, so the first drag frame only composites.
       () => schedule(),
+      fonts,
     );
 
     const paint = () => {
@@ -226,7 +227,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       if (!raf) raf = requestAnimationFrame(paint);
     };
     live.current.schedule = schedule;
-    const stopFonts = fonts.onReady(schedule);
+    const stopFonts = connectFontGate(fonts, el, schedule);
     live.current.onViewChanged = () => draw.viewChanged();
 
     const measure = () => {
@@ -310,16 +311,8 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
         measure();
       },
       cancelDrag: () => draw.cancel(),
-      placeAtCentre() {
-        // RULE-19 Enter / F-003.R5 / F-004.R4 / F-006.R4: the default shape, a pen or highlight dot
-        // (RULE-05), or the next step, at the centre of the view.
-        const { image: img, tool: active, style: current } = live.current;
-        const kind = placeKindOf(active);
-        const centre = view.centreImage();
-        if (!kind || !current || !centre || !fonts.ready) return false;
-        live.current.onCreate?.(defaultAt(centre, kind, Math.min(img.width, img.height), current));
-        return true;
-      },
+      // RULE-19 Enter: the active tool's default annotation at the centre of the view (./draw.ts).
+      placeAtCentre: () => draw.placeAt(view.centreImage()),
     };
 
     measure();

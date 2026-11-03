@@ -376,4 +376,8 @@
   .tk-canvas:not([data-tool='select']) {
     cursor: crosshair;
   }
+  /* ADR-0009 §4: until the tool's face is ready the canvas accepts no drawing; it shows it is busy. */
+  .tk-canvas[data-fonts='loading'] {
+    cursor: progress;
+  }
 }

@@ -24,7 +24,7 @@ export {
   type DrawSetup,
   type PlaceKind,
 } from './draw';
-export { FontGate, fontGate } from './fonts';
+export { connectFontGate, FontGate, fontGate } from './fonts';
 export { DragLayers, type DragFrame } from './drag';
 
 /**

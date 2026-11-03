@@ -9,9 +9,9 @@ import {
   moved,
   nextStepNumber,
   renumberSteps,
-  shapeBox,
   stepAt,
   stepBadge,
+  stepPillWidth,
   type Annotation,
   type StepAnnotation,
 } from '../../src/core';
@@ -77,6 +77,16 @@ describe('MOD-Core steps', () => {
     expect(at('L').width).toBe(240); // 120
   });
 
+  it('RULE-07 a pill is as wide as its digits’ advances plus one text size, rounded to nearest', () => {
+    // Text size M on a 1000 × 800 image is 32 px; Manrope 600 advances (em): 1 = 0.422, 0 = 0.642, 8 = 0.602.
+    expect(stepBadge(step('a', 100), 800).width).toBe(87); // (0.422 + 2 × 0.642) × 32 + 32 = 86.59
+    expect(stepBadge(step('a', 111), 800).width).toBe(73); // 3 × 0.422 × 32 + 32 = 72.51
+    expect(stepBadge(step('a', 888), 800).width).toBe(90); // 3 × 0.602 × 32 + 32 = 89.79
+    // Never narrower than the circle.
+    expect(stepPillWidth('11', 32, 64)).toBe(64);
+    expect(stepPillWidth('1', 100, 200)).toBe(200);
+  });
+
   it('RULE-07 F-006 edge case from 100 on the badge is a pill of the same height, wider than the circle', () => {
     const two = stepBadge(step('a', 99), 800);
     const three = stepBadge(step('a', 100), 800);
@@ -110,7 +120,7 @@ describe('MOD-Core steps', () => {
   it('F-008.R3 a selected step has no handles; its outline is the badge box', () => {
     const a = step('a', 1, 100, 100);
     expect(handlesOf(a)).toEqual([]);
-    expect(shapeBox(a, 800)).toEqual({ x: 68, y: 68, width: 64, height: 64 });
+    expect(boundsOf(a, 800)).toEqual({ x: 68, y: 68, width: 64, height: 64 });
   });
 
   it('F-006.R5 a step moves by its centre (the duplicate offset) and keeps its number', () => {
