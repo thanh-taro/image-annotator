@@ -54,7 +54,7 @@
     "build": {
       "title": "4 Implementation",
       "status": "in_progress",
-      "step": "4 wave 1: F-001 review round 1 fixes in progress; F-016 built, waits for F-001 merge then review",
+      "step": "4: F-001/F-015/F-018 merged; F-016 rebasing then review; F-002 building",
       "gate": {
         "status": "pending",
         "at": null,
@@ -1334,9 +1334,17 @@
     {
       "at": "2026-11-03T01:33:21+00:00",
       "event": "context compaction (auto) at: build-my-app: phase 4 Implementation [in_progress] — 4 wave 1: F-001 review round 1 fixes in progress; F-016 built, waits for F-001 merge then review · 4/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-03T01:47:19+00:00",
+      "event": "F-001 merged (c800413) and shipped after 2 review rounds"
+    },
+    {
+      "at": "2026-11-03T01:47:35+00:00",
+      "event": "build step: 4: F-001/F-015/F-018 merged; F-016 rebasing then review; F-002 building"
     }
   ],
-  "updated": "2026-11-03T01:33:21+00:00",
+  "updated": "2026-11-03T01:47:35+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
