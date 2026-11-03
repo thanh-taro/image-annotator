@@ -20,7 +20,7 @@ const near = (a: number[], b: number[], tolerance = 24) => a.every((v, i) => Mat
 
 const workArea = (page: Page) => page.locator('main.tk-work-area');
 const toolButton = (page: Page, name: string) =>
-  page.getByRole('toolbar', { name: 'Tools and actions' }).getByRole('button', { name });
+  page.getByRole('toolbar', { name: 'Tools and actions' }).getByRole('radio', { name });
 const frame = (page: Page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
 
 /** Image pixel → CSS px in the work area at 100 % (the image is centred horizontally, top-aligned). */
@@ -46,6 +46,14 @@ async function open(page: Page, query = '') {
   await expect(summary(page)).toHaveText('1,000 × 800 px canvas, 0 annotations');
   await page.locator('footer.tk-status-bar').getByRole('button', { name: 'Actual size', exact: true }).click();
   await expect(page.locator('.tk-zoom__level')).toHaveText('100 %');
+  await frame(page);
+}
+
+/** Zooms in with the status bar until 200 % (the view is then larger than the work area, so it pans). */
+async function zoomTo200(page: Page) {
+  const zoomIn = page.locator('footer.tk-status-bar').getByRole('button', { name: 'Zoom in', exact: true });
+  for (let i = 0; i < 8 && (await page.locator('.tk-zoom__level').textContent()) !== '200 %'; i++) await zoomIn.click();
+  await expect(page.locator('.tk-zoom__level')).toHaveText('200 %');
   await frame(page);
 }
 
@@ -118,7 +126,16 @@ test.describe('F-003 draw shapes', () => {
     ] as const)
       expect(near(await pixel(page, x, y), RED), `outline ${x},${y}`).toBe(true);
     expect(near(await pixel(page, 300, 200), GREY)).toBe(true);
-    expect(near(await pixel(page, 115, 115), GREY)).toBe(true); // a box corner is outside the ellipse
+    // Not a rectangle: the box's corners and its top edge near them are outside the ellipse, and the
+    // ellipse passes through its 45° point (300 + 200 cos 45°, 200 − 100 sin 45°) ≈ (441, 129).
+    for (const [x, y] of [
+      [115, 115],
+      [110, 100],
+      [100, 110],
+      [490, 290],
+    ] as const)
+      expect(near(await pixel(page, x, y), GREY), `outside ${x},${y}`).toBe(true);
+    expect(near(await pixel(page, 441, 129), RED)).toBe(true);
   });
 
   test('F-003.AC3 an arrow from A has its 20 px long, 15 px wide head at B (1000 × 800, stroke M)', async ({
@@ -202,6 +219,45 @@ test.describe('F-003 draw shapes', () => {
     expect(near(await pixel(page, 414, 400), GREY)).toBe(true);
   });
 
+  test('F-003.AC8 Enter places at the centre of the view, not of the image, after zooming and panning', async ({
+    page,
+  }) => {
+    await open(page);
+    await zoomTo200(page);
+    await toolButton(page, 'Arrow (A)').click();
+    await workArea(page).focus();
+    await page.keyboard.press('ArrowDown'); // RULE-19: pans 40 screen px; the image centre moves off the view centre
+    await frame(page);
+    await page.keyboard.press('Enter');
+    await expect(summary(page)).toHaveText(count(1));
+    await deselect(page);
+    // The default arrow (160 image px = 320 screen px at 200 %) lies across the view's centre (600, 400).
+    const centre = { x: AREA.width / 2, y: AREA.height / 2 };
+    for (const dx of [-120, 0, 120])
+      expect(near(await canvasPixel(page, centre.x + dx, centre.y), RED), `on the arrow ${dx}`).toBe(true);
+    // The image's centre is 40 px away from it after the pan: nothing is drawn there.
+    expect(near(await canvasPixel(page, centre.x - 40, centre.y - 40), GREY)).toBe(true);
+    expect(near(await canvasPixel(page, centre.x - 40, centre.y + 40), GREY)).toBe(true);
+  });
+
+  test('F-003.AC3 a scroll during the drag keeps the arrow head under the pointer', async ({ page }) => {
+    await open(page);
+    await zoomTo200(page);
+    await toolButton(page, 'Arrow (A)').click();
+    const box = (await workArea(page).boundingBox())!;
+    await page.mouse.move(box.x + 300, box.y + 400);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 700, box.y + 400, { steps: 4 });
+    await page.mouse.wheel(0, 120); // F-002.R4: plain scrolling pans the view mid-drag
+    await frame(page);
+    await page.mouse.up();
+    await expect(summary(page)).toHaveText(count(1));
+    await deselect(page);
+    // The head ends where the pointer was released; its tail moved with the image.
+    expect(near(await canvasPixel(page, 700 - 30, 400), RED), 'head under the pointer').toBe(true);
+    expect(near(await canvasPixel(page, 700 - 30, 280), GREY), 'not where the old view put it').toBe(true);
+  });
+
   test('F-003.AC8 with the arrow tool and focus on the canvas, Enter places a selected arrow at the centre', async ({
     page,
   }) => {
@@ -233,7 +289,7 @@ test.describe('F-003 draw shapes', () => {
     await dragImage(page, [100, 300], [400, 300]);
     expect(near(await pixel(page, 400, 300), WHITE, 8)).toBe(true); // head handle
     expect(near(await pixel(page, 100, 300), WHITE, 8)).toBe(true); // tail handle
-    await expect(toolButton(page, 'Arrow (A)')).toHaveAttribute('aria-pressed', 'true');
+    await expect(toolButton(page, 'Arrow (A)')).toHaveAttribute('aria-checked', 'true');
     await dragImage(page, [100, 500], [400, 500]);
     await expect(summary(page)).toHaveText(count(2));
     // Only the newest is selected: the first arrow's head shows no handle any more.
@@ -271,25 +327,29 @@ test.describe('F-003 draw shapes', () => {
     await open(page);
     await workArea(page).focus();
     await page.keyboard.press('o');
-    await expect(toolButton(page, 'Ellipse (O)')).toHaveAttribute('aria-pressed', 'true');
+    await expect(toolButton(page, 'Ellipse (O)')).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('[role="status"]')).toContainText('Ellipse tool');
     await page.keyboard.press('Enter');
     await expect(summary(page)).toHaveText(count(1));
     await page.keyboard.press('Escape'); // clears the selection
-    await expect(toolButton(page, 'Ellipse (O)')).toHaveAttribute('aria-pressed', 'true');
+    await expect(toolButton(page, 'Ellipse (O)')).toHaveAttribute('aria-checked', 'true');
     await page.keyboard.press('Escape'); // then the select tool
-    await expect(toolButton(page, 'Select (V)')).toHaveAttribute('aria-pressed', 'true');
+    await expect(toolButton(page, 'Select (V)')).toHaveAttribute('aria-checked', 'true');
   });
 
-  test('CMP-Toolbar the tool group is one tab stop with arrow-key navigation', async ({ page }) => {
+  test('CMP-Toolbar the tool group is one tab stop, a radio group with arrow-key navigation', async ({ page }) => {
     await open(page);
     await toolButton(page, 'Select (V)').focus();
     await page.keyboard.press('ArrowRight');
     await expect(toolButton(page, 'Rectangle (R)')).toBeFocused();
+    // A radio group named COPY-a11y.tool_group: moving with the arrows checks the tool.
+    await expect(page.getByRole('radiogroup', { name: 'Drawing tools' })).toBeVisible();
+    await expect(toolButton(page, 'Rectangle (R)')).toHaveAttribute('aria-checked', 'true');
+    await expect(toolButton(page, 'Select (V)')).toHaveAttribute('aria-checked', 'false');
     await page.keyboard.press('End');
     await expect(toolButton(page, 'Line (L)')).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(toolButton(page, 'Line (L)')).toHaveAttribute('aria-pressed', 'true');
+    await expect(toolButton(page, 'Line (L)')).toHaveAttribute('aria-checked', 'true');
     await expect(toolButton(page, 'Line (L)')).toHaveAttribute('tabindex', '0');
     await expect(toolButton(page, 'Select (V)')).toHaveAttribute('tabindex', '-1');
   });

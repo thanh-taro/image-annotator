@@ -14,6 +14,7 @@ import {
   tool,
   unexported,
 } from '../../src/app/state';
+import { canvasCommands } from '../../src/canvas';
 import { DEFAULT_STYLES, type Annotation } from '../../src/core';
 import { add, restyle, startSession } from '../../src/document';
 import type { DecodedImage } from '../../src/io';
@@ -150,5 +151,18 @@ describe('MOD-App drawing commands', () => {
     expect(tool.value).toBe('select');
     select(['x']);
     expect(selection.value).toEqual(['x']);
+  });
+
+  it('RULE-19 Esc during a drag cancels the drag first; the narrow sheet closes on the next Esc', () => {
+    setTool('rectangle');
+    sheetOpen.value = true;
+    const cancel = vi.spyOn(canvasCommands, 'cancelDrag').mockReturnValueOnce(true);
+    escape();
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(sheetOpen.value).toBe(true);
+    escape();
+    expect(sheetOpen.value).toBe(false);
+    expect(tool.value).toBe('rectangle');
+    cancel.mockRestore();
   });
 });

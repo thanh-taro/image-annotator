@@ -214,7 +214,7 @@ test('F-016.AC4 the source link opens the repository in a new tab with no referr
   const tool = page.locator('[data-screen="SCR-Annotator"]');
   await expect(tool).toHaveAttribute('data-state', 'default');
   // Annotate it (F-003): a rectangle placed at the view centre, then deselected.
-  await page.getByRole('button', { name: 'Rectangle (R)' }).click();
+  await page.getByRole('radio', { name: 'Rectangle (R)' }).click();
   await page.locator('main.tk-work-area').focus();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Escape');

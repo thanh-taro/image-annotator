@@ -4,7 +4,7 @@
 // only while tools are hidden beyond it, the active or focused tool scrolled into view; tapping the
 // active tool again opens or closes the style sheet (D-019). Undo/redo (F-009), the redaction count,
 // copy, download and the overflow menu (F-012, F-013) are added in the slots marked below.
-// Implements: CMP-Toolbar (tool group, variants no image and narrow; behaviour), F-003 UX notes.
+// Implements: CMP-Toolbar (tool group, variants no image, compact and narrow; behaviour), F-003 UX notes.
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { t } from '../copy';
 import { TOOL_KEYS, type ToolName } from '../core';
@@ -57,7 +57,7 @@ function ToolGroup({ narrow }: { narrow: boolean }) {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || !narrow) return;
-    el.querySelector<HTMLElement>('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    el.querySelector<HTMLElement>('[aria-checked="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
@@ -80,7 +80,11 @@ function ToolGroup({ narrow }: { narrow: boolean }) {
               : -1;
     if (next < 0) return;
     e.preventDefault();
-    buttons[next]?.focus();
+    // CMP-Toolbar: a single-choice radio group; per the radio pattern, moving with the arrows checks.
+    const to = buttons[next];
+    to?.focus();
+    const name = to?.dataset['tool'] as ToolName | undefined;
+    if (name && name !== active) setTool(name);
   };
 
   const pick = (name: ToolName) => {
@@ -94,8 +98,16 @@ function ToolGroup({ narrow }: { narrow: boolean }) {
 
   return (
     <div class={narrow ? 'tk-tools tk-tools--narrow' : 'tk-tools'}>
-      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions -- arrow keys between the tool buttons */}
-      <div ref={ref} class="tk-tools__strip" onKeyDown={onKeyDown} onScroll={measure}>
+      {/* CMP-Toolbar "Accessibility": the tool group is a radio group named COPY-a11y.tool_group. */}
+      {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus -- APG radio group: the radios take focus (roving tab stop), not the group */}
+      <div
+        ref={ref}
+        class="tk-tools__strip"
+        role="radiogroup"
+        aria-label={t('a11y.tool_group')}
+        onKeyDown={onKeyDown}
+        onScroll={measure}
+      >
         {BUILT_TOOLS.map((name) => {
           const label = t('tool.shortcut_hint', { tool: toolLabel(name), key: TOOL_KEYS[name] });
           const on = name === active;
@@ -104,7 +116,8 @@ function ToolGroup({ narrow }: { narrow: boolean }) {
               key={name}
               type="button"
               class="tk-tool"
-              aria-pressed={on}
+              role="radio"
+              aria-checked={on}
               aria-label={label}
               aria-keyshortcuts={TOOL_KEYS[name]}
               title={label}
@@ -154,7 +167,8 @@ export function Toolbar() {
   }
   return (
     <div class="tk-toolbar__row" role="toolbar" aria-label={t('a11y.toolbar')}>
-      <OpenButton icon={false} />
+      {/* CMP-Toolbar "compact" (800–999 px): COPY-action.open as an icon named by its label. */}
+      <OpenButton icon={layout.value === 'compact'} />
       <span class="tk-toolbar__sep" aria-hidden="true" />
       <ToolGroup narrow={false} />
       {/* Slot: undo/redo (F-009). */}

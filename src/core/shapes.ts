@@ -3,6 +3,10 @@
 // Promoted from the SP-engine spike (ADR-0004 §3, ADR-0016) and adapted to the domain types; stroke,
 // highlight, text and step geometry join with F-004…F-006. Pure; coordinates are image pixels.
 // Implements: F-003.R1/R2/R4/R5, RULE-05 (default size), RULE-06 (constrain), ADR-0004 §3.
+// Spec gap (reported with F-003's review): MOD-Core's public surface lists `hitTest(annotation, point,
+// tolerance)`, `boundsOf(annotation)`, `constrain(drag, kind)` and `defaultAnnotationAt(point, kind,
+// sizes)`. Here stroke widths need the image's shorter side (RULE-04), so they take `shortSide`, and
+// `constrain` takes the drag's two points. Hit-testing and handles are used by F-008.
 import { DEFAULT_SIZE_FACTOR } from './constants';
 import { styleSizes } from './sizes';
 import type { Annotation, AnnotationKind, Box, Point, Style } from './types';

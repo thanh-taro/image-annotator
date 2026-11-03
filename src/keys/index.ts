@@ -130,7 +130,8 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
     const letter = letterOf(key);
     const tool = letter && TOOL_LETTERS[letter];
     if (tool) return act('tool', tool);
-    if (key.key === 'Enter') return NOT_DRAWING.has(scope.tool) ? NONE : act('canvas', 'place');
+    // RULE-19: kept from the browser with every tool, even with nothing to act on (select, crop).
+    if (key.key === 'Enter') return NOT_DRAWING.has(scope.tool) ? KEEP : act('canvas', 'place');
   }
   if (plain && key.key === 'Escape') return act('edit', 'escape');
   if (plain && key.shift && key.code === 'Digit1') return act('view', 'fit');

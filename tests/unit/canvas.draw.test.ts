@@ -149,4 +149,64 @@ describe('MOD-Canvas drawing tool', () => {
     expect(created).toEqual([]);
     expect(draw.active).toBe(false);
   });
+
+  it('F-003.AC3 a scroll or zoom mid-drag maps the pointer through the view as it is now', () => {
+    let zoom = 1;
+    let dx = 0;
+    const created: Annotation[] = [];
+    const draw = new DrawTool(
+      () => ({
+        tool: 'arrow',
+        style: DEFAULT_STYLES.arrow,
+        shortSide: 800,
+        toImage: (p: Point) => ({ x: (p.x - dx) / zoom, y: p.y / zoom }),
+      }),
+      () => {},
+      (a) => created.push(a),
+    );
+    draw.down(at(100, 100));
+    draw.move(at(200, 100));
+    dx = -200; // view B: panned 200 px left (a wheel scroll)
+    draw.viewChanged();
+    expect((draw.preview as LineAnnotation).head).toEqual({ x: 400, y: 100 }); // still under the pointer
+    zoom = 2; // and zoomed to 200 %
+    draw.move(at(300, 100));
+    draw.up(at(300, 100));
+    expect(created[0]).toMatchObject({ tail: { x: 100, y: 100 }, head: { x: 250, y: 50 } });
+  });
+
+  it('F-003 edge case pointercancel ends a drag like Esc: nothing is created, even before the threshold', () => {
+    for (const moveTo of [200, 101]) {
+      const { draw, created } = setup('rectangle');
+      const view = new ViewController();
+      view.setArea({ width: 1200, height: 800 }, 24);
+      view.setContent({ x: 0, y: 0, width: 1000, height: 800 }, true);
+      const input = new InputController(view, () => {}, draw);
+      input.down(at(100, 100, { type: 'pen' }));
+      input.move(at(moveTo, moveTo, { type: 'pen' }));
+      input.cancel(at(moveTo, moveTo, { type: 'pen' }));
+      expect(created).toEqual([]);
+      expect(draw.active).toBe(false);
+      expect(draw.preview).toBeNull();
+      // The next gesture draws normally.
+      input.down(at(100, 100));
+      input.move(at(300, 200));
+      input.up(at(300, 200));
+      expect(created).toHaveLength(1);
+    }
+  });
+
+  it('F-003.AC6 RULE-06 pressing or releasing Shift mid-drag updates the preview without a move', () => {
+    const { draw, created } = setup('ellipse');
+    draw.down(at(100, 100));
+    draw.move(at(300, 220));
+    expect(draw.preview).toMatchObject({ box: { width: 200, height: 120 } });
+    draw.setShift(true);
+    expect(draw.preview).toMatchObject({ box: { width: 200, height: 200 } });
+    draw.setShift(false);
+    expect(draw.preview).toMatchObject({ box: { width: 200, height: 120 } });
+    draw.setShift(true);
+    draw.up(at(300, 220, { shift: true }));
+    expect(created[0]).toMatchObject({ kind: 'ellipse', box: { width: 200, height: 200 } });
+  });
 });

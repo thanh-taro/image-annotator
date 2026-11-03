@@ -58,7 +58,7 @@
   .tk-tool:hover:not(:disabled) {
     background: var(--tk-color-surface2);
   }
-  .tk-tool[aria-pressed='true'] {
+  .tk-tool[aria-checked='true'] {
     background: var(--tk-color-selection);
     box-shadow: inset 0 0 0 var(--tk-border-width-focus) var(--tk-color-accent);
     color: var(--tk-color-accent);
@@ -358,7 +358,7 @@
   }
 
   @media (forced-colors: active) {
-    .tk-tool[aria-pressed='true'],
+    .tk-tool[aria-checked='true'],
     .tk-segment:has(.tk-choice:checked) {
       outline: var(--tk-border-width-focus) solid Highlight;
     }

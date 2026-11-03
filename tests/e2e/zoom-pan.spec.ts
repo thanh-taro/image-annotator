@@ -253,7 +253,7 @@ test.describe('F-002 zoom and pan the view', () => {
     const clip = { x: box.x + box.width / 2 - 20, y: box.y, width: 40, height: 4 };
     // The tab stop before the canvas: the active tool (F-003; the style panel has no controls with the
     // select tool and nothing selected until F-011).
-    await page.getByRole('button', { name: 'Select (V)' }).focus();
+    await page.getByRole('radio', { name: 'Select (V)' }).focus();
     const before = await page.screenshot({ clip });
     await page.keyboard.press('Tab'); // keyboard focus: :focus-visible
     await expect(workArea(page)).toBeFocused();

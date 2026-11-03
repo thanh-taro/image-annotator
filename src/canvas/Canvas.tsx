@@ -106,11 +106,23 @@ const NO_PATCHES: Patches = new Map();
 export function Canvas({ image, doc, theme, onView, tool = 'select', style, selection = [], onCreate }: CanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   // Mutable per-mount state (MOD-Canvas: transient state stays in a plain controller, not signals).
-  const live = useRef({ image, doc, theme, onView, tool, style, selection, onCreate, schedule: () => {} });
+  const live = useRef({
+    image,
+    doc,
+    theme,
+    onView,
+    tool,
+    style,
+    selection,
+    onCreate,
+    schedule: () => {},
+    onViewChanged: () => {},
+  });
   Object.assign(live.current, { image, doc, theme, onView, tool, style, selection, onCreate });
   const controller = useRef<ViewController | null>(null);
   controller.current ??= new ViewController((v) => {
     live.current.onView?.(v);
+    live.current.onViewChanged();
     live.current.schedule();
   });
 
@@ -138,13 +150,16 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     const draw = new DrawTool(
       () => {
         const { image: img, tool: active, style: current } = live.current;
-        const v = view.view;
-        if (!v || !current) return null;
+        if (!view.view || !current) return null;
         return {
           tool: active,
           style: current,
           shortSide: Math.min(img.width, img.height),
-          toImage: (p: Point) => toImage(v, p),
+          // Read the view on every call: a scroll or zoom mid-drag keeps the end under the pointer.
+          toImage: (p: Point) => {
+            const now = view.view;
+            return now ? toImage(now, p) : p;
+          },
         };
       },
       () => schedule(),
@@ -199,6 +214,7 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       if (!raf) raf = requestAnimationFrame(paint);
     };
     live.current.schedule = schedule;
+    live.current.onViewChanged = () => draw.viewChanged();
 
     const measure = () => {
       const r = el.getBoundingClientRect();
@@ -251,6 +267,11 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     };
     const onPointerMove = (e: PointerEvent) => input.move(read(e));
     const onPointerEnd = (e: PointerEvent) => input.up(read(e));
+    const onPointerCancel = (e: PointerEvent) => input.cancel(read(e));
+    // RULE-06: Shift pressed or released mid-drag constrains the preview at once, without a move.
+    const onShift = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') draw.setShift(e.type === 'keydown');
+    };
 
     // F-002.R3 Safari trackpad pinch: WebKit on macOS sends `gesturestart` / `gesturechange` /
     // `gestureend` (with `scale` and the pointer position) instead of Ctrl+wheel. A real trackpad pinch
@@ -297,7 +318,9 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
     el.addEventListener('pointerdown', onPointerDown);
     el.addEventListener('pointermove', onPointerMove);
     el.addEventListener('pointerup', onPointerEnd);
-    el.addEventListener('pointercancel', onPointerEnd);
+    el.addEventListener('pointercancel', onPointerCancel);
+    window.addEventListener('keydown', onShift);
+    window.addEventListener('keyup', onShift);
     for (const g of GESTURES) el.addEventListener(g, onGesture, { passive: false });
     return () => {
       cancelAnimationFrame(raf);
@@ -307,11 +330,14 @@ export function Canvas({ image, doc, theme, onView, tool = 'select', style, sele
       el.removeEventListener('pointerdown', onPointerDown);
       el.removeEventListener('pointermove', onPointerMove);
       el.removeEventListener('pointerup', onPointerEnd);
-      el.removeEventListener('pointercancel', onPointerEnd);
+      el.removeEventListener('pointercancel', onPointerCancel);
+      window.removeEventListener('keydown', onShift);
+      window.removeEventListener('keyup', onShift);
       for (const g of GESTURES) el.removeEventListener(g, onGesture);
       layer.release();
       drag.release();
       live.current.schedule = () => {};
+      live.current.onViewChanged = () => {};
       if (active?.controller === view) active = null;
       live.current.onView?.(null);
     };

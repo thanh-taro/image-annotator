@@ -63,6 +63,19 @@ describe('MOD-Render paint', () => {
     expect(calls).not.toContain('fill()');
   });
 
+  it('F-003.AC2 an ellipse is drawn as the ellipse inscribed in its box, not as a rectangle', () => {
+    const { ctx, calls } = recorder();
+    const e: Annotation = {
+      id: 'e',
+      kind: 'ellipse',
+      style: DEFAULT_STYLES.ellipse,
+      box: { x: 100, y: 100, width: 200, height: 100 },
+    };
+    paintAnnotations(ctx, scene([e]), image, T, new Map());
+    expect(calls).toContain('ellipse(200,150,100,50,0,0,6.28)');
+    expect(calls).not.toContain('rect(100,100,200,100)');
+  });
+
   it('F-003.AC5 F-003.R3 translucent fills at 30 % opacity in the colour, solid at 100 %, then the outline', () => {
     const t = recorder();
     paintAnnotations(t.ctx, scene([rect('translucent')]), image, T, new Map());
@@ -174,5 +187,25 @@ describe('MOD-Canvas split drag layers (ADR-0022)', () => {
     expect(made[0]?.calls).toContain('rect(100,100,200,100)'); // below
     expect(made[1]?.calls).toContain('lineTo(100,0)'); // above
     expect(out.calls).toContain('lineTo(80,0)'); // the dragged arrow, drawn each frame
+  });
+
+  it('ADR-0022 a drag frame draws the shape exactly as the settled frame does, so nothing jumps on release', () => {
+    const { create } = surfaces();
+    const layers = new DragLayers(create);
+    const final: Annotation = { ...rect('translucent'), id: 'n' };
+    const before = scene([arrow, line]);
+    const dragOut = recorder();
+    layers.paint(dragOut.ctx, frame(before, 2, 1, [final]));
+    const settledOut = recorder();
+    paint(settledOut.ctx, scene([arrow, line, final]), image, T, new Map(), undefined, base);
+    // The settled frame draws all three; its last annotation's calls equal the drag frame's preview calls.
+    // The last annotation's calls: from its first style setting to the end of the clipped pass.
+    const shape = (calls: string[]) => {
+      const start = calls.findLastIndex((c) => c.startsWith('strokeStyle=')) - 1;
+      const transform = calls.findLast((c, i) => i < start && c.startsWith('setTransform('));
+      return [transform, ...calls.slice(start, calls.indexOf('restore()', start) + 1)];
+    };
+    expect(shape(dragOut.calls)).toEqual(shape(settledOut.calls));
+    expect(shape(dragOut.calls)).toContain('rect(100,100,200,100)');
   });
 });

@@ -5,6 +5,8 @@
 // it; selecting, moving and resizing are F-008.
 // Implements: F-003.R1/R2/R4/R5, RULE-05 (a drag under 4 screen pixels is a click), RULE-06 (Shift),
 // RULE-19 (Esc cancels the current drag), F-003 edge case "Esc during a drag → nothing is created".
+// The pointer is mapped through the view as it is now (setup().toImage on every call), so a scroll or
+// zoom mid-drag keeps the shape's end under the pointer; the start stays where it was pressed.
 import {
   CLICK_THRESHOLD_PX,
   defaultAnnotationAt,
@@ -26,7 +28,7 @@ export interface DrawSetup {
   readonly style: Style;
   /** The image's shorter side `s` (RULE-04, RULE-05). */
   readonly shortSide: number;
-  /** Screen (CSS px in the work area) → image pixels, for the current view. */
+  /** Screen (CSS px in the work area) → image pixels, through the view as it is when called. */
   toImage(p: Point): Point;
 }
 
@@ -48,6 +50,9 @@ interface Gesture {
   readonly start: Point; // screen
   readonly from: Point; // image
   readonly toImage: (p: Point) => Point;
+  /** The latest pointer position (screen) and Shift state, so a view change or Shift redraws at once. */
+  last: Point;
+  shift: boolean;
   /** RULE-05: the pointer has passed the click threshold, so this gesture is a drag. */
   dragging: boolean;
   cancelled: boolean;
@@ -85,6 +90,8 @@ export class DrawTool implements ToolInput {
       start: input.point,
       from: s.toImage(input.point),
       toImage: s.toImage,
+      last: input.point,
+      shift: !!input.shift,
       dragging: false,
       cancelled: false,
     };
@@ -96,7 +103,27 @@ export class DrawTool implements ToolInput {
     if (!g || g.cancelled || input.id !== g.id) return;
     if (!g.dragging && Math.hypot(input.point.x - g.start.x, input.point.y - g.start.y) < CLICK_THRESHOLD_PX) return;
     g.dragging = true;
-    this.preview = shapeFromDrag(g.kind, DRAFT_ID, g.style, g.from, g.toImage(input.point), !!input.shift);
+    g.last = input.point;
+    g.shift = !!input.shift;
+    this.update(g);
+  }
+
+  /** RULE-06 "while Shift is held": pressing or releasing Shift mid-drag updates the preview at once. */
+  setShift(held: boolean): void {
+    const g = this.gesture;
+    if (!g || g.cancelled || g.shift === held) return;
+    g.shift = held;
+    if (g.dragging) this.update(g);
+  }
+
+  /** The view changed mid-drag (scroll, zoom, inset): re-map the pointer so the end stays under it. */
+  viewChanged(): void {
+    const g = this.gesture;
+    if (g && !g.cancelled && g.dragging) this.update(g);
+  }
+
+  private update(g: Gesture): void {
+    this.preview = shapeFromDrag(g.kind, DRAFT_ID, g.style, g.from, g.toImage(g.last), g.shift);
     this.onPreview();
   }
 

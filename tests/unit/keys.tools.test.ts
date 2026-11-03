@@ -51,7 +51,9 @@ describe('MOD-Keys tools, Enter and Esc (RULE-19)', () => {
     expect(named(key({ key: 'Enter', code: 'Enter' }), scope({ tool: 'arrow', selection: 'one' }))).toBe(
       'canvas:place',
     );
-    expect(named(key({ key: 'Enter', code: 'Enter' }), scope({ tool: 'select' }))).toBeUndefined();
+    // RULE-19: kept from the browser with every tool, even with nothing to act on.
+    for (const t of ['select', 'crop'] as const)
+      expect(resolveKey(key({ key: 'Enter', code: 'Enter' }), scope({ tool: t }))).toEqual({ preventDefault: true });
     expect(named(key({ key: 'Enter', code: 'Enter' }), scope({ tool: 'arrow', focus: 'control' }))).toBeUndefined();
   });
 

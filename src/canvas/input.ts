@@ -109,7 +109,7 @@ export class InputController {
     if (input.id === this.toolPointer) this.tool?.move(input);
   }
 
-  /** A pointer went up or was cancelled. */
+  /** A pointer went up (see cancel() for `pointercancel`). */
   up(input: PointerInput): void {
     if (this.touches.delete(input.id)) {
       this.view.endPinch();
@@ -125,5 +125,19 @@ export class InputController {
       this.toolPointer = null;
       this.tool?.up(input);
     }
+  }
+
+  /**
+   * The browser or OS cancelled a pointer (`pointercancel`: an edge gesture, palm rejection, lost
+   * capture). Pinch and pan end as on release; the tool's gesture ends with no result, like Esc.
+   */
+  cancel(input: PointerInput): void {
+    if (input.id === this.toolPointer) {
+      this.toolPointer = null;
+      this.tool?.cancel?.();
+      this.tool?.up(input); // the cancelled gesture is closed; nothing is created
+      return;
+    }
+    this.up(input);
   }
 }

@@ -85,7 +85,7 @@ test('F-015.AC2 an annotated image survives the host switching from light to dar
   const summary = frame.locator('#tk-canvas-summary');
   await expect(summary).toHaveText('2,000 × 1,000 px canvas, 0 annotations');
   // Annotate (F-003): a rectangle placed at the view centre with Enter.
-  await frame.getByRole('button', { name: 'Rectangle (R)' }).click();
+  await frame.getByRole('radio', { name: 'Rectangle (R)' }).click();
   await frame.locator('main.tk-work-area').focus();
   await frame.page().keyboard.press('Enter');
   await expect(summary).toHaveText('2,000 × 1,000 px canvas, 1 annotation');
@@ -96,7 +96,7 @@ test('F-015.AC2 an annotated image survives the host switching from light to dar
   await expect.poll(() => workArea(page)).toBe(DARK_WORK_AREA);
   expect(await stillSameWindow(frame)).toBe(true);
   await expect(summary).toHaveText('2,000 × 1,000 px canvas, 1 annotation');
-  await expect(frame.getByRole('button', { name: 'Rectangle (R)' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(frame.getByRole('radio', { name: 'Rectangle (R)' })).toHaveAttribute('aria-checked', 'true');
 });
 
 test('F-015.AC3 standalone on a device set to dark shows the dark theme', async ({ page }) => {
