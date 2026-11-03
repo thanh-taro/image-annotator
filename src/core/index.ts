@@ -1,33 +1,21 @@
 // MOD-Core — domain types, limits, geometry, frame/padding/canvas maths, pure helpers
 // (specs/40-technical/modules/MOD-Core.md). Pure, synchronous, dependency-free: usable on the main
 // thread and in the effects worker; no DOM, clock or language. Results carry codes and numbers.
-// Phase 3.3 scaffold: types, the exact constants and size tables are real; the rest throws until
-// its feature is built (phase 4).
-import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize, Point, SourceType } from './types';
+// Types, constants, size tables, the format sniff (F-001) and the canvas/fit maths are real; the
+// rest throws until its feature is built (phase 4).
+import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize, Point } from './types';
 
 export * from './types';
 export * from './limits';
 export * from './sizes';
 export * from './constants';
+export * from './format';
+export * from './canvas';
+export * from './header';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Core ${name}`);
 };
-
-/** RULE-01 format sniff from the first bytes (ADR-0005); null when not a supported format. */
-export function sniffFormat(_bytes: Uint8Array): SourceType | null {
-  return notImplemented('sniffFormat');
-}
-
-/** RULE-14: the canvas rectangle (frame plus padding), in image pixels. */
-export function canvasRect(_frame: Frame, _padding: PaddingSize): Box {
-  return notImplemented('canvasRect');
-}
-
-/** RULE-14: padding in pixels on each side for a frame and a padding size. */
-export function paddingPixels(_frame: Frame, _size: PaddingSize): number {
-  return notImplemented('paddingPixels');
-}
 
 /** RULE-14: the padding sizes that keep the canvas within RULE-02. */
 export function availablePaddings(_frame: Frame): readonly PaddingSize[] {
@@ -50,9 +38,6 @@ export function zoomIn(_zoom: number): number {
 }
 export function zoomOut(_zoom: number, _fit: number): number {
   return notImplemented('zoomOut');
-}
-export function fitZoom(_content: Box, _viewport: { width: number; height: number }): number {
-  return notImplemented('fitZoom');
 }
 
 /** F-003.R2: analytic hit-test with a tolerance in image pixels. */

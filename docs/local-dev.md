@@ -24,18 +24,24 @@ phase 7.
 | Environment | Command | Serves |
 |---|---|---|
 | local (dev) | `pnpm dev` | source, hot reload, port 5173 |
-| local (release preview) | `pnpm build && pnpm preview` | the exact `dist/`, port 4173 (the e2e target) |
+| local (release preview) | `pnpm build && pnpm preview` | the exact `dist/`, port 4173; the e2e suite starts its own preview on a per-worktree port (below) |
 
 `vite preview` does not send the generated headers. The host/offline harness
 (`pnpm test:e2e:host`) serves two builds **with** `public/_headers` (real CSP, `frame-ancestors`)
 and a stub host page on a second local origin (SP-host):
 
-| Origin | Role |
+| Origin (`B` = port base) | Role |
 |---|---|
-| `http://localhost:4290` | stub host (the allowed host origin; frame grants of D-006, focus on ready) |
-| `http://127.0.0.1:4291` | the tool, built with `HOST_ORIGINS=http://localhost:4290` |
-| `http://localhost:4292` | a host origin **not** allowed (must be refused) |
-| `http://127.0.0.1:4293` | the tool, built with an empty `HOST_ORIGINS` (standalone only) |
+| `http://localhost:B` | stub host (the allowed host origin; frame grants of D-006, focus on ready) |
+| `http://127.0.0.1:B+1` | the tool, built with `HOST_ORIGINS=http://localhost:B` |
+| `http://localhost:B+2` | a host origin **not** allowed (must be refused) |
+| `http://127.0.0.1:B+3` | the tool, built with an empty `HOST_ORIGINS` (standalone only) |
+
+**E2E ports** (`tests/e2e/support/ports.ts`) are derived from the checkout's path, so parallel
+worktrees never collide or test each other's build: the harness base `B` is 20000–27996 (step 4) and
+the preview port of `pnpm test:e2e` is 30000–31999, both above WebKit's blocked-port list.
+`E2E_HOST_PORT_BASE` and `E2E_PORT` override them. The preview runs with `--strictPort`, and an
+already running server is reused only with `E2E_REUSE=1`.
 
 The stub host page is `/host.html?tool=<tool URL>`; add `grants=0` to drop the frame grants or
 `focus=0` to skip focusing the tool after its ready signal (F-015.R7 fallbacks).

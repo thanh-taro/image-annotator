@@ -27,11 +27,13 @@ with its ID**; `python3 tools/spec_lint.py --coverage tests` lists criteria with
 
 ## End-to-end setup
 - `pnpm build`, then `pnpm test:e2e` (`--project=chromium|webkit`). `playwright.config.ts` serves
-  `dist/` with `pnpm preview` (port 4173; `E2E_PORT` overrides). `vite preview` sends no CSP, so
+  `dist/` with `pnpm preview --strictPort` on a per-worktree port (30000–31999, from
+  `tests/e2e/support/ports.ts`; `E2E_PORT` overrides; a running server is reused only with `E2E_REUSE=1`). `vite preview` sends no CSP, so
   header-dependent behaviour is tested in the harness below.
 - `pnpm test:e2e:host` (`playwright.host-offline.config.ts`): global setup builds two variants into
-  `dist-e2e/` (`HOST_ORIGINS=http://localhost:4290`, and empty) with their real `_headers`, and
-  starts four local servers (`tests/e2e/support/urls.ts`): the stub host page `/host.html?tool=…` on
+  `dist-e2e/` (`HOST_ORIGINS` = the stub host origin, and empty) with their real `_headers`, and
+  starts four local servers on a per-worktree port base (20000–27996; `E2E_HOST_PORT_BASE` overrides;
+  `tests/e2e/support/urls.ts`): the stub host page `/host.html?tool=…` on
   a second origin (the D-006 frame grants and focus-on-ready; `grants=0`, `focus=0` for the fallback
   cases), a disallowed host origin, and the two tool builds. The tool servers keep a server-side
   request log (`/__log/dump`, `/__log/reset`, reachable only from the test runner, since the page has

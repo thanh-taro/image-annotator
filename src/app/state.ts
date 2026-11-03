@@ -1,0 +1,114 @@
+// MOD-App — the signals of SCR-Annotator (ADR-0008 §6): the loaded image and its session, the
+// document and a change version (so every edit repaints), the computed `unexported` (RULE-18), the
+// notice, the open dialog, the drag state and the two persistent live regions (NFR-06). Later features
+// add the selection, tool, current styles and view. MOD-Document stays free of signals; every change
+// to the session goes through `commit` or `exported` here.
+import { computed, signal } from '@preact/signals';
+import { startSession, type Doc, type Restore, type Session } from '../document';
+import type { DecodedImage, Size } from '../io';
+import type { Notice } from './notice';
+
+export interface Loaded {
+  readonly image: DecodedImage;
+  readonly session: Session;
+}
+
+/** ENT-Session with its ENT-Image, or null in the empty state. */
+export const loaded = signal<Loaded | null>(null);
+
+/** The session's current document (ADR-0008 §6); null in the empty state. */
+export const doc = signal<Doc | null>(null);
+
+/** Bumped on every do, undo, redo and export, so `unexported` recomputes. */
+const version = signal(0);
+
+/** RULE-18: the session has unexported changes (F-001.R7, F-014). */
+export const unexported = computed(() => {
+  void version.value;
+  return loaded.value?.session.unexported ?? false;
+});
+
+/** Applies a history result (apply, undo or redo) to the signals. */
+export function commit(restore: Restore): void {
+  doc.value = restore.doc;
+  version.value++;
+}
+
+/** Records a successful export (RULE-18; F-012 calls this). */
+export function exported(): void {
+  loaded.value?.session.markExported();
+  version.value++;
+}
+
+/**
+ * Starts a new session with this image (ENT-Session, F-001.R7): empty history, the whole image as
+ * frame, no padding. The previous image's bitmap is closed (NFR-04); the canvas skips a closed bitmap.
+ */
+export function startNewSession(image: DecodedImage): Session {
+  const previous = loaded.value;
+  const session = startSession(image.info);
+  loaded.value = { image, session };
+  doc.value = session.doc;
+  version.value++;
+  previous?.image.bitmap.close();
+  return session;
+}
+
+/** CMP-Notice: at most one at a time; a new one replaces the old. */
+export const notice = signal<Notice | null>(null);
+
+export interface DialogRequest {
+  readonly kind: 'replace' | 'scale-down';
+  readonly size?: Size;
+  answer(ok: boolean): void;
+}
+/** CMP-ConfirmDialog, while open. */
+export const dialog = signal<DialogRequest | null>(null);
+
+/** CMP-DropOverlay: a file is dragged over the tool. */
+export const dragging = signal(false);
+
+export interface LiveMessage {
+  readonly id: number;
+  readonly text: string;
+}
+
+/**
+ * The polite live region: messages are appended (so one following another is not lost, and a repeated
+ * one is announced again) and the region keeps only the latest few; clearing empties it.
+ */
+export const polite = signal<readonly LiveMessage[]>([]);
+/** The assertive live region (errors): one message at a time. */
+export const assertive = signal('');
+
+const POLITE_KEEP = 3;
+let nextId = 1;
+
+/** Adds a message to the polite region (CMP-Canvas, CMP-Notice "Accessibility"). */
+export function announcePolite(text: string): void {
+  polite.value = [...polite.value, { id: nextId++, text }].slice(-POLITE_KEEP);
+}
+
+/** Clears the polite region (a progress message ends, the drop overlay disappears). */
+export function clearPolite(): void {
+  polite.value = [];
+}
+
+let assertiveTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Writes an error into the assertive region, clearing it first so a repeated error is announced again. */
+export function announceAssertive(text: string): void {
+  clearTimeout(assertiveTimer);
+  assertive.value = '';
+  if (text) assertiveTimer = setTimeout(() => (assertive.value = text), 50);
+}
+
+/** Shows (or clears) the notice and announces it: errors assertively, the rest politely (CMP-Notice). */
+export function setNotice(next: Notice | null): void {
+  const previous = notice.value;
+  notice.value = next;
+  if (previous?.kind === 'progress') clearPolite(); // progress is cleared before any result
+  if (!next) return;
+  if (next.kind === 'error') announceAssertive(next.text());
+  else announcePolite(next.text());
+}

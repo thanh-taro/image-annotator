@@ -8,6 +8,7 @@ import { render } from 'preact';
 import './styles/index.css';
 import { language, t } from '../copy';
 import { loadFonts, resolveLanguage, startHost } from '../host';
+import { startLoader } from './loader';
 import { Shell } from './Shell';
 
 const address = (() => {
@@ -24,5 +25,6 @@ document.title = t('app.title');
 
 const root = document.getElementById('app');
 if (root) render(<Shell />, root);
+startLoader(); // F-001: paste, drop, open — listening before the ready signal (F-001.R9)
 startHost();
 void loadFonts();

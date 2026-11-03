@@ -40,7 +40,7 @@ async function expectUi(page: Page, lang: 'en-US' | 'vi-VN') {
   const tool = page.frameLocator('#tool');
   await expect(tool.locator('html')).toHaveAttribute('lang', lang);
   await expect(tool.locator('main')).toHaveAccessibleName(CATALOG[lang]['a11y.canvas'] as string);
-  await expect(tool.locator('header')).toHaveAccessibleName(CATALOG[lang]['a11y.toolbar'] as string);
+  await expect(tool.getByRole('toolbar')).toHaveAccessibleName(CATALOG[lang]['a11y.toolbar'] as string);
 }
 
 test('F-018.AC1 vi-VN in the address: every string in vi-VN from first display, never English first', async ({
