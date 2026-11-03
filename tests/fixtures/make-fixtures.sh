@@ -38,7 +38,7 @@ magick -size 2000x1000 xc:'#10c010' -strip wide-2000x1000.png
 # stored 3400 × 6000 with orientation 6 (shown 6000 × 3400, scale-down to 5441 × 3083).
 magick fmt.png -quality 80 fmt-lossy.webp
 magick fmt.png -alpha set -channel A -evaluate set 50% +channel -quality 80 fmt-alpha.webp
-magick -size 3400x6000 xc:'#3366cc' -quality 5 -sampling-factor 4:2:0 -strip tmp.jpg
+magick fmt.png -filter point -resize 6000x3400! -rotate -90 -quality 5 -sampling-factor 4:2:0 -strip tmp.jpg
 python3 tools/exif_orient.py tmp.jpg large-rot6.jpg 6
 rm tmp.jpg
 

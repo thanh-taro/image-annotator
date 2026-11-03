@@ -73,6 +73,16 @@ describe('MOD-Document session', () => {
     expect(s.unexported).toBe(false);
   });
 
+  it('RULE-11 ADR-0008 §3 an export breaks the coalescing chain (nudge, export, nudge, undo)', () => {
+    const s = startSession(image);
+    s.history.apply(touch, ['A'], 'nudge:A');
+    const exportedDoc = s.doc;
+    s.markExported();
+    s.history.apply(touch, ['A'], 'nudge:A');
+    expect(s.history.undo()?.doc).toBe(exportedDoc); // back to the exported state, not past it
+    expect(s.history.canUndo).toBe(true);
+  });
+
   it('RULE-11 repeated steps with the same key coalesce until another command breaks the chain', () => {
     const s = startSession(image);
     const start = s.doc;

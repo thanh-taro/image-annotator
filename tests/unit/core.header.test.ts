@@ -92,6 +92,13 @@ describe('MOD-Core readImageHeader', () => {
     expect(readImageHeader(Uint8Array.of(0xff, 0xd8, 0xff, 0xda, 0, 4, 0, 0))).toBeNull(); // scan before SOF
   });
 
+  it('ADR-0023 the AVIF scan stops at mdat (pixel data may contain the bytes ispe)', () => {
+    const avif = fixtureBytes('fmt.avif');
+    const fake = cat(be32(20), ascii('ispe'), be32(0), be32(40_000), be32(40_000));
+    const inPixels = cat(avif, fake); // fmt.avif ends with its mdat payload
+    expect(readImageHeader(inPixels)).toEqual({ width: 240, height: 160 });
+  });
+
   it('ADR-0023 §3 a lying header is reported as declared; the decoded size is checked separately', () => {
     // A 240 × 160 PNG whose IHDR was rewritten to claim 1 × 1: the header says 1 × 1.
     const lying = Uint8Array.from(fixtureBytes('fmt.png'));

@@ -113,13 +113,17 @@ function jpeg(b: Uint8Array): HeaderSize | null {
   return null;
 }
 
-/** AVIF: the largest `ispe` (the primary image; thumbnails are smaller), swapped by an odd `irot`. */
+/**
+ * AVIF: the largest `ispe` (the primary image; thumbnails are smaller), swapped by an odd `irot`. The
+ * scan stops at the first `mdat` box: compressed pixel data may contain the bytes `ispe`.
+ */
 function avif(b: Uint8Array): HeaderSize | null {
   let best: HeaderSize | null = null;
   let rotate = false;
   for (let at = 4; at + 16 <= b.length; at++) {
-    if (b[at] !== 0x69) continue; // 'i'
+    if (b[at] !== 0x69 && b[at] !== 0x6d) continue; // 'i' or 'm'
     const name = tag(b, at);
+    if (name === 'mdat') break;
     if (name === 'ispe' && u32be(b, at - 4) >= 20) {
       const s = size(u32be(b, at + 8), u32be(b, at + 12));
       if (s && (!best || s.width * s.height > best.width * best.height)) best = s;

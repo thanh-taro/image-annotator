@@ -160,6 +160,7 @@ export function startSession(image: ImageInfo): Session {
     history,
     markExported() {
       exportedEpoch = epoch;
+      chain = undefined; // an export is another command (ADR-0008 §3)
     },
     get unexported() {
       return epoch !== exportedEpoch;

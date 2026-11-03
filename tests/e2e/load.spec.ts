@@ -344,13 +344,21 @@ test.describe('F-001 load an image', () => {
 
   test('RULE-03 ADR-0023 an over-limit JPEG with orientation 6 is offered at its upright size', async ({ page }) => {
     await open(page);
-    await paste(page, [LARGE_ROTATED]); // stored 3400 × 6000, orientation 6
+    await paste(page, [LARGE_ROTATED]); // fmt.png's quadrants, stored 3400 × 6000, orientation 6
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toContainText('Open it scaled down to 5,441 × 3,083 px?');
     await dialog.getByRole('button', { name: 'Open scaled down' }).click();
     await expectLoaded(page, 5441, 3083);
+    // The four-quadrant pattern (fmt.png): upright, not squashed or sideways.
     const box = await canvasBox(page);
-    expect(near(await canvasPixel(page, box.width / 2, box.height / 2), [51, 102, 204, 255], 24)).toBe(true);
+    const scale = Math.min(1, (box.width - 48) / 5441, (box.height - 48) / 3083);
+    const left = (box.width - 5441 * scale) / 2;
+    const top = (box.height - 3083 * scale) / 2;
+    const at = (fx: number, fy: number) => canvasPixel(page, left + 5441 * scale * fx, top + 3083 * scale * fy);
+    expect(near(await at(0.25, 0.25), [224, 16, 16, 255], 48)).toBe(true); // red top-left
+    expect(near(await at(0.75, 0.25), [16, 192, 16, 255], 48)).toBe(true); // green top-right
+    expect(near(await at(0.25, 0.75), [16, 48, 224, 255], 48)).toBe(true); // blue bottom-left
+    expect(near(await at(0.75, 0.75), [240, 224, 32, 255], 48)).toBe(true); // yellow bottom-right
   });
 
   for (const theme of ['dark', 'light'] as const) {
