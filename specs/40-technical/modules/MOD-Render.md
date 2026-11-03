@@ -25,7 +25,7 @@ state other than the transform it is given (INV-05).
 
 ## Public surface
 - `paint(ctx, doc, image, transform, patches, overlays?, layer?)` — the single entry point; `layer` is the display-only image layer (ADR-0016), never passed by the export. `doc` is typed as `Scene`, a read-only view type in MOD-Core that MOD-Document's document satisfies, so MOD-Render imports only MOD-Core.
-- `paintBase(ctx, doc, image, transform, view)` — scene steps 1–2 plus the screen-only surround and checkerboard, for the display layer (ADR-0016).
+- `paintBase(ctx, doc, image, transform, view)` — scene steps 1–2 plus the screen-only surround, checkerboard and canvas outline (style.md work area), for the display layer (ADR-0016).
 - `paletteColour(name)` and `contrastPair(name)` constants compiled from the tokens (ADR-0013).
 
 ## Implements

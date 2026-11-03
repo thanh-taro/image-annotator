@@ -17,7 +17,7 @@ Spike code is promoted deliberately into the feature that needs it, in a commit 
 
 Scale: about 18 builder agents, each followed by 1–2 review agents, so roughly 40–55 agent runs over many sessions. Each feature ends with a commit on a build branch.
 
-Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, or each gap listed as a manual check (Firefox, Safari Vietnamese typing, paste into apps, GPU Chromium drag fps, iPad limits).
+Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, or each gap listed as a manual check (Firefox, Safari Vietnamese typing, paste into apps, GPU Chromium drag fps, iPad limits, real Mod+V paste on WebKit/Safari — e2e dispatches the paste event there).
 
 ## Deferred acceptance criteria (each gets its test when the named feature lands)
 | AC | Needs |
@@ -30,3 +30,5 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 | F-018.AC6 (e2e) | crop size shown (F-010) |
 | F-018.AC7 | every screen state (end of M-1) |
 | F-018.AC10 | text, download, offline (F-005, F-012, F-017) |
+| F-016.AC4 (image, annotations and history unchanged) | F-003, F-009 |
+| F-001.AC9, AC10, AC14 (e2e; unit-tested in tests/unit/app.load.test.ts) | unexported changes and export (F-003, F-012) |

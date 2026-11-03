@@ -54,7 +54,7 @@
     "build": {
       "title": "4 Implementation",
       "status": "in_progress",
-      "step": "4 wave 1: F-015+F-018 built (branch build/f015-f018), in review; F-001 building",
+      "step": "4 wave 1: F-001 review round 1 fixes in progress; F-016 built, waits for F-001 merge then review",
       "gate": {
         "status": "pending",
         "at": null,
@@ -1314,9 +1314,29 @@
     {
       "at": "2026-11-03T01:06:26+00:00",
       "event": "build step: 4 wave 1: F-015+F-018 built (branch build/f015-f018), in review; F-001 building"
+    },
+    {
+      "at": "2026-11-03T01:11:51+00:00",
+      "event": "F-015+F-018 merged into build/m1 (bfede4e), status building (9 ACs deferred)"
+    },
+    {
+      "at": "2026-11-03T01:11:52+00:00",
+      "event": "build step: 4 wave 1: F-015/F-018 merged; F-001 and F-016 building"
+    },
+    {
+      "at": "2026-11-03T01:23:01+00:00",
+      "event": "build step: 4 wave 1: F-001 rebased + in review; F-016 building"
+    },
+    {
+      "at": "2026-11-03T01:27:52+00:00",
+      "event": "build step: 4 wave 1: F-001 review round 1 fixes in progress; F-016 built, waits for F-001 merge then review"
+    },
+    {
+      "at": "2026-11-03T01:33:21+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 4 Implementation [in_progress] — 4 wave 1: F-001 review round 1 fixes in progress; F-016 built, waits for F-001 merge then review · 4/9 phases done · autonomy balanced"
     }
   ],
-  "updated": "2026-11-03T01:06:26+00:00",
+  "updated": "2026-11-03T01:33:21+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
