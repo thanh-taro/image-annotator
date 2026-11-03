@@ -27,3 +27,4 @@ Zoom level updates live.
 
 ## Accessibility
 Zoom changes are not announced on every step; the level is readable on focus.
+Privacy details: a non-modal popover (`size.popover` wide at most); focus moves into it when it opens; Esc or Close dismisses it and returns focus to the statement; a press outside it, or focus leaving it, also dismisses it.

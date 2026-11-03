@@ -56,6 +56,7 @@ export const TOKEN_VARS = {
   "size.handle": "--tk-size-handle",
   "size.checker": "--tk-size-checker",
   "size.field": "--tk-size-field",
+  "size.popover": "--tk-size-popover",
   "border.width.hairline": "--tk-border-width-hairline",
   "border.width.focus": "--tk-border-width-focus",
   "motion.duration.fast": "--tk-motion-duration-fast",

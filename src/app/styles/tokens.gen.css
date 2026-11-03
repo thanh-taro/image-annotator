@@ -55,6 +55,7 @@
     --tk-size-handle: 10px; /** visible handle; hit area is size.targetMin */
     --tk-size-checker: 8px; /** checkerboard square on screen */
     --tk-size-field: 56px; /** position/size number field width */
+    --tk-size-popover: 360px; /** max width of a status-bar popover (privacy details) */
     --tk-border-width-hairline: 1px;
     --tk-border-width-focus: 2px;
     --tk-motion-duration-fast: 120ms;
