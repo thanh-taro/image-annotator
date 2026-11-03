@@ -32,3 +32,8 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 | F-018.AC10 | text, download, offline (F-005, F-012, F-017) |
 | F-016.AC4 (image, annotations and history unchanged) | F-003, F-009 |
 | F-001.AC9, AC10, AC14 (e2e; unit-tested in tests/unit/app.load.test.ts) | unexported changes and export (F-003, F-012) |
+| F-002.AC7 (export equals the view) | F-003, F-012 |
+
+## Manual checks collected so far
+- Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
+- Real Mod+V paste on WebKit (F-001)
