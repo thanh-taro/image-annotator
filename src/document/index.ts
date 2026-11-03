@@ -1,7 +1,8 @@
 // MOD-Document — immutable session document, edit operations, history, unexported state
 // (specs/40-technical/modules/MOD-Document.md, ADR-0008). Imports MOD-Core only; no DOM.
-// Phase 3.3 scaffold: the public surface is typed; every operation throws until F-008/F-009/F-014.
-import type { Annotation, Colour, Frame, ImageInfo, PaddingSize } from '../core';
+// The session, its history and the RULE-18 change epoch are built (F-001); the edit operations throw
+// until F-003…F-011 build them.
+import { HISTORY_STEPS, type Annotation, type Colour, type Frame, type ImageInfo, type PaddingSize } from '../core';
 
 /** The session's editable state: frozen plain objects with structural sharing. */
 export interface Doc {
@@ -34,7 +35,10 @@ export interface Restore {
   readonly selection: Selection;
 }
 
-/** Snapshot history (RULE-11, F-009): 500 steps, coalescing, redo discard. */
+/**
+ * Snapshot history (RULE-11, F-009): 500 steps, coalescing, redo discard. `apply` takes the selection
+ * after the step; the one before is the selection last applied or restored.
+ */
 export interface History {
   apply(op: Op, selection: Selection, coalesceKey?: string): Restore;
   undo(): Restore | null;
@@ -43,13 +47,94 @@ export interface History {
   readonly canRedo: boolean;
 }
 
-/** A session: the history plus the change epoch for RULE-18. */
+/** A session: the current document, the history and the change epoch for RULE-18. */
 export interface Session {
+  readonly doc: Doc;
   readonly history: History;
   markExported(): void;
   readonly unexported: boolean;
 }
 
-export function startSession(_image: ImageInfo): Session {
-  return notImplemented('startSession');
+interface Step {
+  readonly before: Doc;
+  readonly after: Doc;
+  readonly selectionBefore: Selection;
+  readonly selectionAfter: Selection;
+}
+
+const freeze = <T extends object>(value: T): T => Object.freeze(value);
+
+/** The document of a freshly loaded image: no annotations, the whole image as frame, no padding (RULE-13, RULE-14). */
+function initialDoc(image: ImageInfo): Doc {
+  return freeze({
+    annotations: freeze([] as Annotation[]),
+    frame: freeze({ x: 0, y: 0, width: image.width, height: image.height }),
+    padding: freeze({ size: 'none' as const, background: 'transparent' as const }),
+  });
+}
+
+/**
+ * A new session for a loaded image (ENT-Session, F-001.R7): an empty history (RULE-11) and the change
+ * epoch of RULE-18 (ADR-0008 §5) — every do, undo and redo counts; exporting records the epoch.
+ * Implements: RULE-11 (snapshot steps, redo discard, HISTORY_STEPS kept), RULE-18.
+ * Coalescing (ADR-0008 §3) and composite steps arrive with F-009 and the features that need them.
+ */
+export function startSession(image: ImageInfo): Session {
+  let doc = initialDoc(image);
+  let steps: Step[] = [];
+  let cursor = 0; // steps[0..cursor) are done
+  let current: Selection = [];
+  let epoch = 0;
+  let exportedEpoch = 0;
+
+  const history: History = {
+    apply(op, selection) {
+      const after = op(doc);
+      steps = steps.slice(0, cursor);
+      steps.push({ before: doc, after, selectionBefore: current, selectionAfter: selection });
+      current = selection;
+      if (steps.length > HISTORY_STEPS) steps = steps.slice(steps.length - HISTORY_STEPS);
+      cursor = steps.length;
+      doc = after;
+      epoch++;
+      return { doc, selection };
+    },
+    undo() {
+      const step = steps[cursor - 1];
+      if (!step) return null;
+      cursor--;
+      doc = step.before;
+      current = step.selectionBefore;
+      epoch++;
+      return { doc, selection: current };
+    },
+    redo() {
+      const step = steps[cursor];
+      if (!step) return null;
+      cursor++;
+      doc = step.after;
+      current = step.selectionAfter;
+      epoch++;
+      return { doc, selection: current };
+    },
+    get canUndo() {
+      return cursor > 0;
+    },
+    get canRedo() {
+      return cursor < steps.length;
+    },
+  };
+
+  return {
+    get doc() {
+      return doc;
+    },
+    history,
+    markExported() {
+      exportedEpoch = epoch;
+    },
+    get unexported() {
+      return epoch !== exportedEpoch;
+    },
+  };
 }

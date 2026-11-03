@@ -1,0 +1,302 @@
+/* MOD-App — F-001 components (style.md, ADR-0013): CMP-Toolbar (open), CMP-EmptyState, the canvas
+   box, CMP-DropOverlay, CMP-Notice and CMP-ConfirmDialog. Tokens only; no inline styles (ADR-0010). */
+@layer components {
+  .tk-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tk-icon {
+    flex: none;
+  }
+
+  /* Buttons (style.md principle 2): quiet by default; 32 px in the toolbar and dialogs. */
+  .tk-button {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-2);
+    min-width: var(--tk-size-target-min);
+    height: var(--tk-size-tool-button);
+    padding: 0 var(--tk-space-3);
+    border: var(--tk-border-width-hairline) solid transparent;
+    border-radius: var(--tk-radius-sm);
+    background: transparent;
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-semibold);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--tk-motion-duration-fast) var(--tk-motion-easing-standard);
+  }
+  .tk-button:hover {
+    background: var(--tk-color-surface2);
+  }
+  .tk-button:focus-visible,
+  .tk-icon-button:focus-visible {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: var(--tk-border-width-focus);
+  }
+  .tk-button--outlined,
+  .tk-button--quiet {
+    border-color: var(--tk-color-line-strong);
+  }
+  .tk-button--outlined {
+    background: var(--tk-color-surface);
+  }
+  .tk-button--quiet {
+    border-color: transparent;
+  }
+  .tk-button--primary {
+    border-color: var(--tk-color-accent);
+    color: var(--tk-color-accent);
+  }
+  .tk-button--danger {
+    border-color: var(--tk-color-danger);
+    color: var(--tk-color-danger);
+  }
+
+  .tk-icon-button {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--tk-size-control);
+    height: var(--tk-size-control);
+    padding: 0;
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: transparent;
+    color: var(--tk-color-muted);
+    cursor: pointer;
+  }
+  .tk-icon-button:hover {
+    background: var(--tk-color-surface2);
+    color: var(--tk-color-fg);
+  }
+
+  /* CMP-Toolbar */
+  .tk-toolbar__row {
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-1);
+    height: 100%;
+    padding: 0 var(--tk-space-2);
+  }
+  .tk-toolbar__spacer {
+    flex: 1;
+  }
+  /* Compact and narrow widths (D-014): COPY-action.open shows as an icon named by its label. */
+  @container tk-annotator (width < 1000px) {
+    .tk-toolbar__row .tk-button--bar {
+      width: var(--tk-size-tool-button);
+      padding: 0;
+      font-size: 0;
+      gap: 0;
+    }
+    .tk-toolbar__row .tk-button--bar .tk-icon {
+      width: var(--tk-size-icon-md);
+      height: var(--tk-size-icon-md);
+    }
+  }
+
+  /* Work area: the display canvas fills it; the canvas box is drawn by MOD-Render paintBase. */
+  .tk-work-area:focus-visible {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: calc(-1 * var(--tk-border-width-focus));
+  }
+  .tk-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* CMP-EmptyState */
+  .tk-empty {
+    position: absolute;
+    inset: var(--tk-space-6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-3);
+    padding: var(--tk-space-4);
+    border: var(--tk-border-width-focus) dashed var(--tk-color-muted);
+    border-radius: var(--tk-radius-md);
+    text-align: center;
+  }
+  .tk-empty__icon {
+    color: var(--tk-color-muted);
+  }
+  .tk-empty__title {
+    margin: 0;
+    font-size: var(--tk-font-size-lg);
+    font-weight: var(--tk-font-weight-bold);
+    line-height: var(--tk-font-line-height-tight);
+  }
+  .tk-empty__hint {
+    max-width: 360px;
+    margin: 0;
+    color: var(--tk-color-muted);
+    font-size: var(--tk-font-size-md);
+  }
+  kbd {
+    padding: 0 var(--tk-space-1);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-bottom-width: var(--tk-border-width-focus);
+    border-radius: var(--tk-radius-sm);
+    background: var(--tk-color-surface);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    white-space: nowrap;
+  }
+
+  /* CMP-DropOverlay: over everything while a file is dragged in. */
+  .tk-annotator {
+    position: relative;
+  }
+  .tk-drop {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    background: color-mix(in srgb, var(--tk-color-work-area) 88%, transparent);
+    pointer-events: none;
+  }
+  .tk-drop__zone {
+    position: absolute;
+    inset: var(--tk-space-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--tk-border-width-focus) dashed var(--tk-color-fg);
+    border-radius: var(--tk-radius-md);
+  }
+  .tk-drop__label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    padding: var(--tk-space-2) var(--tk-space-4);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+    font-size: var(--tk-font-size-lg);
+    font-weight: var(--tk-font-weight-bold);
+  }
+  .tk-drop__icon {
+    color: var(--tk-color-accent);
+  }
+
+  /* CMP-Notice: bottom centre of the work area, space.4 above its edge, up to 680 px wide. */
+  .tk-notice {
+    position: absolute;
+    bottom: var(--tk-space-4);
+    left: 50%;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    width: 680px;
+    max-width: calc(100% - 2 * var(--tk-space-4));
+    min-height: var(--tk-size-touch-target);
+    padding: var(--tk-space-2) var(--tk-space-2) var(--tk-space-2) var(--tk-space-3);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+    font-size: var(--tk-font-size-sm);
+    transform: translateX(-50%);
+  }
+  .tk-empty ~ .tk-notice {
+    bottom: var(--tk-space-10);
+  }
+  .tk-notice__text {
+    flex: 1;
+    margin: 0;
+  }
+  .tk-notice--error {
+    border-color: var(--tk-color-danger);
+    background: var(--tk-color-danger-bg);
+  }
+  .tk-notice--error .tk-notice__icon {
+    color: var(--tk-color-danger);
+  }
+  .tk-notice--success .tk-notice__icon {
+    color: var(--tk-color-success);
+  }
+  .tk-notice--progress .tk-notice__icon {
+    color: var(--tk-color-accent);
+    animation: tk-spin 1s linear infinite;
+  }
+  @keyframes tk-spin {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  /* CMP-ConfirmDialog */
+  .tk-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tk-color-scrim);
+  }
+  .tk-dialog {
+    width: 420px;
+    max-width: calc(100% - 2 * var(--tk-space-4));
+    padding: var(--tk-space-4);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+  }
+  .tk-dialog__title {
+    margin: 0 0 var(--tk-space-2);
+    font-size: var(--tk-font-size-lg);
+    font-weight: var(--tk-font-weight-bold);
+    line-height: var(--tk-font-line-height-tight);
+  }
+  .tk-dialog__message {
+    margin: 0 0 var(--tk-space-4);
+    color: var(--tk-color-muted);
+    font-size: var(--tk-font-size-sm);
+    text-wrap: pretty;
+  }
+  .tk-dialog__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--tk-space-2);
+  }
+
+  /* style.md: on a coarse pointer every target grows to size.touchTarget. */
+  @media (pointer: coarse) {
+    .tk-button,
+    .tk-icon-button {
+      min-width: var(--tk-size-touch-target);
+      height: var(--tk-size-touch-target);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tk-notice--progress .tk-notice__icon {
+      animation: none;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .tk-notice,
+    .tk-dialog,
+    .tk-drop__label {
+      border-color: CanvasText;
+    }
+  }
+}

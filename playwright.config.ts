@@ -24,7 +24,7 @@ export default defineConfig({
   },
   // Serves the production build (dist/). Build it first: `pnpm build` (adapters/tests.md).
   webServer: {
-    command: 'pnpm preview',
+    command: `pnpm preview --port ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !CI,
     timeout: 60_000,
