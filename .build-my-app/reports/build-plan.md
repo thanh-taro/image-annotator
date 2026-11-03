@@ -37,3 +37,6 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 ## Manual checks collected so far
 - Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
 - Real Mod+V paste on WebKit (F-001)
+
+## Notes for later features
+- F-008: a straight (Shift) highlight has a zero-height bounding box; decide how its selection box and handles show (F-004 review m3).
