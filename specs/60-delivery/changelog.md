@@ -56,3 +56,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-003 gaps: RULE-19 Esc closes the narrow style sheet after cancelling a drag; CMP-StylePanel coarse-pointer swatches in 2 rows of 4.
 - F-003 review: CMP-Toolbar's tool group is a radio group named by the new COPY-a11y.tool_group.
 - F-004 gaps: RULE-09 highlight ends are square and a Shift highlight is a straight run; MOD-Core stores stroke points as sampled.
+- F-006 gaps: RULE-07 pill width; a press that moves with the step tool places one step at the press point.
