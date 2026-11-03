@@ -1,10 +1,11 @@
 // MOD-App — the signals of SCR-Annotator (ADR-0008 §6): the loaded image and its session, the
 // document and a change version (so every edit repaints), the computed `unexported` (RULE-18), the
 // notice, the open dialog, the drag state and the two persistent live regions (NFR-06). Later features
-// add the selection, tool, current styles and view. MOD-Document stays free of signals; every change
+// add the selection, tool and current styles; F-002 adds the view. MOD-Document stays free of signals; every change
 // to the session goes through `commit` or `exported` here.
 import { computed, signal } from '@preact/signals';
 import { startSession, type Doc, type Restore, type Session } from '../document';
+import type { View } from '../core';
 import type { DecodedImage, Size } from '../io';
 import type { Notice } from './notice';
 
@@ -53,6 +54,12 @@ export function startNewSession(image: DecodedImage): Session {
   previous?.image.bitmap.close();
   return session;
 }
+
+/**
+ * The view of the shown canvas (zoom, pan; F-002), reported by MOD-Canvas; null in the empty state.
+ * It is never part of the session (INV-05): changing it adds no history step and no unexported change.
+ */
+export const view = signal<View | null>(null);
 
 /** CMP-Notice: at most one at a time; a new one replaces the old. */
 export const notice = signal<Notice | null>(null);
