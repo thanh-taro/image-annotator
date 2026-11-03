@@ -1,10 +1,13 @@
 // MOD-Host — theme, language, origin-checked messaging, ready signal, offline service worker
 // (specs/40-technical/modules/MOD-Host.md, ADR-0010, ADR-0011, ADR-0015, ADR-0021). Only this module
 // reaches the parent window or the service worker (lint-enforced).
-// Implements: F-015.R1/R2/R4/R5 (RULE-16). Offline (F-017) still throws until it is built.
+// Implements: F-015.R1/R2/R4/R5 (RULE-16), F-018.R1/R2/R4/R7 (RULE-17, ADR-0015). Offline (F-017)
+// still throws until it is built.
 import { signal } from '@preact/signals';
+import { language, t, type Language } from '../copy';
 import { acceptSettings, READY_MESSAGE, readyTargets, type Settings, type Theme } from './messages';
 
+export { loadFonts } from './fonts';
 export { matchLanguage, resolveLanguage } from './language';
 export type { Theme } from './messages';
 
@@ -38,10 +41,21 @@ function setTheme(next: Theme): void {
   if (document.documentElement.dataset['theme'] !== next) document.documentElement.dataset['theme'] = next;
 }
 
+// Implements: F-018.R2 (switch live: components re-render from the signal with their state intact;
+// nothing is announced and focus does not move), ADR-0015 §7 (title on every switch).
+function setLanguage(next: Language): void {
+  if (language.value === next && document.documentElement.lang === next) return; // same value twice: no-op
+  language.value = next;
+  document.documentElement.lang = next;
+  document.title = t('app.title');
+}
+
 function apply(settings: Settings): void {
   if (settings.type === 'taro:theme') {
     hostOwnsTheme = true;
     setTheme(settings.value);
+  } else {
+    setLanguage(settings.value);
   }
 }
 

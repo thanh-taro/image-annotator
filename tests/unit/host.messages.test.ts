@@ -39,6 +39,22 @@ describe('MOD-Host settings messages', () => {
       expect(acceptSettings(msg({ type: 'taro:theme', value }), ALLOW, parent)).toBeNull();
   });
 
+  it('F-018.R4 a language message is matched per RULE-17; an unsupported value is ignored', () => {
+    expect(acceptSettings(msg({ type: 'taro:language', value: 'vi' }), ALLOW, parent)).toEqual({
+      type: 'taro:language',
+      value: 'vi-VN',
+    });
+    expect(acceptSettings(msg({ type: 'taro:language', value: 'en-GB' }), ALLOW, parent)).toEqual({
+      type: 'taro:language',
+      value: 'en-US',
+    });
+    for (const value of ['fr-FR', '', null, 42])
+      expect(acceptSettings(msg({ type: 'taro:language', value }), ALLOW, parent)).toBeNull();
+    expect(
+      acceptSettings(msg({ type: 'taro:language', value: 'vi-VN' }, 'https://evil.example'), ALLOW, parent),
+    ).toBeNull();
+  });
+
   it('RULE-16 other message shapes are ignored', () => {
     for (const data of [null, 'taro:theme', { type: 'taro:ready' }, { type: 'taro:other', value: 'dark' }, [1]])
       expect(acceptSettings(msg(data), ALLOW, parent)).toBeNull();
