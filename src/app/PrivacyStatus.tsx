@@ -21,44 +21,56 @@ export function PrivacyStatus() {
   const rootRef = useRef<HTMLDivElement>(null);
   const badgeRef = useRef<HTMLButtonElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
+  // The last press was on the statement, the link or the popover. WebKit does not focus a pressed
+  // button, so such a press moves focus to the body; it must not count as focus leaving.
+  const pressedInside = useRef(false);
 
   const close = (returnFocus: boolean) => {
     setOpen(false);
     if (returnFocus) badgeRef.current?.focus();
   };
 
-  // Implements: F-016.R2 — place the popover above the statement. On narrow widths it spans the
-  // tool minus the gutters, so it needs the statement's offset from the tool's start edge.
+  // CMP-StatusBar "Accessibility": focus moves into the popover when it opens.
   useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!open || !root) return;
-    const tool = root.closest('[data-screen]') ?? document.documentElement;
-    const offset = root.getBoundingClientRect().left - tool.getBoundingClientRect().left;
-    root.style.setProperty('--tk-privacy-offset', `${offset}px`);
-    detailsRef.current?.focus();
+    if (open) detailsRef.current?.focus();
   }, [open]);
 
   // Implements: F-016.AC2 — a press outside the statement and its popover dismisses it.
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) close(false);
+      pressedInside.current = rootRef.current?.contains(e.target as Node) === true;
+      if (!pressedInside.current) close(false);
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
   }, [open]);
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (e.key !== 'Escape') return;
+    pressedInside.current = false;
+    if (e.key !== 'Escape' || !open) return;
     // Esc belongs to the popover while it is open, not to the tool's own Esc (RULE-19).
     e.stopPropagation();
     e.preventDefault();
     close(true);
   };
 
+  // CMP-StatusBar "Accessibility": focus leaving the popover dismisses it; only the popover and the
+  // statement that opened it keep it open (the source link is outside it).
   const onFocusOut = (e: FocusEvent) => {
+    if (!open) return;
+    const keeps = (node: Node | null) =>
+      !!node && (detailsRef.current?.contains(node) === true || node === badgeRef.current);
     const next = e.relatedTarget as Node | null;
-    if (next && !rootRef.current?.contains(next)) close(false);
+    if (next) {
+      if (!keeps(next)) close(false);
+      return;
+    }
+    // No next element: focus left the page (Tab past the last control) or went to the body. Decide
+    // once the move is done; a window switch keeps the active element, so it keeps the popover.
+    setTimeout(() => {
+      if (!pressedInside.current && !keeps(document.activeElement)) close(false);
+    });
   };
 
   return (

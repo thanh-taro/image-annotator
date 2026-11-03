@@ -112,6 +112,11 @@
   /* Narrow (D-014, CMP-StatusBar "narrow"): icons named COPY-privacy.badge_label and
      COPY-privacy.source_label; the popover spans the tool minus the 16 px gutters. */
   @container tk-annotator (width < 800px) {
+    /* Anchored to the status bar (positioned in base.css), not to the statement. */
+    .tk-privacy {
+      position: static;
+    }
+
     .tk-privacy__wide {
       display: none;
     }
@@ -130,8 +135,8 @@
     }
 
     .tk-privacy__details {
-      inset-inline-start: calc(var(--tk-space-4) - var(--tk-privacy-offset, 0px));
-      inline-size: calc(100cqi - 2 * var(--tk-space-4));
+      inset-inline: var(--tk-space-4);
+      inline-size: auto;
     }
   }
 

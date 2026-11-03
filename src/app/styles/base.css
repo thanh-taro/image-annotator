@@ -34,6 +34,7 @@
 
   .tk-status-bar {
     /* F-016: a row of status items with the privacy statement at the start (style.md "Status bar"). */
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--tk-space-2);

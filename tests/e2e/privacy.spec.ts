@@ -2,10 +2,11 @@
 // the privacy statement and source link in the status bar at every layout width, the details
 // popover and its dismissal, and the source link opening the repository in a new tab with no
 // referrer. GitHub is never contacted: the new tab's request is answered by a local route.
-// Partly deferred: AC4's "image, annotations and history unchanged" needs a loaded, annotated image
-// (F-001, F-003, F-009); until then the test checks that the page keeps its window and session.
+// Partly deferred: AC4 checks that a loaded image (F-001) is unchanged; "annotations and history
+// unchanged" waits for F-003 and F-009.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { expectLoaded, fixture, paste } from './support/load';
 
 const REPO = 'https://github.com/thanh-taro/image-annotator';
 const BADGE = 'Runs locally, nothing uploaded';
@@ -86,6 +87,10 @@ for (const theme of ['dark', 'light'] as const) {
     await expect(notices).toHaveAttribute('href', '/third-party-notices.txt');
     await expect(notices).toHaveAttribute('target', '_blank');
     await expect(notices).toHaveAttribute('rel', 'noopener noreferrer');
+    // The notices file the link points to is shipped with the tool.
+    const served = await page.request.get('/third-party-notices.txt');
+    expect(served.ok()).toBe(true);
+    expect(await served.text()).toContain('lucide-static');
     // The popover stays inside the tool.
     const box = await details(page).boundingBox();
     expect(box && box.x >= 0 && box.y >= 0 && box.x + box.width <= 1200).toBe(true);
@@ -124,6 +129,37 @@ test('F-016.AC2 activating the statement again or clicking outside dismisses the
   await expect(details(page)).toHaveCount(0);
 });
 
+test('F-016.AC2 focus leaving the details dismisses them, forwards or backwards', async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 760 });
+  await page.goto('/');
+  // Tab past Close leaves the popover. (Chromium lands on the source link; WebKit skips links on Tab
+  // by default, as Safari does, and moves on past it.)
+  await badge(page).click();
+  await expect(details(page)).toBeVisible();
+  await details(page).getByRole('button', { name: 'Close' }).focus();
+  await page.keyboard.press('Tab');
+  await expect(details(page)).toHaveCount(0);
+
+  // Focus moving from the popover to the source link, which sits right after it, dismisses it.
+  await badge(page).click();
+  await expect(details(page)).toBeVisible();
+  await sourceLink(page).focus();
+  await expect(details(page)).toHaveCount(0);
+  // Esc on the source link with the popover closed leaves focus where it is.
+  await page.keyboard.press('Escape');
+  await expect(sourceLink(page)).toBeFocused();
+
+  // Back from the details to the statement keeps them open; Shift+Tab out of the statement closes them.
+  // (Shift+Tab from the popover reaches the statement in Chromium; WebKit skips buttons on Tab.)
+  await badge(page).click();
+  await expect(details(page)).toBeVisible();
+  await badge(page).focus();
+  await expect(details(page)).toBeVisible();
+  await page.keyboard.press('Shift+Tab');
+  await expect(badge(page)).not.toBeFocused();
+  await expect(details(page)).toHaveCount(0);
+});
+
 test('F-016.AC2 at 320 px the details fit the tool with gutters', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 760 });
   await page.goto('/');
@@ -147,6 +183,10 @@ for (const width of [320, 390, 900, 1200]) {
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute('href', REPO);
     await expect(link).toHaveAccessibleName(`${SOURCE} (opens in a new tab)`);
+    // Narrow (< 800 px): the link is an icon; its words are visually hidden but still name it.
+    const label = await link.getByText(SOURCE, { exact: true }).boundingBox();
+    if (width < 800) expect(label!.width).toBeLessThanOrEqual(1);
+    else expect(label!.width).toBeGreaterThan(40);
     // Next to the statement: same row, directly after it.
     const [b, l] = await Promise.all([badge(page).boundingBox(), link.boundingBox()]);
     expect(b && l).toBeTruthy();
@@ -169,6 +209,11 @@ test('F-016.AC4 the source link opens the repository in a new tab with no referr
     await route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>repo</title>' });
   });
   await page.goto('/');
+  await paste(page, [fixture('wide-2000x1000.png', 'image/png')]);
+  await expectLoaded(page, 2000, 1000);
+  const tool = page.locator('[data-screen="SCR-Annotator"]');
+  await expect(tool).toHaveAttribute('data-state', 'default');
+  const summaryBefore = await page.locator('#tk-canvas-summary').textContent();
   await page.evaluate(() => ((window as unknown as { __mark?: number }).__mark = 42));
   const before = page.url();
 
@@ -180,8 +225,10 @@ test('F-016.AC4 the source link opens the repository in a new tab with no referr
   expect(await tab.evaluate(() => document.referrer)).toBe('');
   expect(await tab.evaluate(() => window.opener)).toBeNull();
 
-  // The tool's own page is untouched: same window, same address, still showing the tool.
+  // The tool's own page is untouched: same window and address, the image still shown at its size.
   expect(page.url()).toBe(before);
   expect(await page.evaluate(() => (window as unknown as { __mark?: number }).__mark)).toBe(42);
-  await expect(page.locator('[data-screen="SCR-Annotator"]')).toBeVisible();
+  await expect(tool).toHaveAttribute('data-state', 'default');
+  await expectLoaded(page, 2000, 1000);
+  await expect(page.locator('#tk-canvas-summary')).toHaveText(summaryBefore ?? '');
 });
