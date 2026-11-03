@@ -1,0 +1,153 @@
+/* MOD-App — the privacy statement, its popover and the source link (F-016, CMP-StatusBar, style.md
+   "Status bar" and principles 2, 4 and 5), tokens only (ADR-0013). Layout widths follow the tool's
+   own width through the `tk-annotator` container (D-014): below 800 px the statement and the link
+   become icons and the popover spans the tool minus the gutters. */
+@layer components {
+  .tk-privacy {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-1);
+    min-inline-size: 0;
+    block-size: 100%;
+  }
+
+  .tk-privacy__badge,
+  .tk-privacy__link,
+  .tk-privacy__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--tk-space-1);
+    min-block-size: var(--tk-size-target-min);
+    min-inline-size: var(--tk-size-target-min);
+    padding-block: 0;
+    padding-inline: var(--tk-space-1);
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: transparent;
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-semibold);
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--tk-motion-duration-fast) var(--tk-motion-easing-standard);
+  }
+
+  /* style.md principle 5: the privacy badge uses `success`. */
+  .tk-privacy__badge {
+    color: var(--tk-color-success);
+  }
+
+  .tk-privacy__link {
+    color: var(--tk-color-accent);
+  }
+
+  .tk-privacy__badge:hover,
+  .tk-privacy__link:hover,
+  .tk-privacy__close:hover {
+    background: var(--tk-color-surface2);
+  }
+
+  .tk-privacy__badge:focus-visible,
+  .tk-privacy__link:focus-visible,
+  .tk-privacy__close:focus-visible,
+  .tk-privacy__details:focus-visible {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: var(--tk-border-width-focus);
+  }
+
+  .tk-privacy__narrow {
+    display: none;
+  }
+
+  /* F-016.R2: the explanation, a small popover above the statement (CMP-StatusBar artboard). Floating
+     surfaces use a `lineStrong` border on `surface` (style.md principle 1); at most `size.popover`
+     wide (CMP-StatusBar "Accessibility"). */
+  .tk-privacy__details {
+    position: absolute;
+    z-index: 1;
+    inset-block-end: calc(100% + var(--tk-space-2));
+    inset-inline-start: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-space-3);
+    inline-size: min(var(--tk-size-popover), 100cqi - 2 * var(--tk-space-4));
+    padding: var(--tk-space-4);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-medium);
+    line-height: var(--tk-font-line-height-normal);
+    white-space: normal;
+  }
+
+  .tk-privacy__text {
+    margin: 0;
+  }
+
+  .tk-privacy__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--tk-space-2);
+  }
+
+  .tk-privacy__actions .tk-privacy__link {
+    font-size: var(--tk-font-size-sm);
+  }
+
+  /* Dialog buttons are 32 px and quiet, with a hairline border (style.md principle 2). */
+  .tk-privacy__close {
+    min-block-size: var(--tk-size-tool-button);
+    padding-inline: var(--tk-space-3);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+  }
+
+  /* Narrow (D-014, CMP-StatusBar "narrow"): icons named COPY-privacy.badge_label and
+     COPY-privacy.source_label; the popover spans the tool minus the 16 px gutters. */
+  @container tk-annotator (width < 800px) {
+    .tk-privacy__wide {
+      display: none;
+    }
+
+    .tk-privacy__narrow {
+      display: inline;
+    }
+
+    .tk-privacy__label {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .tk-privacy__details {
+      inset-inline-start: calc(var(--tk-space-4) - var(--tk-privacy-offset, 0px));
+      inline-size: calc(100cqi - 2 * var(--tk-space-4));
+    }
+  }
+
+  /* style.md principle 2: on a coarse pointer every target grows to `size.touchTarget`. */
+  @media (pointer: coarse) {
+    .tk-privacy__badge,
+    .tk-privacy__link,
+    .tk-privacy__close {
+      min-block-size: var(--tk-size-touch-target);
+      min-inline-size: var(--tk-size-touch-target);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .tk-privacy__details {
+      border-color: CanvasText;
+    }
+  }
+}

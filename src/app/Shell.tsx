@@ -10,6 +10,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { DropOverlay } from './DropOverlay';
 import { EmptyState } from './EmptyState';
 import { NoticeView } from './NoticeView';
+import { PrivacyStatus } from './PrivacyStatus'; // F-016
 import { Toolbar } from './Toolbar';
 import { assertive, dialog, doc, dragging, loaded, notice, polite } from './state';
 
@@ -62,7 +63,10 @@ export function Shell() {
           {assertive.value}
         </div>
       </main>
-      <footer class="tk-status-bar" inert={inert} />
+      <footer class="tk-status-bar" inert={inert}>
+        {/* F-016: privacy statement, details and source link (start of CMP-StatusBar). */}
+        <PrivacyStatus />
+      </footer>
       {dragging.value && <DropOverlay />}
       {modal && <ConfirmDialog request={modal} />}
     </div>
