@@ -2,7 +2,8 @@
 // (specs/40-technical/modules/MOD-Keys.md). The pure core imports no DOM code; a thin adapter
 // (added with F-013) reads the event, focus and platform into `KeyInfo`.
 // F-002 builds the View keys and the arrow-key pan of RULE-19; F-003 the Tools keys, Enter (place) and
-// Esc; the other groups resolve to nothing (and are not yet kept from the browser) until F-013.
+// Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; the other groups
+// resolve to nothing (and are not yet kept from the browser) until F-013.
 
 /** What the adapter reads from a keyboard event (platform-mapping.md "Letter keys by layout"). */
 export interface KeyInfo {
@@ -14,11 +15,16 @@ export interface KeyInfo {
   readonly mac: boolean;
 }
 
-/** Where focus is, the active tool and the selection shape (RULE-19 scope). */
+/**
+ * Where focus is, the active tool and the selection shape (RULE-19 scope). `textAnnotation` is
+ * CMP-TextEditor (a text annotation being edited); `text` is any other text or number field.
+ */
 export interface Scope {
-  readonly focus: 'canvas' | 'control' | 'text' | 'dialog';
+  readonly focus: 'canvas' | 'control' | 'text' | 'textAnnotation' | 'dialog';
   readonly tool: string;
   readonly selection: 'none' | 'one' | 'many';
+  /** The single selected annotation is a text (RULE-19: Enter with the select tool edits it). */
+  readonly textSelected?: boolean;
 }
 
 /** The closed set of action groups (MOD-Keys public surface); members are defined with F-013. */
@@ -117,6 +123,11 @@ const ARROWS: Readonly<Record<string, readonly [number, number]>> = {
  * edited, or while a dialog or menu is open (Esc there is the dialog's or menu's own).
  */
 export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
+  // F-005.R2 / RULE-19: while a text is edited only Esc (and Mod+S, F-012) keep their meaning; every
+  // other key edits the text as in any text field, and undo/redo act within it.
+  if (scope.focus === 'textAnnotation') {
+    return !key.mod && !key.alt && key.key === 'Escape' ? act('edit', 'escape') : NONE;
+  }
   if (scope.focus === 'text' || scope.focus === 'dialog') return NONE;
   const plain = !key.mod && !key.alt;
   if (key.mod && !key.alt) {
@@ -130,8 +141,12 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
     const letter = letterOf(key);
     const tool = letter && TOOL_LETTERS[letter];
     if (tool) return act('tool', tool);
-    // RULE-19: kept from the browser with every tool, even with nothing to act on (select, crop).
-    if (key.key === 'Enter') return NOT_DRAWING.has(scope.tool) ? KEEP : act('canvas', 'place');
+    // RULE-19: kept from the browser with every tool, even with nothing to act on (select, crop);
+    // F-005.R4: with the select tool and one text selected, Enter edits it.
+    if (key.key === 'Enter') {
+      if (scope.tool === 'select' && scope.selection === 'one' && scope.textSelected) return act('canvas', 'editText');
+      return NOT_DRAWING.has(scope.tool) ? KEEP : act('canvas', 'place');
+    }
   }
   if (plain && key.key === 'Escape') return act('edit', 'escape');
   if (plain && key.shift && key.code === 'Digit1') return act('view', 'fit');

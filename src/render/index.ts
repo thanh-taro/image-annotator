@@ -3,7 +3,9 @@
 // never reads language, theme or view state beyond the transform it is given (INV-05).
 // The palette constants are generated from the tokens (scripts/gen-tokens.mjs). `paintBase` is built
 // (F-001); `paint` draws rectangles, ellipses, lines and arrows and the selection overlay (F-003), pen
-// strokes and highlights (F-004), step badges (F-006); the other kinds join with F-005 and F-007. Promoted from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022).
+// strokes and highlights (F-004), step badges (F-006), text (F-005); redactions join with F-007. Promoted
+// from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022) and, for text, the SP-text spike (ADR-0009,
+// ADR-0020).
 import {
   ARROW_HEAD_LENGTH,
   arrowHead,
@@ -15,9 +17,13 @@ import {
   strokePieces,
   isLineAnnotation,
   isStepAnnotation,
+  isTextAnnotation,
   shapeBox,
   stepBadge,
   strokePixels,
+  textLines,
+  textMetrics,
+  textOutlineWidth,
   TRANSLUCENT_FILL_OPACITY,
   type Annotation,
   type Box,
@@ -26,6 +32,8 @@ import {
   type Padding,
   type PathAnnotation,
   type StepAnnotation,
+  type TextAnnotation,
+  type TextMeasure,
 } from '../core';
 import { PALETTE_HEX } from './palette.gen';
 
@@ -77,11 +85,22 @@ export interface Overlays {
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 /**
+ * ADR-0020: a TextMeasure on a Canvas 2D context — the advance width of a line in a font, which is
+ * what the text box (RULE-08) is built from. The context's font is changed; callers save and restore.
+ */
+export function measureWith(ctx: Ctx): TextMeasure {
+  return (font, line) => {
+    ctx.font = font;
+    return ctx.measureText(line).width;
+  };
+}
+
+/**
  * The one scene painter for the screen and the export (ADR-0004 §1, NFR-08). With `layer` (the display
  * image layer, ADR-0016) it copies that layer instead of scene steps 1–2; the export never passes one
  * and gets the background and the image clipped to the frame from the image itself. Then the
  * annotations in painter's order, clipped to the canvas (RULE-14), then the screen-only overlays.
- * Implements: F-003.R1/R2/R3, F-004.R1/R2, F-006.R3/R4, RULE-07, RULE-09, NFR-08.
+ * Implements: F-003.R1/R2/R3, F-004.R1/R2, F-005.R2/R5, F-006.R3/R4, RULE-07, RULE-08, RULE-09, NFR-08.
  */
 export function paint(
   ctx: Ctx,
@@ -189,8 +208,11 @@ function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
     case 'step':
       drawStep(ctx, a, shortSide);
       return;
+    case 'text':
+      drawText(ctx, a, shortSide);
+      return;
     default:
-      // Text and redactions are drawn by F-005 and F-007.
+      // Redactions are drawn by F-007.
       return;
   }
 }
@@ -213,6 +235,32 @@ function drawStep(ctx: Ctx, a: StepAnnotation, shortSide: number): void {
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = paletteColour(contrastPair(a.style.color));
   ctx.fillText(b.label, b.centre.x, b.baseline);
+}
+
+/**
+ * F-005.R2/R5, RULE-08, ADR-0009 §1, ADR-0020: each line in the tool's face at the text size, its
+ * alphabetic baseline at the line top plus the font's own metric offset (not engine `textBaseline`
+ * values), so the display at any zoom, the editing field above it and the export agree (NFR-08). The
+ * outline is `strokeText` in the contrast pairing (RULE-07) with lineWidth 2 × max(1, 0.08 × size) and
+ * round joins — half of it lies under the glyph — then `fillText` in the style colour on top. Lines
+ * break only at typed new lines; nothing wraps.
+ */
+function drawText(ctx: Ctx, a: TextAnnotation, shortSide: number): void {
+  const m = textMetrics(a.style, shortSide);
+  ctx.font = m.font;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  ctx.lineWidth = 2 * textOutlineWidth(m.size);
+  ctx.strokeStyle = paletteColour(contrastPair(a.style.color));
+  ctx.fillStyle = paletteColour(a.style.color);
+  textLines(a.text).forEach((line, i) => {
+    if (!line) return;
+    const y = a.anchor.y + i * m.lineHeight + m.baseline;
+    ctx.strokeText(line, a.anchor.x, y);
+    ctx.fillText(line, a.anchor.x, y);
+  });
 }
 
 /**
@@ -275,8 +323,9 @@ function paintSelection(
     // line through the band and the n/s handles stack; F-008 decides the box, scaling H from 0 and
     // which of overlapping handles a press picks (review F-004 round 1, finding 4).
     if (!single || !isLineAnnotation(a)) {
-      // F-006: a step's outline is its badge (no stroke), which needs the image's shorter side.
-      const b = isStepAnnotation(a) ? boundsOf(a, shortSide) : shapeBox(a);
+      // F-006: a step's outline is its badge (no stroke), which needs the image's shorter side; F-005:
+      // a text's is its box (RULE-08, ADR-0020), measured in the tool's face.
+      const b = isStepAnnotation(a) || isTextAnnotation(a) ? boundsOf(a, shortSide, measureWith(ctx)) : shapeBox(a);
       const x = X(b.x);
       const y = Y(b.y);
       ctx.lineWidth = look.lineWidth + 2;

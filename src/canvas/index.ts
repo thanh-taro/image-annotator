@@ -1,8 +1,9 @@
 // MOD-Canvas — view, pointer and touch input, tool state machine, handles, crop, text overlay
 // (specs/40-technical/modules/MOD-Canvas.md, ADR-0004, ADR-0009, ADR-0016, ADR-0020, ADR-0022).
 // <Canvas> shows the loaded image (F-001, ./Canvas.tsx) in a view that zooms and pans (F-002,
-// ./view.ts); shapes, pen strokes, highlights and steps are drawn with ./draw.ts (F-003, F-004, F-006); the other
-// drawing commands are built with F-005…F-008 and F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
+// ./view.ts); shapes, pen strokes, highlights and steps are drawn with ./draw.ts (F-003, F-004, F-006);
+// text is placed and edited with ./text.ts and ./editor.ts (F-005); the other drawing commands are built
+// with F-007, F-008 and F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
 import type { Point } from '../core';
 import { activeCanvas } from './Canvas';
 
@@ -26,6 +27,7 @@ export {
 } from './draw';
 export { connectFontGate, FontGate, fontGate } from './fonts';
 export { DragLayers, type DragFrame } from './drag';
+export { TextTool, type TextEdit, type TextEndReason, type TextField, type TextSetup } from './text';
 
 /**
  * The view commands (F-002.R2/R4; CMP-StatusBar and the RULE-19 View keys). With no image shown they
@@ -54,6 +56,8 @@ export const canvasCommands = {
   altResize: (_dx: number, _dy: number): void => notImplemented('canvasCommands.altResize'),
   selectNext: (): void => notImplemented('canvasCommands.selectNext'),
   selectPrevious: (): void => notImplemented('canvasCommands.selectPrevious'),
-  beginTextEdit: (): void => notImplemented('canvasCommands.beginTextEdit'),
-  endTextEdit: (): void => notImplemented('canvasCommands.endTextEdit'),
+  /** F-005.R4 / RULE-19 Enter with the select tool: edits the selected text; true if started. */
+  beginTextEdit: (id: string): boolean => activeCanvas()?.beginTextEdit(id) ?? false,
+  /** RULE-19 Esc: ends the text edit, keeping the text selected; true if one was open. */
+  endTextEdit: (): boolean => activeCanvas()?.endTextEdit() ?? false,
 };

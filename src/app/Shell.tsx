@@ -2,8 +2,10 @@
 // image fitted in the work area, the drop overlay, notices and the confirm dialog; F-003 the tools and
 // the style panel (region 3: docked on the right, or the narrow summary bar and sheet of D-019), which
 // comes before the canvas in reading order (SCR-Annotator "Accessibility").
-// Implements: SCR-Annotator states empty, default (image fitted), selecting, dragging-file, loading,
-// error; F-001.R6, F-001.R8; CMP-ConfirmDialog "the rest of the tool is inert"; D-014 layout widths.
+// F-005: while a text is edited (SCR-Annotator "editing-text") the style panel shows and changes the
+// edited text's colour and size and keeps the edit open; a mouse press there keeps focus in the field.
+// Implements: SCR-Annotator states empty, default (image fitted), selecting, editing-text, dragging-file,
+// loading, error; F-001.R6, F-001.R8; CMP-ConfirmDialog "the rest of the tool is inert"; D-014 layout widths.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
 import { Canvas } from '../canvas';
@@ -13,7 +15,7 @@ import { DropOverlay } from './DropOverlay';
 import { EmptyState } from './EmptyState';
 import { NoticeView } from './NoticeView';
 import { PrivacyStatus } from './PrivacyStatus'; // F-016
-import { createAnnotation } from './drawing';
+import { createAnnotation, textEditEnded, textEditStarted } from './drawing';
 import { StylePanel } from './StylePanel';
 import { Toolbar } from './Toolbar';
 import { ZoomControl } from './ZoomControl';
@@ -28,6 +30,7 @@ import {
   notice,
   polite,
   selection,
+  textEditing,
   tool,
   view,
   type Layout,
@@ -37,11 +40,23 @@ import { isDrawingTool } from '../core';
 /** D-014 layout widths, measured on the tool's own width (the frame when embedded). */
 const layoutOf = (width: number): Layout => (width >= 1000 ? 'wide' : width >= 800 ? 'compact' : 'narrow');
 
+/** F-005: focus may move into the style panel while a text is edited; the edit stays open. */
+const inPanel = (target: Element) => !!target.closest('.tk-body__panel');
+
+/**
+ * SCR-Annotator "editing-text": CMP-TextEditor has focus. A mouse press on a panel control applies it
+ * to the edited text and leaves focus in the field (keyboard users reach the panel with Shift+Tab).
+ */
+function keepEditorFocus(e: MouseEvent): void {
+  if (textEditing.value && e.button === 0) e.preventDefault();
+}
+
 function screenState(): string {
   if (dialog.value) return dialog.value.kind === 'replace' ? 'confirm-replace' : 'confirm-scale-down';
   if (dragging.value) return 'dragging-file';
   if (notice.value?.kind === 'progress') return 'loading';
   if (notice.value?.kind === 'error') return 'error';
+  if (loaded.value && textEditing.value) return 'editing-text';
   if (loaded.value && selection.value.length) return 'selecting';
   return loaded.value ? 'default' : 'empty';
 }
@@ -79,7 +94,8 @@ export function Shell() {
       </header>
       <div class="tk-body">
         {current && (
-          <div class="tk-body__panel" inert={inert}>
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- keeps focus in CMP-TextEditor (SCR-Annotator "editing-text")
+          <div class="tk-body__panel" inert={inert} onMouseDown={keepEditorFocus}>
             <StylePanel />
           </div>
         )}
@@ -88,9 +104,8 @@ export function Shell() {
           aria-label={t('a11y.canvas')}
           aria-describedby={info ? 'tk-canvas-summary' : undefined}
           // CMP-Canvas: one focusable region while an image is shown (RULE-19 canvas keys, F-002.R4); its
-          // role becomes the annotation list's with F-013.
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- CMP-Canvas "Accessibility"
-          tabIndex={current ? 0 : undefined}
+          // role becomes the annotation list's with F-013. While CMP-TextEditor is open it has no Tab stop.
+          tabIndex={current ? (textEditing.value ? -1 : 0) : undefined}
           inert={inert}
         >
           {current && info && scene ? (
@@ -104,6 +119,10 @@ export function Shell() {
                 style={isDrawingTool(active) ? currentStyles.value[active] : undefined}
                 selection={selection.value}
                 onCreate={createAnnotation}
+                textStyle={currentStyles.value.text}
+                onTextEdit={textEditStarted}
+                onTextEnd={textEditEnded}
+                keepsTextEdit={inPanel}
               />
               <span id="tk-canvas-summary" class="tk-sr">
                 {t('a11y.canvas_summary', {

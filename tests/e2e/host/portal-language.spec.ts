@@ -165,3 +165,42 @@ test('F-018.R7 the Vietnamese faces are part of the initial load, in every langu
     })
     .toBe(2);
 });
+
+// The text part of F-018's offline Vietnamese check (its download and offline halves wait for F-012 and
+// F-017): opened in en-US first, then in vi-VN, the user's Vietnamese text is drawn in the tool's face
+// with no font request after the load.
+test('F-018.R7 F-005.R5 vi-VN: the text "Đường dẫn lỗi" is drawn in the tool’s face with no font request', async ({
+  page,
+}) => {
+  await page.goto(`${TOOL_ALLOWED}/?theme=dark&lang=en-US`);
+  await expect(page.locator(SHELL)).toBeVisible();
+  await page.goto(`${TOOL_ALLOWED}/?theme=dark&lang=vi-VN`);
+  await expect(page.locator(SHELL)).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await page.request.get(`${TOOL_ALLOWED}/__log/reset`);
+  await page.evaluate(async () => {
+    const c = new OffscreenCanvas(400, 300);
+    const ctx = c.getContext('2d');
+    if (!ctx) throw new Error('no 2d context');
+    ctx.fillStyle = '#c8c8c8';
+    ctx.fillRect(0, 0, 400, 300);
+    const dt = new DataTransfer();
+    dt.items.add(new File([await c.convertToBlob({ type: 'image/png' })], 'grey.png', { type: 'image/png' }));
+    document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  });
+  await expect(page.locator('#tk-canvas-summary')).toContainText(', 0 chú thích');
+  await page.getByRole('radio', { name: `${CATALOG['vi-VN']['tool.text'] as string} (T)` }).click();
+  const area = await page.locator('main.tk-work-area').boundingBox();
+  if (!area) throw new Error('no work area');
+  await page.mouse.click(area.x + area.width / 2 - 100, area.y + area.height / 2);
+  const field = page.getByRole('textbox', { name: CATALOG['vi-VN']['tool.text'] as string });
+  await expect(field).toBeFocused();
+  await expect(field).toHaveAttribute('placeholder', CATALOG['vi-VN']['text.placeholder'] as string);
+  await page.keyboard.insertText('Đường dẫn lỗi');
+  await page.keyboard.press('Escape');
+  await expect(field).toBeHidden();
+  await expect(page.locator('#tk-canvas-summary')).toContainText(', 1 chú thích');
+  expect(await page.evaluate(() => document.fonts.check('600 16px Manrope', 'Đường dẫn lỗi'))).toBe(true);
+  const log = (await (await page.request.get(`${TOOL_ALLOWED}/__log/dump`)).json()) as { path: string }[];
+  expect(log.map((r) => r.path).filter((p) => /\.woff2?$/.test(p))).toEqual([]);
+});

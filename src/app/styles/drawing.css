@@ -380,4 +380,48 @@
   .tk-canvas[data-fonts='loading'] {
     cursor: progress;
   }
+
+  /* CMP-TextEditor (F-005, ADR-0009 §2, ADR-0020): a transparent-text field exactly over the canvas
+     glyphs — the canvas draws the text; the field gives the caret, selection, input methods and undo.
+     MOD-Canvas places it with CSSOM (position, font, line height, size, --tk-text-colour); its text box
+     starts at the annotation's anchor, inside the dashed editing outline of the designs. */
+  .tk-text-editor {
+    position: absolute;
+    z-index: 1;
+    display: none;
+    box-sizing: content-box;
+    margin: 0;
+    padding: var(--tk-space-1);
+    border: var(--tk-border-width-focus) dashed var(--tk-color-selection-outline);
+    border-radius: 0;
+    box-shadow: 0 0 0 var(--tk-border-width-hairline) var(--tk-color-work-area);
+    outline: none;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--tk-text-colour);
+    resize: none;
+    overflow: hidden;
+    white-space: pre;
+    min-width: 0;
+    min-height: 0;
+    font-kerning: normal;
+    font-synthesis: none;
+    font-variant-ligatures: normal;
+    letter-spacing: 0;
+    word-spacing: 0;
+    text-indent: 0;
+    text-transform: none;
+    tab-size: 8;
+  }
+  .tk-text-editor[data-open] {
+    display: block;
+  }
+  /* CMP-TextEditor design: the placeholder at 50 % in the current colour, hidden on the first key. */
+  .tk-text-editor::placeholder {
+    color: var(--tk-text-colour);
+    opacity: 0.5;
+  }
+  .tk-text-editor::selection {
+    color: transparent;
+  }
 }

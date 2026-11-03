@@ -2,7 +2,7 @@
 // (specs/40-technical/modules/MOD-Core.md). Pure, synchronous, dependency-free: usable on the main
 // thread and in the effects worker; no DOM, clock or language. Results carry codes and numbers.
 // Types, constants, size tables, the format sniff (F-001), the canvas/fit maths and the view maths
-// (F-002), the tools and shape geometry (F-003), step numbering (F-006) are real; the rest throws until its feature is built.
+// (F-002), the tools and shape geometry (F-003), step numbering (F-006) and text (F-005) are real; the rest throws until its feature is built.
 import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize } from './types';
 
 export * from './types';
@@ -16,6 +16,7 @@ export * from './view';
 export * from './tools';
 export * from './shapes';
 export * from './steps';
+export * from './text';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Core ${name}`);
@@ -58,9 +59,4 @@ export function downloadName(_sourceName: string | null, _localTime: Date): stri
 /** ADR-0007 / ADR-0019 PNG chunk whitelist, failing closed. */
 export function stripPngChunks(_bytes: Uint8Array): Uint8Array {
   return notImplemented('stripPngChunks');
-}
-
-/** RULE-08 / ADR-0020: NFC of the inserted text together with the preceding characters back to the last starter. */
-export function toNFC(_before: string, _inserted: string): { replaceFrom: number; text: string } {
-  return notImplemented('toNFC');
 }
