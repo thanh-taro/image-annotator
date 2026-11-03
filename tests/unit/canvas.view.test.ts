@@ -117,20 +117,45 @@ describe('MOD-Canvas view controller (F-002)', () => {
     const { c } = controller(3840, 2160, AREA, 24);
     c.actualSize();
     const centreBefore = toImage(view(c), { x: 600, y: 400 });
-    c.panKey('right');
+    c.panView(40, 0);
     const centreAfter = toImage(view(c), { x: 600, y: 400 });
     expect(centreAfter.x).toBeGreaterThan(centreBefore.x);
     expect(centreAfter.y).toBeCloseTo(centreBefore.y);
   });
 
-  it('RULE-19 arrow keys pan 40 screen pixels, Shift+arrow 200', () => {
+  it('RULE-19 the arrow-key pan moves the view by its screen pixels (40, Shift: 200)', () => {
     const { c } = controller(3840, 2160, AREA, 24);
     c.actualSize();
     const x0 = view(c).x;
-    c.panKey('right');
+    c.panView(40, 0);
     expect(view(c).x).toBe(x0 - 40);
-    c.panKey('right', true);
+    c.panView(200, 0);
     expect(view(c).x).toBe(x0 - 240);
+  });
+
+  it('F-002.R3 zoom at a point keeps that point and stays within RULE-12', () => {
+    const { c } = controller(3840, 2160, AREA, 24);
+    const at = { x: 300, y: 200 };
+    const before = toImage(view(c), at);
+    c.zoomAt(150, at);
+    expect(view(c).zoom).toBe(150);
+    expect(toImage(view(c), at).x).toBeCloseTo(before.x, 6);
+    c.zoomAt(5000, at);
+    expect(view(c).zoom).toBe(800);
+    c.zoomAt(1, at);
+    expect(view(c).zoom).toBe(10);
+  });
+
+  it('F-002.R3 a Safari trackpad pinch (gesture scale) zooms at the pointer', () => {
+    const { c } = controller(3840, 2160, AREA, 24);
+    c.actualSize();
+    const at = { x: 400, y: 300 };
+    const detail = toImage(view(c), at);
+    c.gesture(1, at, true);
+    c.gesture(2, at, false);
+    expect(view(c).zoom).toBeCloseTo(200);
+    expect(toImage(view(c), at).x).toBeCloseTo(detail.x, 6);
+    c.endPinch();
   });
 
   it('F-002 edge case: a resize keeps the zoom, and refits a fitted view', () => {
@@ -170,7 +195,7 @@ describe('MOD-Canvas view controller (F-002)', () => {
     c.zoomIn();
     c.wheel({ deltaX: 0, deltaY: -100, deltaMode: 0, mod: true }, { x: 300, y: 300 });
     c.panBy(-200, -100);
-    c.panKey('down');
+    c.panView(0, 40);
     c.pinch({ x: 100, y: 100 }, { x: 200, y: 100 }, true);
     c.pinch({ x: 100, y: 100 }, { x: 300, y: 100 }, false);
     c.fit();

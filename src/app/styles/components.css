@@ -106,9 +106,17 @@
   }
 
   /* Work area: the display canvas fills it; the canvas box is drawn by MOD-Render paintBase. */
+  /* CMP-Canvas: the focus ring is drawn inset, above the canvas (which covers the region's own outline). */
+  .tk-work-area:focus-visible::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    pointer-events: none;
+  }
   .tk-work-area:focus-visible {
-    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
-    outline-offset: calc(-1 * var(--tk-border-width-focus));
+    outline: none;
   }
   .tk-canvas {
     position: absolute;
@@ -293,6 +301,9 @@
   }
 
   @media (forced-colors: active) {
+    .tk-work-area:focus-visible::after {
+      border-color: Highlight;
+    }
     .tk-notice,
     .tk-dialog,
     .tk-drop__label {

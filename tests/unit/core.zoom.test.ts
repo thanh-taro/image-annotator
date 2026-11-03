@@ -97,6 +97,13 @@ describe('MOD-Core fit, zoom at a point and pan (RULE-12, F-002.R3/R4)', () => {
     expect(panBy(fit, 100, -100, p)).toEqual(fit);
   });
 
+  it('F-002.R4 a canvas smaller than the area but larger than the area inside the margin is centred', () => {
+    const p = port(1180, 300, { width: 1200, height: 800 }, 24);
+    const v = clampView({ zoom: 100, x: 0, y: 0, fitted: false }, p);
+    expect(v.x).toBe(10);
+    expect(panBy(v, 15, 0, p)).toEqual(v);
+  });
+
   it('F-002.R4 a larger canvas pans but its edges never pass the margin', () => {
     const p = port(3840, 2160, { width: 1200, height: 800 }, 24);
     const actual = clampView({ zoom: 100, x: 24, y: 24, fitted: false }, p);

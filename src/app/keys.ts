@@ -2,7 +2,7 @@
 // the platform into MOD-Keys' pure `resolveKey`, keeps the key from the browser when RULE-19 says so,
 // and runs the action. F-002 dispatches the View group and the arrow-key pan; F-013 completes the map.
 // Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected), F-002.R2/R4.
-import { viewCommands, type PanDirection } from '../canvas';
+import { viewCommands } from '../canvas';
 import { isEditing } from '../io';
 import { resolveKey, type Scope } from '../keys';
 import { isMac } from './platform';
@@ -17,13 +17,6 @@ function focusScope(e: KeyboardEvent): Scope['focus'] {
   return 'control';
 }
 
-const PAN: Readonly<Record<string, PanDirection>> = {
-  panLeft: 'left',
-  panRight: 'right',
-  panUp: 'up',
-  panDown: 'down',
-};
-
 function onKeyDown(e: KeyboardEvent): void {
   if (e.defaultPrevented) return;
   const mod = isMac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
@@ -34,10 +27,8 @@ function onKeyDown(e: KeyboardEvent): void {
   );
   if (resolution.preventDefault) e.preventDefault();
   const action = resolution.action;
-  if (action?.group !== 'view') return;
-  const far = action.name.endsWith('Far'); // RULE-19: Shift+arrow pans 200 px
-  const pan = PAN[far ? action.name.slice(0, -3) : action.name];
-  if (pan) viewCommands.panKey(pan, far);
+  if (!action || action.group !== 'view') return;
+  if (action.kind === 'pan') viewCommands.panView(action.dx, action.dy);
   else if (action.name === 'zoomIn') viewCommands.zoomIn();
   else if (action.name === 'zoomOut') viewCommands.zoomOut();
   else if (action.name === 'fit') viewCommands.fit();

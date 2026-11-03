@@ -109,6 +109,11 @@ test.describe('F-002 zoom and pan the view', () => {
     }
     await button(page, 'Zoom in').click();
     await expect(level(page)).toHaveText('800 %');
+    // The image is really drawn at 800 % (WebKit once hung here): about the centre, the red/blue
+    // boundary at image x 1920 is at the centre of the area, and one image pixel is 8 screen pixels.
+    await frame(page);
+    expect(near(await canvasPixel(page, AREA.width / 2 - 6, AREA.height / 2), RED)).toBe(true);
+    expect(near(await canvasPixel(page, AREA.width / 2 + 6, AREA.height / 2), BLUE)).toBe(true);
   });
 
   test('F-002.AC4 Fit to view shows the whole canvas from any zoom; Actual size is 100 %', async ({ page }) => {
@@ -221,6 +226,54 @@ test.describe('F-002 zoom and pan the view', () => {
     await page.keyboard.press('ArrowLeft');
     await frame(page);
     expect(near(await canvasPixel(page, probe.x, probe.y), RED)).toBe(true);
+  });
+
+  test('RULE-19 Shift+Right pans the view 200 screen pixels (Right: 40)', async ({ page }) => {
+    await open(page);
+    await pasteImage(page, 3840, 2160);
+    await button(page, 'Actual size').click();
+    await workArea(page).focus();
+    await frame(page);
+    // The red/blue boundary starts at the centre; after 40 + 200 px it is 240 px left of it.
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Shift+ArrowRight');
+    await frame(page);
+    expect(near(await canvasPixel(page, AREA.width / 2 - 236, AREA.height / 2), BLUE)).toBe(true);
+    expect(near(await canvasPixel(page, AREA.width / 2 - 244, AREA.height / 2), RED)).toBe(true);
+  });
+
+  test('NFR-06 keyboard focus on the canvas shows a focus ring over the image', async ({ page }) => {
+    await open(page);
+    await pasteImage(page, 400, 300);
+    await button(page, 'Actual size').click();
+    const box = await workArea(page).boundingBox();
+    if (!box) throw new Error('no work area');
+    const clip = { x: box.x + box.width / 2 - 20, y: box.y, width: 40, height: 4 };
+    await page.getByRole('button', { name: 'Open image' }).focus();
+    const before = await page.screenshot({ clip });
+    await page.keyboard.press('Tab'); // keyboard focus: :focus-visible
+    await expect(workArea(page)).toBeFocused();
+    const after = await page.screenshot({ clip });
+    expect(after.equals(before)).toBe(false);
+  });
+
+  test('F-002.R3 Safari trackpad pinch (gesture events) zooms at the pointer', async ({ page }) => {
+    // A real trackpad pinch cannot be automated: these are the events WebKit sends for one.
+    await open(page);
+    await pasteImage(page, 3840, 2160);
+    await button(page, 'Actual size').click();
+    await expect(level(page)).toHaveText('100 %');
+    await page.locator('canvas.tk-canvas').evaluate((el) => {
+      const send = (type: string, scale: number) => {
+        const e = new Event(type, { bubbles: true, cancelable: true });
+        Object.assign(e, { scale, clientX: 600, clientY: 440 });
+        el.dispatchEvent(e);
+        return e.defaultPrevented;
+      };
+      if (!send('gesturestart', 1) || !send('gesturechange', 2) || !send('gestureend', 2))
+        throw new Error('gesture not kept from the page');
+    });
+    await expect(level(page)).toHaveText('200 %');
   });
 
   test('RULE-19 Mod+= and Mod+- zoom anywhere in the tool; Shift+1 and Shift+0 on the canvas', async ({ page }) => {

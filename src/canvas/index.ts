@@ -2,9 +2,8 @@
 // (specs/40-technical/modules/MOD-Canvas.md, ADR-0004, ADR-0009, ADR-0016, ADR-0020, ADR-0022).
 // <Canvas> shows the loaded image (F-001, ./Canvas.tsx) in a view that zooms and pans (F-002,
 // ./view.ts); the drawing commands are built with F-003…F-008 and F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
-import type { AnnotationKind } from '../core';
+import type { AnnotationKind, Point } from '../core';
 import { activeCanvas } from './Canvas';
-import type { PanDirection } from './view';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Canvas ${name}`);
@@ -12,11 +11,12 @@ const notImplemented = (name: string): never => {
 
 /** The canvas component (CMP-Canvas): the loaded image in a zoomable, pannable view (F-001, F-002). */
 export { Canvas, viewTransform, type CanvasProps } from './Canvas';
-export { PAN_STEP, PAN_STEP_SHIFT, ViewController, type PanDirection } from './view';
+export { ViewController, type WheelInput } from './view';
+export { InputController, type PanCursor, type PointerInput, type ToolInput } from './input';
 
 /**
  * The view commands (F-002.R2/R4; CMP-StatusBar and the RULE-19 View keys). With no image shown they
- * do nothing (SCR-Annotator "empty": zoom disabled). `panKey` and `holdSpace` serve the arrow-key pan
+ * do nothing (SCR-Annotator "empty": zoom disabled). `panView` and `holdSpace` serve the arrow-key pan
  * and Space+drag of RULE-19.
  */
 export const viewCommands = {
@@ -25,7 +25,10 @@ export const viewCommands = {
   fit: (): void => activeCanvas()?.controller.fit(),
   actualSize: (): void => activeCanvas()?.controller.actualSize(),
   setBottomInset: (px: number): void => activeCanvas()?.setBottomInset(px),
-  panKey: (direction: PanDirection, far = false): void => activeCanvas()?.controller.panKey(direction, far),
+  /** F-002.R3: `zoom` (percent, within RULE-12's range) keeping the image point under `at` (CSS px in the work area). */
+  zoomAt: (zoom: number, at: Point): void => activeCanvas()?.controller.zoomAt(zoom, at),
+  /** RULE-19 arrow keys: moves the view by (dx, dy) screen pixels (positive dx shows more of the right). */
+  panView: (dx: number, dy: number): void => activeCanvas()?.controller.panView(dx, dy),
   holdSpace: (held: boolean): void => activeCanvas()?.holdSpace(held),
 };
 

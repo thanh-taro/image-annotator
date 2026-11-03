@@ -9,6 +9,7 @@ import { useEffect, useRef } from 'preact/hooks';
 import { canvasRect, CRISP_ZOOM, type Point, type View } from '../core';
 import type { Doc } from '../document';
 import type { BaseView, Transform } from '../render';
+import { InputController } from './input';
 import { ImageLayer } from './layer';
 import { ViewController } from './view';
 
@@ -24,7 +25,7 @@ export interface CanvasProps {
 /** What the view commands reach while a canvas is shown (MOD-Canvas public surface). */
 export interface ActiveCanvas {
   readonly controller: ViewController;
-  /** RULE-19 Space held: a drag pans instead of drawing (F-002.R4). */
+  /** RULE-19 Space held: a drag pans instead of drawing (F-002.R4; ./input.ts). */
   holdSpace(held: boolean): void;
   /** D-019: the narrow bottom sheet covers this much of the work area. */
   setBottomInset(px: number): void;
@@ -47,7 +48,7 @@ export function viewTransform(view: View, dpr: number): Transform {
 }
 
 /** The screen-only inputs of paintBase, read from the theme's tokens (style.md "Work area"). */
-function baseView(el: Element, dpr: number, crisp: boolean): BaseView {
+function baseView(el: Element, dpr: number): BaseView {
   const style = getComputedStyle(el);
   return {
     surround: style.getPropertyValue('--tk-color-work-area').trim(),
@@ -58,7 +59,6 @@ function baseView(el: Element, dpr: number, crisp: boolean): BaseView {
       colour: style.getPropertyValue('--tk-color-line-strong').trim(),
       width: cssPx(el, '--tk-border-width-hairline') * dpr,
     },
-    crisp,
   };
 }
 
@@ -86,6 +86,7 @@ export function Canvas({ image, doc, theme, onView }: CanvasProps) {
     let box = { width: 0, height: 0 };
     let inset = 0;
     let media: MediaQueryList | undefined;
+    let tokens: { key: string; view: BaseView } | null = null;
     const dpr = () => Math.min(MAX_DPR, window.devicePixelRatio || 1);
 
     const paint = () => {
@@ -106,7 +107,12 @@ export function Canvas({ image, doc, theme, onView }: CanvasProps) {
       const crisp = v.zoom >= CRISP_ZOOM;
       const source = layer.get(
         { image: img, doc: scene, transform: viewTransform(v, ratio), width, height, theme: th, crisp },
-        () => baseView(el, ratio, crisp),
+        () => {
+          // The theme's tokens are read once per (theme, device pixel ratio), not on every rebuild.
+          const key = `${th}|${ratio}`;
+          if (!tokens || tokens.key !== key) tokens = { key, view: baseView(el, ratio) };
+          return { ...tokens.view, crisp };
+        },
       );
       if (source) ctx.drawImage(source, 0, 0);
     };
@@ -146,66 +152,38 @@ export function Canvas({ image, doc, theme, onView }: CanvasProps) {
       view.wheel({ deltaX: e.deltaX, deltaY: e.deltaY, deltaMode: e.deltaMode, mod }, local(e));
     };
 
-    // F-002.R4 Space+drag (mouse and pen), and two touch fingers pan and zoom (CMP-Canvas).
-    let space = false;
-    let drag: { id: number; last: Point } | null = null;
-    const touches = new Map<number, Point>();
-    const setCursor = () => {
-      el.dataset['pan'] = drag ? 'active' : space ? 'ready' : '';
-    };
-    const pinchPoints = (): [Point, Point] | null => {
-      const [a, b] = Array.from(touches.values());
-      return a && b ? [a, b] : null;
-    };
+    // F-002.R4 Space+drag (mouse and pen) and two touch fingers (CMP-Canvas), routed by ./input.ts.
+    const input = new InputController(view, (cursor) => (el.dataset['pan'] = cursor));
+    const read = (e: PointerEvent) => ({ id: e.pointerId, type: e.pointerType, button: e.button, point: local(e) });
     const onPointerDown = (e: PointerEvent) => {
-      if (e.pointerType === 'touch') {
-        touches.set(e.pointerId, local(e));
-        el.setPointerCapture(e.pointerId);
-        const pair = pinchPoints();
-        if (pair && touches.size === 2) view.pinch(pair[0], pair[1], true);
-        return;
-      }
-      if (space && e.button === 0 && !drag) {
-        e.preventDefault();
-        drag = { id: e.pointerId, last: local(e) };
-        el.setPointerCapture(e.pointerId);
-        setCursor();
-      }
+      if (!input.down(read(e))) return;
+      if (e.pointerType !== 'touch') e.preventDefault();
+      el.setPointerCapture(e.pointerId);
     };
-    const onPointerMove = (e: PointerEvent) => {
-      if (touches.has(e.pointerId)) {
-        touches.set(e.pointerId, local(e));
-        const pair = pinchPoints();
-        if (pair) view.pinch(pair[0], pair[1], false);
-        return;
-      }
-      if (drag && e.pointerId === drag.id) {
-        const p = local(e);
-        view.panBy(p.x - drag.last.x, p.y - drag.last.y);
-        drag.last = p;
-      }
-    };
-    const onPointerEnd = (e: PointerEvent) => {
-      if (touches.delete(e.pointerId)) {
+    const onPointerMove = (e: PointerEvent) => input.move(read(e));
+    const onPointerEnd = (e: PointerEvent) => input.up(read(e));
+
+    // F-002.R3 Safari trackpad pinch: WebKit on macOS sends `gesturestart` / `gesturechange` /
+    // `gestureend` (with `scale` and the pointer position) instead of Ctrl+wheel. A real trackpad pinch
+    // cannot be automated; tests/e2e/zoom-pan.spec.ts dispatches synthetic gesture events instead.
+    const onGesture = (e: Event) => {
+      e.preventDefault(); // the page itself is never zoomed by the pinch
+      const g = e as Event & { scale?: number; clientX?: number; clientY?: number };
+      if (e.type === 'gestureend') {
         view.endPinch();
-        const pair = pinchPoints();
-        if (pair) view.pinch(pair[0], pair[1], true); // a third finger lifted: continue with the two left
         return;
       }
-      if (drag && e.pointerId === drag.id) {
-        drag = null;
-        setCursor();
-      }
+      view.gesture(
+        g.scale ?? 1,
+        local({ clientX: g.clientX ?? 0, clientY: g.clientY ?? 0 }),
+        e.type === 'gesturestart',
+      );
     };
+    const GESTURES = ['gesturestart', 'gesturechange', 'gestureend'] as const;
 
     active = {
       controller: view,
-      holdSpace(held) {
-        if (space === held) return;
-        space = held;
-        if (!held) drag = null;
-        setCursor();
-      },
+      holdSpace: (held) => input.holdSpace(held),
       setBottomInset(px) {
         inset = Math.max(0, px);
         measure();
@@ -221,6 +199,7 @@ export function Canvas({ image, doc, theme, onView }: CanvasProps) {
     el.addEventListener('pointermove', onPointerMove);
     el.addEventListener('pointerup', onPointerEnd);
     el.addEventListener('pointercancel', onPointerEnd);
+    for (const g of GESTURES) el.addEventListener(g, onGesture, { passive: false });
     return () => {
       cancelAnimationFrame(raf);
       observer.disconnect();
@@ -230,6 +209,7 @@ export function Canvas({ image, doc, theme, onView }: CanvasProps) {
       el.removeEventListener('pointermove', onPointerMove);
       el.removeEventListener('pointerup', onPointerEnd);
       el.removeEventListener('pointercancel', onPointerEnd);
+      for (const g of GESTURES) el.removeEventListener(g, onGesture);
       layer.release();
       live.current.schedule = () => {};
       if (active?.controller === view) active = null;

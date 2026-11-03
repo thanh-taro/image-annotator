@@ -9,7 +9,7 @@ import { viewCommands } from '../canvas';
 import { t } from '../copy';
 import { Icon } from './icons';
 import { modShortcut } from './platform';
-import { loaded, view } from './state';
+import { zoomLevel } from './state';
 
 /** The level shown: whole percent, at least 1 (COPY-status.zoom). */
 export const zoomPercent = (zoom: number) => Math.max(1, Math.round(zoom));
@@ -57,9 +57,9 @@ function ZoomMenu({ onClose }: { onClose: (refocus: boolean) => void }) {
 }
 
 export function ZoomControl() {
-  const current = loaded.value ? view.value : null;
-  const percent = current ? zoomPercent(current.zoom) : 0;
-  const off = !current;
+  const zoom = zoomLevel.value; // the zoom only: a pan does not re-render this control
+  const percent = zoom === null ? 0 : zoomPercent(zoom);
+  const off = zoom === null;
   const [menu, setMenu] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const closeMenu = (refocus: boolean) => {

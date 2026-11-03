@@ -10,7 +10,7 @@ import {
   fitView,
   panBy,
   toImage,
-  zoomAt,
+  zoomAt as zoomViewAt,
   zoomIn,
   zoomOut,
   ZOOM_MAX,
@@ -19,8 +19,6 @@ import {
   type View,
   type Viewport,
 } from '../core';
-
-export type PanDirection = 'left' | 'right' | 'up' | 'down';
 
 /** One wheel event, as the canvas reads it (`mod`: Ctrl or Cmd held, or a trackpad pinch). */
 export interface WheelInput {
@@ -31,9 +29,6 @@ export interface WheelInput {
   readonly mod: boolean;
 }
 
-/** RULE-19: arrow keys pan 40 screen pixels, 200 with Shift. */
-export const PAN_STEP = 40;
-export const PAN_STEP_SHIFT = 200;
 /** A wheel delta at least this large (pixels) is a mouse-wheel notch, which zooms one RULE-12 step. */
 const NOTCH = 50;
 /** Smooth zoom for trackpad pinches: the zoom is multiplied by e^(−deltaY × this). */
@@ -102,22 +97,24 @@ export class ViewController {
     return { x: this.area.width / 2, y: this.area.height / 2 };
   }
 
-  private zoomTo(zoom: number, at: Point): void {
+  /** F-002.R3 zoom at a point: `zoom` (percent, kept within RULE-12's range) keeping the image point under `at`. */
+  zoomAt(zoom: number, at: Point): void {
     const port = this.port;
     const view = this.current;
-    if (!port || !view || zoom === view.zoom) return;
-    this.set(zoomAt(view, zoom, at, port));
+    if (!port || !view) return;
+    const next = clampZoom(zoom, fitLevel(port));
+    if (next !== view.zoom) this.set(zoomViewAt(view, next, at, port));
   }
 
   /** F-002.R2: one RULE-12 step in, about `at` (the centre of the view by default). */
   zoomIn(at: Point = this.centre()): void {
-    if (this.current) this.zoomTo(zoomIn(this.current.zoom), at);
+    if (this.current) this.zoomAt(zoomIn(this.current.zoom), at);
   }
 
   /** F-002.R2: one RULE-12 step out, never below RULE-12's floor. */
   zoomOut(at: Point = this.centre()): void {
     const port = this.port;
-    if (this.current && port) this.zoomTo(zoomOut(this.current.zoom, fitLevel(port)), at);
+    if (this.current && port) this.zoomAt(zoomOut(this.current.zoom, fitLevel(port)), at);
   }
 
   /** F-002.R2 COPY-action.zoom_fit: the whole canvas, never above 100 % (RULE-12). */
@@ -128,7 +125,7 @@ export class ViewController {
 
   /** F-002.R2 COPY-action.zoom_actual: 100 %, about the centre of the view. */
   actualSize(): void {
-    this.zoomTo(100, this.centre());
+    this.zoomAt(100, this.centre());
   }
 
   /** F-002.R4: pans by screen pixels (scrolling, Space+drag, two fingers). */
@@ -137,11 +134,9 @@ export class ViewController {
     if (port && this.current) this.set(panBy(this.current, dx, dy, port));
   }
 
-  /** F-002.R4 arrow keys with nothing selected (RULE-19): "Right" shows more of the right side. */
-  panKey(direction: PanDirection, far = false): void {
-    const n = far ? PAN_STEP_SHIFT : PAN_STEP;
-    const d = { left: [n, 0], right: [-n, 0], up: [0, n], down: [0, -n] }[direction];
-    this.panBy(d[0] ?? 0, d[1] ?? 0);
+  /** F-002.R4 arrow keys (RULE-19): moves the view by (dx, dy) — positive dx shows more of the right side. */
+  panView(dx: number, dy: number): void {
+    this.panBy(-dx, -dy);
   }
 
   /**
@@ -165,7 +160,7 @@ export class ViewController {
       else this.zoomOut(at);
       return;
     }
-    this.zoomTo(clampZoom(view.zoom * Math.exp(-dy * PINCH_RATE), fitLevel(port)), at);
+    this.zoomAt(clampZoom(view.zoom * Math.exp(-dy * PINCH_RATE), fitLevel(port)), at);
   }
 
   /**
@@ -173,11 +168,23 @@ export class ViewController {
    * every move. The zoom follows the fingers' distance; the image point between them follows their centre.
    */
   pinch(a: Point, b: Point, start: boolean): void {
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    this.scaleAt(Math.hypot(a.x - b.x, a.y - b.y) || 1, mid, start);
+  }
+
+  /**
+   * F-002.R3 Safari's trackpad pinch (`gesturestart` / `gesturechange`, whose `scale` starts at 1): the
+   * zoom follows the gesture's scale; the image point under the pointer stays there.
+   */
+  gesture(scale: number, at: Point, start: boolean): void {
+    this.scaleAt(scale > 0 ? scale : 1, at, start);
+  }
+
+  /** A pinch measured by `distance` (any unit) about `mid`; `start` records the reference. */
+  private scaleAt(distance: number, mid: Point, start: boolean): void {
     const view = this.current;
     const port = this.port;
     if (!view || !port) return;
-    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    const distance = Math.hypot(a.x - b.x, a.y - b.y) || 1;
     if (start || !this.pinchStart) {
       this.pinchStart = { zoom: view.zoom, distance, point: toImage(view, mid) };
       return;
@@ -188,7 +195,7 @@ export class ViewController {
     this.set(clampView({ zoom: next, x: mid.x - point.x * z, y: mid.y - point.y * z, fitted: false }, port));
   }
 
-  /** The pinch ended (a finger lifted). */
+  /** The pinch or gesture ended (a finger lifted, `gestureend`). */
   endPinch(): void {
     this.pinchStart = null;
   }

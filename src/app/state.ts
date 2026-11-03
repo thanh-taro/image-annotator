@@ -61,6 +61,12 @@ export function startNewSession(image: DecodedImage): Session {
  */
 export const view = signal<View | null>(null);
 
+/**
+ * The zoom level (percent) while an image is shown, else null. CMP-StatusBar reads this, not `view`,
+ * so panning (which changes only the position) never re-renders the zoom control (NFR-02).
+ */
+export const zoomLevel = computed(() => (loaded.value && view.value ? view.value.zoom : null));
+
 /** CMP-Notice: at most one at a time; a new one replaces the old. */
 export const notice = signal<Notice | null>(null);
 

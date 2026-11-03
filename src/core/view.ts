@@ -67,14 +67,15 @@ export function toImage(view: View, p: Point): Point {
 }
 
 /**
- * F-002.R4 pan limits, per axis: a content no larger than the area inside the margin is centred;
- * a larger one can be panned until its edge reaches the margin, never further.
+ * F-002.R4 pan limits, per axis: a canvas no larger than the visible area is centred (no pan on that
+ * axis); a larger one pans until its edge reaches the Fit margin, never further.
  */
 export function clampView(view: View, { content, area, margin }: Viewport): View {
   const z = view.zoom / 100;
   const axis = (pos: number, start: number, size: number, extent: number) => {
     const s = size * z;
-    if (s <= extent - 2 * margin) return (extent - s) / 2 - start * z;
+    if (s <= extent) return (extent - s) / 2 - start * z;
+    // Larger than the area: from its far edge at the margin to its near edge at the margin.
     const lo = extent - margin - s - start * z;
     const hi = margin - start * z;
     return Math.min(hi, Math.max(lo, pos));
