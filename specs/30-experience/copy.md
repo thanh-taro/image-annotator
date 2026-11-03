@@ -165,6 +165,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-a11y.duplicated_count** | one: {count} annotation duplicated · other: {count} annotations duplicated | Đã nhân bản {count} chú thích | |
 | **COPY-a11y.selected_count** | one: {count} annotation selected · other: {count} annotations selected | Đã chọn {count} chú thích | |
 | **COPY-a11y.toolbar** | Tools and actions | Công cụ và thao tác | Name of the toolbar |
+| **COPY-a11y.tool_group** | Drawing tools | Công cụ vẽ | Name of the single-choice tool group |
 | **COPY-a11y.style_panel** | Style | Kiểu dáng | Name of the style panel |
 | **COPY-a11y.zoom_menu** | Zoom: {percent} % | Thu phóng: {percent} % | Name of the narrow zoom button |
 | **COPY-a11y.new_tab** | (opens in a new tab) | (mở trong thẻ mới) | Appended to links that open a new tab |

@@ -54,3 +54,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-001 review: ADR-0023 (amends ADR-0005) reads image dimensions from the header before decoding, so an over-limit image is never fully decoded. F-001 edge case: from several files, the first supported one loads.
 - F-002 gaps: F-002.R4 centres a small canvas and limits panning to the Fit margin; RULE-19 arrow pan is 40 screen px (Shift: 200) and Mod++ also zooms in; copy.md COPY-status.zoom_none.
 - F-003 gaps: RULE-19 Esc closes the narrow style sheet after cancelling a drag; CMP-StylePanel coarse-pointer swatches in 2 rows of 4.
+- F-003 review: CMP-Toolbar's tool group is a radio group named by the new COPY-a11y.tool_group.
