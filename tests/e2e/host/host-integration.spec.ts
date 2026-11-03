@@ -1,9 +1,10 @@
 // F-015 Fit into the host portal (RULE-16, ADR-0010, ADR-0021) on the multi-origin harness: theme
 // from the address and from messages, the device preference standalone, filling the host area,
 // origin and source checks, the single ready signal and frame-ancestors.
-// Deferred ACs (need later features): AC2 (an annotated image and history, F-002+), AC6/AC7
+// Deferred ACs (need later features): AC2's history part (undo controls, F-009), AC6/AC7
 // (every M-1 feature), AC9/AC10 (copy and download, F-012).
 import { expect, test, type Page } from '@playwright/test';
+import { fixture, paste } from '../support/load';
 import { HOST_ALLOWED, HOST_OTHER, TOOL_ALLOWED, TOOL_EMPTY, hostPageUrl } from '../support/urls';
 import {
   markWindow,
@@ -73,6 +74,29 @@ test('F-015.R1 follows later theme messages without reloading', async ({ page })
   await expect(page.frameLocator('#tool').locator('html')).toHaveAttribute('lang', 'vi-VN');
   await expect(page.frameLocator('#tool').locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await stillSameWindow(frame)).toBe(true);
+});
+
+test('F-015.AC2 an annotated image survives the host switching from light to dark, without reloading', async ({
+  page,
+}) => {
+  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'light', 'en-US'));
+  const frame = await toolFrame(page);
+  await paste(frame, [fixture('wide-2000x1000.png', 'image/png')]);
+  const summary = frame.locator('#tk-canvas-summary');
+  await expect(summary).toHaveText('2,000 × 1,000 px canvas, 0 annotations');
+  // Annotate (F-003): a rectangle placed at the view centre with Enter.
+  await frame.getByRole('radio', { name: 'Rectangle (R)' }).click();
+  await frame.locator('main.tk-work-area').focus();
+  await frame.page().keyboard.press('Enter');
+  await expect(summary).toHaveText('2,000 × 1,000 px canvas, 1 annotation');
+  await markWindow(frame);
+  expect(await workArea(page)).toBe(LIGHT_WORK_AREA);
+
+  await page.evaluate(() => (window as unknown as { __sendTheme: (v: string) => void }).__sendTheme('dark'));
+  await expect.poll(() => workArea(page)).toBe(DARK_WORK_AREA);
+  expect(await stillSameWindow(frame)).toBe(true);
+  await expect(summary).toHaveText('2,000 × 1,000 px canvas, 1 annotation');
+  await expect(frame.getByRole('radio', { name: 'Rectangle (R)' })).toHaveAttribute('aria-checked', 'true');
 });
 
 test('F-015.AC3 standalone on a device set to dark shows the dark theme', async ({ page }) => {

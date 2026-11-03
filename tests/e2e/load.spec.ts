@@ -51,7 +51,11 @@ test.describe('F-001 load an image', () => {
       /^Press (Ctrl\+V|⌘V) to paste a screenshot, drop an image file here, or choose Open image\.$/,
     );
     await expect(empty.getByRole('button', { name: 'Open image' })).toBeVisible();
-    await expect(page.getByRole('toolbar', { name: 'Tools and actions' }).getByRole('button')).toHaveText('Open image');
+    // CMP-Toolbar "no image": open is enabled; the tools (F-003) are disabled.
+    const toolbar = page.getByRole('toolbar', { name: 'Tools and actions' });
+    await expect(toolbar.getByRole('button', { name: 'Open image' })).toBeEnabled();
+    for (const name of ['Select (V)', 'Rectangle (R)', 'Arrow (A)'])
+      await expect(toolbar.getByRole('radio', { name })).toBeDisabled();
   });
 
   test('F-001.AC1 pasting a PNG screenshot shows it fitted to the view at full resolution', async ({ page }) => {

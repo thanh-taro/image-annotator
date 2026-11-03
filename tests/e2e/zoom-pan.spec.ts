@@ -1,5 +1,6 @@
 // F-002 Zoom and pan the view — end to end on the production build (Chromium + WebKit). The work area
-// is made exactly 1200 × 800 (the AC's area) by the viewport: toolbar 40 + 800 + status bar 28. Images
+// is made exactly 1200 × 800 (the AC's area) by the viewport: toolbar 40 + 800 + status bar 28 high, and
+// 1200 + the style panel (size.panel, F-003) wide. Images
 // are generated in the page and pasted (tests/e2e/support/load.ts dispatches the same event).
 // AC7 (export unchanged, no undo step) is covered in tests/unit/canvas.view.test.ts until export
 // (F-012) and drawing (F-003) exist to exercise it here.
@@ -8,7 +9,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { canvasBox, canvasPixel, summary } from './support/load';
 
 const AREA = { width: 1200, height: 800 };
-const VIEWPORT = { width: AREA.width, height: 40 + AREA.height + 28 };
+const PANEL = 272; // CMP-StylePanel docked on the right (size.panel)
+const VIEWPORT = { width: AREA.width + PANEL, height: 40 + AREA.height + 28 };
 const RED = [220, 30, 30, 255];
 const BLUE = [30, 60, 220, 255];
 const near = (a: number[], b: number[], tolerance = 24) => a.every((v, i) => Math.abs(v - (b[i] ?? 0)) <= tolerance);
@@ -249,7 +251,9 @@ test.describe('F-002 zoom and pan the view', () => {
     const box = await workArea(page).boundingBox();
     if (!box) throw new Error('no work area');
     const clip = { x: box.x + box.width / 2 - 20, y: box.y, width: 40, height: 4 };
-    await page.getByRole('button', { name: 'Open image' }).focus();
+    // The tab stop before the canvas: the active tool (F-003; the style panel has no controls with the
+    // select tool and nothing selected until F-011).
+    await page.getByRole('radio', { name: 'Select (V)' }).focus();
     const before = await page.screenshot({ clip });
     await page.keyboard.press('Tab'); // keyboard focus: :focus-visible
     await expect(workArea(page)).toBeFocused();

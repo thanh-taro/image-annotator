@@ -4,6 +4,10 @@
 import type { JSX } from 'preact';
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Circle,
   CircleAlert,
   CircleCheck,
   CodeXml,
@@ -11,8 +15,12 @@ import {
   Image,
   LoaderCircle,
   Minus,
+  MousePointer2,
+  MoveUpRight,
   Plus,
+  RectangleHorizontal,
   ShieldCheck,
+  Slash,
   X,
 } from 'lucide-static';
 
@@ -29,6 +37,15 @@ const SOURCES = {
   minus: Minus,
   plus: Plus,
   chevronDown: ChevronDown,
+  // F-003: CMP-Toolbar tools, the narrow tool row's edge hints and the summary bar's chevron.
+  select: MousePointer2,
+  rectangle: RectangleHorizontal,
+  ellipse: Circle,
+  arrow: MoveUpRight,
+  line: Slash,
+  chevronLeft: ChevronLeft,
+  chevronRight: ChevronRight,
+  chevronUp: ChevronUp,
 } as const;
 
 export type IconName = keyof typeof SOURCES;

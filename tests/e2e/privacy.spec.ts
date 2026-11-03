@@ -2,8 +2,8 @@
 // the privacy statement and source link in the status bar at every layout width, the details
 // popover and its dismissal, and the source link opening the repository in a new tab with no
 // referrer. GitHub is never contacted: the new tab's request is answered by a local route.
-// Partly deferred: AC4 checks that a loaded image (F-001) is unchanged; "annotations and history
-// unchanged" waits for F-003 and F-009.
+// Partly deferred: AC4 checks the image and its annotations (F-003) are unchanged; "history
+// unchanged" waits for the undo controls (F-009).
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { expectLoaded, fixture, paste } from './support/load';
@@ -213,6 +213,13 @@ test('F-016.AC4 the source link opens the repository in a new tab with no referr
   await expectLoaded(page, 2000, 1000);
   const tool = page.locator('[data-screen="SCR-Annotator"]');
   await expect(tool).toHaveAttribute('data-state', 'default');
+  // Annotate it (F-003): a rectangle placed at the view centre, then deselected.
+  await page.getByRole('radio', { name: 'Rectangle (R)' }).click();
+  await page.locator('main.tk-work-area').focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#tk-canvas-summary')).toContainText('1 annotation');
+  await expect(tool).toHaveAttribute('data-state', 'default');
   const summaryBefore = await page.locator('#tk-canvas-summary').textContent();
   await page.evaluate(() => ((window as unknown as { __mark?: number }).__mark = 42));
   const before = page.url();
@@ -229,6 +236,5 @@ test('F-016.AC4 the source link opens the repository in a new tab with no referr
   expect(page.url()).toBe(before);
   expect(await page.evaluate(() => (window as unknown as { __mark?: number }).__mark)).toBe(42);
   await expect(tool).toHaveAttribute('data-state', 'default');
-  await expectLoaded(page, 2000, 1000);
   await expect(page.locator('#tk-canvas-summary')).toHaveText(summaryBefore ?? '');
 });

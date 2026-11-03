@@ -1,11 +1,11 @@
 // MOD-App — the signals of SCR-Annotator (ADR-0008 §6): the loaded image and its session, the
 // document and a change version (so every edit repaints), the computed `unexported` (RULE-18), the
-// notice, the open dialog, the drag state and the two persistent live regions (NFR-06). Later features
-// add the selection, tool and current styles; F-002 adds the view. MOD-Document stays free of signals; every change
-// to the session goes through `commit` or `exported` here.
+// notice, the open dialog, the drag state and the two persistent live regions (NFR-06). F-002 adds the
+// view; F-003 the tool, the page-lifetime current styles, the selection and the layout width. MOD-Document
+// stays free of signals; every change to the session goes through `commit` or `exported` here.
 import { computed, signal } from '@preact/signals';
-import { startSession, type Doc, type Restore, type Session } from '../document';
-import type { View } from '../core';
+import { startSession, type Doc, type Restore, type Selection, type Session } from '../document';
+import { DEFAULT_STYLES, type DrawingTool, type Style, type ToolName, type View } from '../core';
 import type { DecodedImage, Size } from '../io';
 import type { Notice } from './notice';
 
@@ -29,11 +29,28 @@ export const unexported = computed(() => {
   return loaded.value?.session.unexported ?? false;
 });
 
-/** Applies a history result (apply, undo or redo) to the signals. */
+/** Applies a history result (apply, undo or redo) to the signals, with the selection that goes with it. */
 export function commit(restore: Restore): void {
   doc.value = restore.doc;
+  selection.value = restore.selection;
   version.value++;
 }
+
+/** CMP-Toolbar: exactly one tool is active; select when the page opens, kept when a new image loads. */
+export const tool = signal<ToolName>('select');
+
+/** RULE-04: each drawing tool's current style, for the page's lifetime (kept across images, ENT-Session). */
+export const currentStyles = signal<Readonly<Record<DrawingTool, Style>>>(DEFAULT_STYLES);
+
+/** The selected annotations' ids, in selection order (not an undo step, RULE-11). */
+export const selection = signal<Selection>([]);
+
+/** D-014 layout width of the tool itself (wide ≥ 1000 px, compact 800–999 px, narrow below). */
+export type Layout = 'wide' | 'compact' | 'narrow';
+export const layout = signal<Layout>('wide');
+
+/** D-019: the narrow bottom sheet of CMP-StylePanel is open. */
+export const sheetOpen = signal(false);
 
 /** Records a successful export (RULE-18; F-012 calls this). */
 export function exported(): void {
@@ -50,6 +67,7 @@ export function startNewSession(image: DecodedImage): Session {
   const session = startSession(image.info);
   loaded.value = { image, session };
   doc.value = session.doc;
+  selection.value = [];
   version.value++;
   previous?.image.bitmap.close();
   return session;

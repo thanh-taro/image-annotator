@@ -207,3 +207,19 @@ describe('MOD-Canvas view controller (F-002)', () => {
     expect(session.history.canUndo).toBe(false);
   });
 });
+
+describe('MOD-Canvas view centre (F-003.R5, RULE-19 Enter)', () => {
+  it('F-003.AC8 the centre of the view follows a pan and leaves out the bottom inset (D-019)', () => {
+    const { c } = controller(2000, 1600, AREA, 0);
+    c.actualSize();
+    const before = c.centreImage();
+    c.panView(-40, 0); // an arrow-key pan of 40 screen px at 100 %: the centre moves 40 image px
+    const after = c.centreImage();
+    expect(Math.abs(after!.x - before!.x)).toBeCloseTo(40, 6);
+    expect(after!.y).toBeCloseTo(before!.y, 6);
+    // A 300 px sheet over the bottom of the work area: the visible part is 500 px high, its centre higher.
+    c.setArea({ width: AREA.width, height: AREA.height - 300 }, 0);
+    const v = view(c);
+    expect(c.centreImage()).toEqual(toImage(v, { x: AREA.width / 2, y: (AREA.height - 300) / 2 }));
+  });
+});

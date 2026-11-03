@@ -1,7 +1,7 @@
 // MOD-Canvas — the pointer input controller: a DOM-free router from pointer events to the view (and,
 // from F-003, to the active tool). It owns the Space-held state, the Space+drag pan and the touch
 // pointers; two touch pointers pan and zoom, one finger and plain mouse or pen drags go to the tool
-// (`tool` below; none until F-003). <Canvas> only wires the DOM listeners and pointer capture.
+// (`tool` below: the drawing tools from F-003). <Canvas> only wires the DOM listeners and pointer capture.
 // Implements: F-002.R3/R4 (Space+drag, two fingers), CMP-Canvas "Behavior", RULE-19 Space+drag.
 import type { Point } from '../core';
 import type { ViewController } from './view';
@@ -12,6 +12,10 @@ export interface PointerInput {
   readonly type: 'mouse' | 'pen' | 'touch' | string;
   readonly button: number;
   readonly point: Point;
+  /** Shift held (RULE-06 constrain). */
+  readonly shift?: boolean;
+  /** Alt held (RULE-19 Pointer: Alt+drag moves an annotation, F-008). */
+  readonly alt?: boolean;
 }
 
 /** What a drawing tool receives (F-003…F-010); the view takes the pointer first. */
@@ -19,6 +23,8 @@ export interface ToolInput {
   down(input: PointerInput): boolean;
   move(input: PointerInput): void;
   up(input: PointerInput): void;
+  /** The gesture ends without a result (a second finger starts a pinch; RULE-19 Esc). */
+  cancel?(): boolean;
 }
 
 /** The cursor the canvas shows: the pan hand while Space is held, grabbing while dragging. */
@@ -65,7 +71,8 @@ export class InputController {
       if (this.touches.size === 2) {
         const pair = this.pair();
         if (pair) this.view.pinch(pair[0], pair[1], true);
-        // A second finger turns a one-finger tool gesture into a pinch: the tool's pointer is dropped.
+        // A second finger turns a one-finger tool gesture into a pinch: the tool's gesture is cancelled.
+        if (this.toolPointer !== null) this.tool?.cancel?.();
         this.toolPointer = null;
         return true;
       }
@@ -102,7 +109,7 @@ export class InputController {
     if (input.id === this.toolPointer) this.tool?.move(input);
   }
 
-  /** A pointer went up or was cancelled. */
+  /** A pointer went up (see cancel() for `pointercancel`). */
   up(input: PointerInput): void {
     if (this.touches.delete(input.id)) {
       this.view.endPinch();
@@ -118,5 +125,20 @@ export class InputController {
       this.toolPointer = null;
       this.tool?.up(input);
     }
+  }
+
+  /**
+   * The browser or OS cancelled a pointer (`pointercancel`: an edge gesture, palm rejection, lost
+   * capture). Pinch and pan end as on release; the tool's gesture ends with no result, like Esc.
+   */
+  cancel(input: PointerInput): void {
+    if (input.id === this.toolPointer) {
+      this.touches.delete(input.id); // a cancelled finger is gone: later one-finger drags draw again
+      this.toolPointer = null;
+      this.tool?.cancel?.();
+      this.tool?.up(input); // the cancelled gesture is closed; nothing is created
+      return;
+    }
+    this.up(input);
   }
 }

@@ -1,0 +1,374 @@
+/* MOD-App — F-003: the tool group of CMP-Toolbar, CMP-StylePanel (docked on wide and compact widths,
+   the narrow summary bar and bottom sheet of D-019), the region-2/3 body and the canvas cursor per
+   tool. style.md "Regions" and principles 2–4; tokens only (ADR-0013). */
+@layer components {
+  /* Region 2 (work area) and region 3 (style panel, right of it; below it on narrow widths). */
+  .tk-body {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+  }
+  .tk-body > .tk-work-area {
+    flex: 1;
+    min-width: 0;
+  }
+  .tk-body__panel {
+    order: 2;
+    flex: none;
+    width: var(--tk-size-panel);
+    overflow-y: auto;
+    border-inline-start: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    background: var(--tk-color-surface);
+  }
+
+  /* CMP-Toolbar tool group (style.md principle 2: the active tool is `selection` with an `accent` inset
+     border, never colour alone). */
+  .tk-toolbar__sep {
+    flex: none;
+    width: var(--tk-border-width-hairline);
+    height: var(--tk-space-5);
+    margin: 0 var(--tk-space-1);
+    background: var(--tk-color-line);
+  }
+  .tk-tools {
+    position: relative;
+    display: flex;
+    min-width: 0;
+  }
+  .tk-tools__strip {
+    display: flex;
+    gap: var(--tk-space-1);
+  }
+  .tk-tool {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--tk-size-tool-button);
+    height: var(--tk-size-tool-button);
+    padding: 0;
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: transparent;
+    color: var(--tk-color-fg);
+    cursor: pointer;
+    transition: background-color var(--tk-motion-duration-fast) var(--tk-motion-easing-standard);
+  }
+  .tk-tool:hover:not(:disabled) {
+    background: var(--tk-color-surface2);
+  }
+  .tk-tool[aria-checked='true'] {
+    background: var(--tk-color-selection);
+    box-shadow: inset 0 0 0 var(--tk-border-width-focus) var(--tk-color-accent);
+    color: var(--tk-color-accent);
+  }
+  .tk-tool:disabled {
+    background: transparent;
+    box-shadow: none;
+    color: var(--tk-color-muted);
+    cursor: default;
+  }
+  .tk-tool:focus-visible {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: var(--tk-border-width-focus);
+  }
+
+  /* Narrow (D-014): two 48 px rows; the tools scroll sideways with a fade on each edge that hides tools. */
+  .tk-toolbar__rows {
+    display: flex;
+    flex-direction: column;
+  }
+  .tk-toolbar__rows .tk-toolbar__row {
+    height: calc(var(--tk-size-touch-target) + var(--tk-space-1));
+    padding: 0 var(--tk-space-1);
+  }
+  .tk-toolbar__rows .tk-toolbar__row + .tk-toolbar__row {
+    border-block-start: var(--tk-border-width-hairline) solid var(--tk-color-line);
+  }
+  .tk-toolbar__rows .tk-tool {
+    width: var(--tk-size-touch-target);
+    height: var(--tk-size-touch-target);
+  }
+  .tk-toolbar__row--tools {
+    min-width: 0;
+  }
+  .tk-tools--narrow {
+    flex: 1;
+    height: 100%;
+  }
+  .tk-tools--narrow .tk-tools__strip {
+    flex: 1;
+    align-items: center;
+    gap: var(--tk-space-2);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .tk-tools--narrow .tk-tools__strip .tk-tool:focus-visible {
+    outline-offset: calc(-1 * var(--tk-border-width-focus));
+  }
+  .tk-tools__fade {
+    position: absolute;
+    inset-block: 0;
+    display: flex;
+    align-items: center;
+    width: var(--tk-space-6);
+    color: var(--tk-color-muted);
+    pointer-events: none;
+  }
+  .tk-tools__fade--end {
+    inset-inline-end: 0;
+    justify-content: flex-end;
+    background: linear-gradient(90deg, transparent, var(--tk-color-surface) 85%);
+  }
+  .tk-tools__fade--start {
+    inset-inline-start: 0;
+    background: linear-gradient(270deg, transparent, var(--tk-color-surface) 85%);
+  }
+
+  /* CMP-StylePanel */
+  .tk-panel {
+    position: relative;
+    height: 100%;
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+  }
+  .tk-panel__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-space-4);
+    padding: var(--tk-space-3);
+  }
+  .tk-panel__body[hidden] {
+    display: none;
+  }
+  .tk-panel__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-space-2);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .tk-panel__heading {
+    margin-bottom: var(--tk-space-2);
+    padding: 0;
+    color: var(--tk-color-muted);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-semibold);
+  }
+
+  /* The native radio sits invisibly inside its swatch or segment, which shows its state. */
+  .tk-choice {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* Colour swatches: 8 in RULE-04 order, named by their colour (NFR-06). */
+  .tk-swatches {
+    display: flex;
+    justify-content: space-between;
+  }
+  .tk-swatch {
+    position: relative;
+    flex: none;
+    width: var(--tk-size-swatch);
+    height: var(--tk-size-swatch);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-sm);
+  }
+  .tk-swatch:has(.tk-choice:checked) {
+    border: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    box-shadow: inset 0 0 0 var(--tk-border-width-focus) var(--tk-color-surface);
+  }
+  .tk-swatch:has(.tk-choice:focus-visible),
+  .tk-segment:has(.tk-choice:focus-visible) {
+    z-index: 1;
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: var(--tk-border-width-focus);
+  }
+  .tk-swatch--red {
+    background: var(--tk-annotation-color-red);
+  }
+  .tk-swatch--orange {
+    background: var(--tk-annotation-color-orange);
+  }
+  .tk-swatch--yellow {
+    background: var(--tk-annotation-color-yellow);
+  }
+  .tk-swatch--green {
+    background: var(--tk-annotation-color-green);
+  }
+  .tk-swatch--blue {
+    background: var(--tk-annotation-color-blue);
+  }
+  .tk-swatch--purple {
+    background: var(--tk-annotation-color-purple);
+  }
+  .tk-swatch--black {
+    background: var(--tk-annotation-color-black);
+  }
+  .tk-swatch--white {
+    background: var(--tk-annotation-color-white);
+  }
+
+  /* Size and fill: a segmented control of radios. */
+  .tk-segmented {
+    display: grid;
+    /* Each choice keeps its whole label ("Translucent", vi-VN "Bán trong suốt" wraps); the rest is shared. */
+    grid-template-columns: repeat(3, minmax(min-content, 1fr));
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-sm);
+  }
+  .tk-segment {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: var(--tk-size-control);
+    padding: 0 var(--tk-space-1);
+    border-inline-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    font-weight: var(--tk-font-weight-semibold);
+  }
+  .tk-segment:first-child {
+    border-radius: var(--tk-radius-sm) 0 0 var(--tk-radius-sm);
+  }
+  .tk-segment:last-child {
+    border-inline-end: 0;
+    border-radius: 0 var(--tk-radius-sm) var(--tk-radius-sm) 0;
+  }
+  .tk-segment:has(.tk-choice:checked) {
+    background: var(--tk-color-selection);
+    box-shadow: inset 0 0 0 var(--tk-border-width-focus) var(--tk-color-accent);
+  }
+  .tk-segment__text {
+    text-align: center;
+    line-height: var(--tk-font-line-height-tight);
+  }
+
+  /* Narrow (D-019): the summary bar sits between the work area and the status bar; the open sheet
+     grows from it over the lower part of the work area, at most half its height (--tk-sheet-max). */
+  @container tk-annotator (width < 800px) {
+    .tk-body {
+      flex-direction: column;
+    }
+    .tk-body__panel {
+      position: relative;
+      z-index: 3;
+      width: auto;
+      height: calc(var(--tk-size-touch-target) + var(--tk-space-1));
+      overflow: visible;
+      border-inline-start: 0;
+      background: transparent;
+    }
+    .tk-panel__inner {
+      position: absolute;
+      inset-inline: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      border-block-start: var(--tk-border-width-hairline) solid var(--tk-color-line);
+      background: var(--tk-color-surface);
+    }
+    .tk-panel--open .tk-panel__inner {
+      max-height: var(--tk-sheet-max, 50vh);
+      border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+      border-block-end: 0;
+      border-radius: var(--tk-radius-md) var(--tk-radius-md) 0 0;
+    }
+    .tk-panel__body {
+      min-height: 0;
+      overflow-y: auto;
+      padding: var(--tk-space-2) var(--tk-space-4) var(--tk-space-6);
+      border-block-start: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    }
+    .tk-panel__body .tk-swatch {
+      width: var(--tk-size-touch-target);
+      height: var(--tk-size-touch-target);
+    }
+    .tk-panel__body .tk-segment {
+      min-height: var(--tk-size-touch-target);
+    }
+  }
+  .tk-panel__bar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--tk-space-2);
+    width: 100%;
+    height: calc(var(--tk-size-touch-target) + var(--tk-space-1) - var(--tk-border-width-hairline));
+    padding: 0 var(--tk-space-4);
+    border: 0;
+    background: transparent;
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-semibold);
+    text-align: start;
+    cursor: pointer;
+  }
+  .tk-panel__bar:focus-visible {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: calc(-1 * var(--tk-border-width-focus));
+  }
+  .tk-panel__chip {
+    flex: none;
+    width: var(--tk-space-4);
+    height: var(--tk-space-4);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-pill);
+  }
+  .tk-panel__summary {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tk-panel__chevron {
+    margin-inline-start: auto;
+    color: var(--tk-color-muted);
+    transition: transform var(--tk-motion-duration-base) var(--tk-motion-easing-standard);
+  }
+  .tk-panel--open .tk-panel__chevron {
+    transform: rotate(180deg);
+  }
+
+  /* style.md: on a coarse pointer every target grows to size.touchTarget. */
+  @media (pointer: coarse) {
+    .tk-tool,
+    .tk-swatch {
+      width: var(--tk-size-touch-target);
+      height: var(--tk-size-touch-target);
+    }
+    /* Eight touch-sized swatches do not fit the docked panel's width: two rows of four. */
+    .tk-swatches {
+      display: grid;
+      grid-template-columns: repeat(4, var(--tk-size-touch-target));
+      justify-content: space-between;
+      row-gap: var(--tk-space-2);
+    }
+    .tk-segment {
+      min-height: var(--tk-size-touch-target);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .tk-tool[aria-checked='true'],
+    .tk-segment:has(.tk-choice:checked) {
+      outline: var(--tk-border-width-focus) solid Highlight;
+    }
+    .tk-swatch {
+      forced-color-adjust: none;
+    }
+  }
+
+  /* CMP-Canvas: the pointer cursor per tool (the pan hand of ./zoom.css wins while Space is held). */
+  .tk-canvas:not([data-tool='select']) {
+    cursor: crosshair;
+  }
+}

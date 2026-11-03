@@ -97,6 +97,11 @@ export class ViewController {
     return { x: this.area.width / 2, y: this.area.height / 2 };
   }
 
+  /** RULE-19 Enter: the image point at the centre of the visible area (above any bottom inset), or null. */
+  centreImage(): Point | null {
+    return this.current ? toImage(this.current, this.centre()) : null;
+  }
+
   /** F-002.R3 zoom at a point: `zoom` (percent, kept within RULE-12's range) keeping the image point under `at`. */
   zoomAt(zoom: number, at: Point): void {
     const port = this.port;
