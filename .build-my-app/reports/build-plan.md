@@ -40,3 +40,6 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 
 ## Notes for later features
 - F-008: a straight (Shift) highlight has a zero-height bounding box; decide how its selection box and handles show (F-004 review m3).
+- Flaky: F-003.AC8 pixel check failed once in F-006's run (passed 16/16 on rerun); watch it.
+- F-013: write the step label for steps (F-006 removed the unused `stepName`).
+- F-008: wire F-006.AC2/AC7 (fixme placeholders exist).
