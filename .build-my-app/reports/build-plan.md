@@ -22,16 +22,12 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 ## Deferred acceptance criteria (each gets its test when the named feature lands)
 | AC | Needs |
 |---|---|
-| F-015.AC2 | annotations + undo history (F-003, F-009) |
 | F-015.AC6, AC7 | every M-1 feature (end of M-1) |
-| F-018.AC2 | image, selection, tools, zoom, history (F-008, F-009) |
 | F-018.AC6 (e2e) | crop size shown (F-010) |
 | F-018.AC7 | every screen state (end of M-1) |
 | F-018.AC10 | offline half (F-017); text and download halves done |
-| F-005.AC12 (e2e) | undo (F-009); model-tested |
-| F-006.AC2, F-008.AC6, AC17 (undo halves, AC6 key order) | undo (F-009); model-tested via history.undo() |
-| F-007.AC13 | F-010, F-011, F-012 |
-| F-016.AC4 (image, annotations and history unchanged) | F-003, F-009 |
+| F-007.AC13 | F-010, F-011 |
+| F-014.AC5 (leave warning after undo) | F-014; unexported half unit-tested |
 
 ## Manual checks collected so far
 - Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
@@ -57,3 +53,4 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
   - Idea after M-1: the portal's new `share` permission (D-072) could offer "Save to Photos" on iPad.
 - F-013: keep the selection in view when selecting from the keyboard (RULE-19 last sentence; deferred from F-008 review).
 - Flaky watch: F-008.AC1 WebKit pixel check failed once in F-009's run (8/8 on repeat).
+- check:full after F-009 merge: preview e2e failed once (load ~12), 400/400 and 57/57 on rerun. Intermittent e2e failures after merges are recurring; QA should hunt the flaky tests.

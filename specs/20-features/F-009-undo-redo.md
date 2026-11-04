@@ -1,7 +1,7 @@
 ---
 id: F-009
 title: Undo and redo
-status: ready
+status: shipped
 milestone: M-1
 priority: P0
 personas: [PER-01]
