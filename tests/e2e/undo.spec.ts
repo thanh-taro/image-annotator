@@ -152,6 +152,10 @@ test.describe('F-009 undo and redo', () => {
     await expect(undoButton(page)).toBeDisabled();
     await expect(redoButton(page)).toBeEnabled();
     await expect(undoButton(page)).toHaveAttribute('aria-keyshortcuts', /^(Control|Meta)\+Z$/);
+    await expect(redoButton(page)).toHaveAttribute(
+      'aria-keyshortcuts',
+      /^(Control\+Shift\+Z Control\+Y|Meta\+Shift\+Z)$/,
+    );
     await redoButton(page).click();
     await expect(summary(page)).toHaveText(count(1));
   });
@@ -219,6 +223,89 @@ test.describe('F-009 undo and redo', () => {
     await expect(toolButton(page, 'Rectangle (R)')).toBeFocused();
     await page.keyboard.press('ControlOrMeta+Shift+Z');
     await expect(summary(page)).toHaveText(count(1));
+  });
+
+  test('CMP-Toolbar NFR-06 when a pressed Undo or Redo becomes disabled, focus moves to the other of the two', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [300, 200]);
+    await undoButton(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(summary(page)).toHaveText(count(0));
+    await expect(undoButton(page)).toBeDisabled();
+    await expect(redoButton(page)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(summary(page)).toHaveText(count(1));
+    await expect(redoButton(page)).toBeDisabled();
+    await expect(undoButton(page)).toBeFocused();
+    // With steps left the pressed one keeps focus.
+    await rectangle(page, [500, 100], [700, 200]);
+    await undoButton(page).focus();
+    await page.keyboard.press('Space');
+    await expect(summary(page)).toHaveText(count(1));
+    await expect(undoButton(page)).toBeFocused();
+  });
+
+  test('F-009 edge case the Undo button pressed while editing a text ends the edit, then undoes the whole text; Redo brings it back', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [300, 200]); // a step before, so Undo is available while editing
+    await toolButton(page, 'Text (T)').click();
+    const box = await workArea(page).boundingBox();
+    if (!box) throw new Error('no work area');
+    await page.mouse.click(box.x + screen(300, 300).x, box.y + screen(300, 300).y);
+    await expect(editor(page)).toBeFocused();
+    await page.keyboard.type('Bug report');
+    await undoButton(page).click();
+    await expect(editor(page)).toBeHidden();
+    await expect(summary(page)).toHaveText(count(1)); // the whole text is undone, the rectangle stays
+    await redoButton(page).click();
+    await expect(summary(page)).toHaveText(count(2));
+    await expect(undoButton(page)).toBeEnabled();
+    await expect(redoButton(page)).toBeDisabled();
+  });
+
+  test('RULE-19 Mod+Z while a text is edited with focus moved into the style panel does nothing', async ({ page }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [300, 200]); // one step to undo
+    await toolButton(page, 'Text (T)').click();
+    const box = await workArea(page).boundingBox();
+    if (!box) throw new Error('no work area');
+    await page.mouse.click(box.x + screen(400, 500).x, box.y + screen(400, 500).y);
+    await expect(editor(page)).toBeFocused();
+    await page.keyboard.type('Bug');
+    await panel(page).getByRole('radio', { name: 'Blue', exact: true }).focus();
+    await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+    await page.keyboard.press('ControlOrMeta+Z');
+    await page.keyboard.press('ControlOrMeta+Shift+Z');
+    await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+    await expect(editor(page)).toHaveValue('Bug');
+    await expect(summary(page)).toHaveText(count(1)); // the rectangle is still there
+    await expect(redoButton(page)).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await expect(summary(page)).toHaveText(count(2));
+  });
+
+  test('RULE-11 ADR-0008 §3 a zoom between arrow-key nudges ends the chain: one undo reverts only the last nudges', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [300, 200]);
+    await workArea(page).focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect(field(page, 'X')).toHaveValue('102');
+    await page.keyboard.press('ControlOrMeta+Equal');
+    await expect(page.locator('.tk-zoom__level')).not.toHaveText('100 %');
+    await workArea(page).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(field(page, 'X')).toHaveValue('103');
+    await page.keyboard.press('ControlOrMeta+Z');
+    await expect(field(page, 'X')).toHaveValue('102');
+    await page.keyboard.press('ControlOrMeta+Z');
+    await expect(field(page, 'X')).toHaveValue('100');
   });
 
   for (const theme of ['light', 'dark'] as const)

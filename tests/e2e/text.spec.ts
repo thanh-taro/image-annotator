@@ -329,6 +329,8 @@ test.describe('F-005 add text', () => {
     await expect(editor(page)).toBeHidden();
     await expect(summary(page)).toHaveText(count(0));
     await expect(state(page)).toHaveAttribute('data-state', 'default');
+    // No undo step was added (F-009): nothing to undo.
+    await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled();
   });
 
   test('F-005.AC5 with the select tool, a double-click on the selected text edits it with the caret where clicked', async ({

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAnnotation, select, setStyle } from '../../src/app/drawing';
 import { commitDrag, nudgeSelection, setGeometry } from '../../src/app/editing';
 import { commands } from '../../src/app/commands';
-import { redo, undo } from '../../src/app/history';
+import { redo, undo, viewChanged } from '../../src/app/history';
 import {
   canRedo,
   canUndo,
@@ -172,5 +172,23 @@ describe('MOD-App undo and redo', () => {
     expect(unexported.value).toBe(true);
     redo(); // back to the exported document: still counts (ADR-0008 §5)
     expect(unexported.value).toBe(true);
+  });
+  it('RULE-11 ADR-0008 §3 a zoom or pan between nudges ends the chain; an unchanged view does not', () => {
+    createAnnotation(rect(0, 0));
+    viewChanged({ zoom: 1, x: 0, y: 0, fitted: false });
+    nudgeSelection(1, 0);
+    viewChanged({ zoom: 1, x: 0, y: 0, fitted: false }); // the same view reported again
+    nudgeSelection(1, 0);
+    viewChanged({ zoom: 2, x: 0, y: 0, fitted: false }); // zoom
+    nudgeSelection(1, 0);
+    viewChanged({ zoom: 2, x: 40, y: 0, fitted: false }); // pan
+    nudgeSelection(1, 0);
+    expect(boxX(all()[0])).toBe(4);
+    undo();
+    expect(boxX(all()[0])).toBe(3);
+    undo();
+    expect(boxX(all()[0])).toBe(2);
+    undo();
+    expect(boxX(all()[0])).toBe(0);
   });
 });

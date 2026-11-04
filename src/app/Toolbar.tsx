@@ -6,7 +6,7 @@
 // narrow widths, the overflow holding the download are F-012's (./ExportActions.tsx). COPY-action.undo and
 // COPY-action.redo (F-009) are icons named by their labels with their shortcuts, after the tools on one
 // row and after COPY-action.open on the narrow actions row, each disabled while there is nothing to undo
-// or redo (and with no image). The overflow's other items (F-013, F-014) are added in the slot marked below.
+// or redo (and with no image); focus moves to the other when the clicked one becomes disabled. The overflow's other items (F-013, F-014) are added in the slot marked below.
 // Implements: CMP-Toolbar (tool group, undo/redo, variants no image, compact and narrow; behaviour),
 // F-003 UX notes, F-009.R1, F-009 UX notes.
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
@@ -53,29 +53,55 @@ function OpenButton({ icon }: { icon: boolean }) {
 const UNDO_KEYS = modShortcut('Z');
 const REDO_KEYS = isMac ? 'Meta+Shift+Z' : 'Control+Shift+Z Control+Y';
 
-/** F-009.R1: COPY-action.undo and COPY-action.redo, unavailable while there is nothing to undo or redo. */
+/**
+ * F-009.R1: COPY-action.undo and COPY-action.redo, unavailable while there is nothing to undo or redo.
+ * CMP-Toolbar "Accessibility": when the clicked one becomes disabled, focus moves to the other of the two
+ * (after an undo there is always a redo, and the other way round), so a keyboard user keeps their place.
+ */
 function HistoryButtons() {
+  const undoRef = useRef<HTMLButtonElement>(null);
+  const redoRef = useRef<HTMLButtonElement>(null);
+  const moveFocus = useRef<'undo' | 'redo' | null>(null);
+  const can = { undo: canUndo.value, redo: canRedo.value };
+
+  useLayoutEffect(() => {
+    const to = moveFocus.current;
+    if (!to) return;
+    moveFocus.current = null;
+    const target = (to === 'undo' ? undoRef : redoRef).current;
+    if (target && !target.disabled) target.focus();
+  });
+
+  const run = (which: 'undo' | 'redo') => {
+    if (which === 'undo') undo();
+    else redo();
+    const left = which === 'undo' ? canUndo.value : canRedo.value;
+    if (!left) moveFocus.current = which === 'undo' ? 'redo' : 'undo';
+  };
+
   return (
     <>
       <button
+        ref={undoRef}
         type="button"
         class="tk-tool"
         aria-label={t('action.undo')}
         title={t('action.undo')}
         aria-keyshortcuts={UNDO_KEYS}
-        disabled={!canUndo.value}
-        onClick={undo}
+        disabled={!can.undo}
+        onClick={() => run('undo')}
       >
         <Icon name="undo" size={20} />
       </button>
       <button
+        ref={redoRef}
         type="button"
         class="tk-tool"
         aria-label={t('action.redo')}
         title={t('action.redo')}
         aria-keyshortcuts={REDO_KEYS}
-        disabled={!canRedo.value}
-        onClick={redo}
+        disabled={!can.redo}
+        onClick={() => run('redo')}
       >
         <Icon name="redo" size={20} />
       </button>

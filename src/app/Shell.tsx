@@ -17,6 +17,7 @@ import { NoticeView } from './NoticeView';
 import { PrivacyStatus } from './PrivacyStatus'; // F-016
 import { createAnnotation, select, textEditEnded, textEditStarted } from './drawing';
 import { commitDrag } from './editing'; // F-008
+import { viewChanged } from './history'; // F-009: a zoom or pan ends a nudge chain (RULE-11)
 import { StylePanel } from './StylePanel';
 import { Toolbar } from './Toolbar';
 import { ZoomControl } from './ZoomControl';
@@ -33,7 +34,6 @@ import {
   selection,
   textEditing,
   tool,
-  view,
   type Layout,
 } from './state';
 import { isDrawingTool } from '../core';
@@ -117,7 +117,7 @@ export function Shell() {
                 image={current.image.bitmap}
                 doc={scene}
                 theme={theme.value}
-                onView={(next) => (view.value = next)}
+                onView={viewChanged}
                 tool={active}
                 style={isDrawingTool(active) ? currentStyles.value[active] : undefined}
                 selection={selection.value}
