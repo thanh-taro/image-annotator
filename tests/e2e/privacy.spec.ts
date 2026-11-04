@@ -2,8 +2,7 @@
 // the privacy statement and source link in the status bar at every layout width, the details
 // popover and its dismissal, and the source link opening the repository in a new tab with no
 // referrer. GitHub is never contacted: the new tab's request is answered by a local route.
-// Partly deferred: AC4 checks the image and its annotations (F-003) are unchanged; "history
-// unchanged" waits for the undo controls (F-009).
+// AC4 checks the image, its annotations (F-003) and the history (F-009: undo, then redo) are unchanged.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { expectLoaded, fixture, paste } from './support/load';
@@ -236,5 +235,14 @@ test('F-016.AC4 the source link opens the repository in a new tab with no referr
   expect(page.url()).toBe(before);
   expect(await page.evaluate(() => (window as unknown as { __mark?: number }).__mark)).toBe(42);
   await expect(tool).toHaveAttribute('data-state', 'default');
+  await expect(page.locator('#tk-canvas-summary')).toHaveText(summaryBefore ?? '');
+  // The history too: one step to undo, none to redo; undoing removes the rectangle, redoing restores it.
+  const undo = page.getByRole('button', { name: 'Undo', exact: true });
+  const redo = page.getByRole('button', { name: 'Redo', exact: true });
+  await expect(redo).toBeDisabled();
+  await undo.click();
+  await expect(page.locator('#tk-canvas-summary')).toContainText('0 annotations');
+  await expect(undo).toBeDisabled();
+  await redo.click();
   await expect(page.locator('#tk-canvas-summary')).toHaveText(summaryBefore ?? '');
 });

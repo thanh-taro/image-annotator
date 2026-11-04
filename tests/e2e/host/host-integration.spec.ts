@@ -1,8 +1,7 @@
 // F-015 Fit into the host portal (RULE-16, ADR-0010, ADR-0021) on the multi-origin harness: theme
 // from the address and from messages, the device preference standalone, filling the host area,
 // origin and source checks, the single ready signal and frame-ancestors.
-// Deferred ACs (need later features): AC2's history part (undo controls, F-009), AC6/AC7
-// (every M-1 feature), AC9/AC10 (copy and download, F-012).
+// Deferred ACs (need later features): AC6/AC7 (every M-1 feature), AC9/AC10 (copy and download, F-012).
 import { expect, test, type Page } from '@playwright/test';
 import { fixture, paste } from '../support/load';
 import { HOST_ALLOWED, HOST_OTHER, TOOL_ALLOWED, TOOL_EMPTY, hostPageUrl } from '../support/urls';
@@ -97,6 +96,15 @@ test('F-015.AC2 an annotated image survives the host switching from light to dar
   expect(await stillSameWindow(frame)).toBe(true);
   await expect(summary).toHaveText('2,000 × 1,000 px canvas, 1 annotation');
   await expect(frame.getByRole('radio', { name: 'Rectangle (R)' })).toHaveAttribute('aria-checked', 'true');
+  // The history survives too (F-009): the one step undoes and redoes.
+  const undo = frame.getByRole('button', { name: 'Undo', exact: true });
+  const redo = frame.getByRole('button', { name: 'Redo', exact: true });
+  await expect(redo).toBeDisabled();
+  await undo.click();
+  await expect(summary).toHaveText('2,000 × 1,000 px canvas, 0 annotations');
+  await expect(undo).toBeDisabled();
+  await redo.click();
+  await expect(summary).toHaveText('2,000 × 1,000 px canvas, 1 annotation');
 });
 
 test('F-015.AC3 standalone on a device set to dark shows the dark theme', async ({ page }) => {

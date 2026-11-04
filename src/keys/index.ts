@@ -4,7 +4,8 @@
 // F-002 builds the View keys and the arrow-key pan of RULE-19; F-003 the Tools keys, Enter (place) and
 // Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the Export
 // keys (Mod+C copy, Mod+S download); F-008 the Edit keys (Delete/Backspace, Mod+D, Mod+A, ] and [,
-// arrow-key moves and Alt+arrow resizes of the selection); the other groups
+// arrow-key moves and Alt+arrow resizes of the selection); F-009 the History keys (Mod+Z, Mod+Shift+Z,
+// Ctrl+Y off macOS); the other groups
 // resolve to nothing (and are not yet kept from the browser) until F-013.
 
 /** What the adapter reads from a keyboard event (platform-mapping.md "Letter keys by layout"). */
@@ -152,6 +153,13 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
   if (scope.focus === 'textAnnotation')
     return !key.mod && !key.alt && key.key === 'Escape' ? act('edit', 'escape') : NONE;
   if (scope.focus === 'text') return NONE;
+  // F-009.R1 / RULE-19 History: Mod+Z undo, Mod+Shift+Z redo, Ctrl+Y redo on Windows/Linux — wherever
+  // focus is in the tool (not in a text field, above), kept from the browser even with nothing to undo.
+  if (key.mod && !key.alt) {
+    const letter = letterOf(key);
+    if (letter === 'z') return act('history', key.shift ? 'redo' : 'undo');
+    if (letter === 'y' && !key.shift && !key.mac) return act('history', 'redo');
+  }
   // F-012.R1 / RULE-19: Mod+C copies the result when no text is selected on the page.
   if (exportKey === 'c') return scope.pageTextSelected ? NONE : act('export', 'copy');
   const plain = !key.mod && !key.alt;

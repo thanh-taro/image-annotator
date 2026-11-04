@@ -30,6 +30,16 @@ export const unexported = computed(() => {
   return loaded.value?.session.unexported ?? false;
 });
 
+/** F-009.R1 / CMP-Toolbar: there is a step to undo / to redo (both false with no image, F-009.AC5). */
+export const canUndo = computed(() => {
+  void version.value;
+  return loaded.value?.session.history.canUndo ?? false;
+});
+export const canRedo = computed(() => {
+  void version.value;
+  return loaded.value?.session.history.canRedo ?? false;
+});
+
 /** Applies a history result (apply, undo or redo) to the signals, with the selection that goes with it. */
 export function commit(restore: Restore): void {
   doc.value = restore.doc;

@@ -2,8 +2,7 @@
 // draw-shapes.spec.ts: a grey 1000 × 800 image at 100 % in a 1200 × 800 work area, so image pixel (x, y)
 // is at (100 + x, y). Positions and sizes are read from CMP-StylePanel's position and size fields
 // (F-008.R8), which show the single selection in image pixels; pixels are read off the display canvas.
-// The undo halves of AC6 and AC17 wait for the undo controls (F-009); they are model-tested in
-// tests/unit/app.edit.test.ts and tests/unit/canvas.select.test.ts.
+// The undo halves of AC6 and AC17 use the undo key and control of F-009.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { canvasPixel, summary } from './support/load';
@@ -123,6 +122,15 @@ test.describe('F-008 select and edit', () => {
     await dragImage(page, [100, 150 - 30], [103, 150 - 30]); // on the left edge, off the handles
     await expect(field(page, 'X')).toHaveValue('100');
     await expect(field(page, 'Y')).toHaveValue('100');
+    // No undo step was added: one undo removes the rectangle; redo brings it back.
+    const undo = page
+      .getByRole('toolbar', { name: 'Tools and actions' })
+      .getByRole('button', { name: 'Undo', exact: true });
+    await undo.click();
+    await expect(summary(page)).toHaveText(count(0));
+    await expect(undo).toBeDisabled();
+    await page.keyboard.press('ControlOrMeta+Shift+Z');
+    await expect(summary(page)).toHaveText(count(1));
     await dragImage(page, [100, 120], [110, 120]);
     await expect(field(page, 'X')).toHaveValue('110');
     await expect(field(page, 'Y')).toHaveValue('100');
@@ -153,22 +161,25 @@ test.describe('F-008 select and edit', () => {
     await expect(field(page, 'X')).toHaveValue('100');
   });
 
-  test('F-008.AC6 Delete removes the selected rectangle; Mod+D puts a selected copy 10 px right and down', async ({
+  test('F-008.AC6 Delete removes the selected rectangle; after undo, Mod+D puts a selected copy 10 px right and down', async ({
     page,
   }) => {
     await open(page);
     await rectangle(page, [100, 100], [300, 200]);
+    await expect(field(page, 'X')).toHaveValue('100');
     await workArea(page).focus();
+    await page.keyboard.press('Delete');
+    await expect(summary(page)).toHaveText(count(0));
+    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+    await page.keyboard.press('Backspace'); // nothing selected: nothing happens
+    await page.keyboard.press('ControlOrMeta+Z');
+    await expect(summary(page)).toHaveText(count(1));
+    await expect(field(page, 'X')).toHaveValue('100'); // back, and selected (F-009.R3)
     await page.keyboard.press('ControlOrMeta+D');
     await expect(summary(page)).toHaveText(count(2));
     await expect(field(page, 'X')).toHaveValue('110');
     await expect(field(page, 'Y')).toHaveValue('110');
     await expect(page.locator('[role="status"]')).toContainText('1 annotation duplicated');
-    await page.keyboard.press('Delete');
-    await expect(summary(page)).toHaveText(count(1));
-    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
-    await page.keyboard.press('Backspace'); // nothing selected: nothing happens
-    await expect(summary(page)).toHaveText(count(1));
   });
 
   test('F-008.AC7 sending the top of two overlapping rectangles backward draws the other on top', async ({ page }) => {
