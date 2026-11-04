@@ -23,10 +23,13 @@ first use, so everything loads at startup.
 
 ## Assumptions
 - A1. "50 MB" = 50,000,000 bytes (suite convention).
-- A2. The portal applies the frame-grant change request (D-006): `sandbox` gains `allow-downloads
-  allow-modals` (and optionally `allow-popups allow-popups-to-escape-sandbox`), `allow=
-  "clipboard-write"`, and the host focuses the frame on ready. Until then the spec fallbacks apply
-  (F-015.R7).
+- A2. The portal applied the frame-grant change request (D-006) in taro-kit commit 4c4ae94
+  (2026-11-04; its D-070, D-071): this tool's catalog entry declares `downloads`, `clipboard-write`,
+  `popups`, `dialogs` and `file-pick`, which give `sandbox="allow-scripts allow-same-origin allow-forms
+  allow-downloads allow-popups allow-popups-to-escape-sandbox allow-modals"`, `allow="clipboard-write"`
+  and `referrerpolicy="strict-origin"`. The portal moves focus into the frame on the first ready only,
+  and only while focus is still on its tool header (the portal's focus-on-ready rule). The tool contract asks for `blob:`
+  downloads. The spec fallbacks (F-015.R7) still cover a host without the grants.
 - A3. Production address `https://image-annotator.tarokit.app`, embedded by `https://tarokit.app`.
 - A4. Text line height = 1.25 × text size, canvas text weight 600 (approved designs).
 - A5. At zoom ≥ 200 % the image is drawn without smoothing on screen so pixel edges are crisp for

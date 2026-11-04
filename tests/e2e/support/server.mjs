@@ -67,6 +67,7 @@ const HOST_PAGE = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Stub host</title></head>
 <body>
 <h1>Stub portal</h1>
+<div class="tk-toolheader" tabindex="-1">Image Annotator</div>
 <script>
   // A minimal TaroKit-portal stand-in: embed the tool, capture every message it sends (the only one
   // should be the ready signal, RULE-16), and offer hooks to push theme and language changes into it.
@@ -75,25 +76,39 @@ const HOST_PAGE = `<!doctype html>
   const toolSrc = params.get('tool');
   window.__toolOrigin = new URL(toolSrc).origin;
   const frame = document.createElement('iframe');
-  // The portal's frame grants (D-006, RULE-16, A2): sandbox with downloads and leave-page dialogs,
-  // clipboard writing, and focus moved into the tool after its ready signal. \`grants=0\` drops the
-  // grants, \`clipboard=0\` only the clipboard grant (F-015.AC10) and \`focus=0\` skips the focus, for the
-  // fallback cases (F-015.R7; SP-host, ADR-0021).
+  // Mirrors the portal's frame for this tool (taro-kit 4c4ae94: MOD-SecurityPolicy frameAttributesFor with
+  // permissions downloads, clipboard-write, popups, dialogs, file-pick; MOD-ToolHost focus on ready, F-003.R9).
+  // \`grants=0\` drops the permissions, \`clipboard=0\` only the clipboard grant (F-015.AC10), \`popups=0\`
+  // only the new-tab grant (F-016 edge case) and \`focus=0\` skips the focus, for the fallback cases
+  // (F-015.R7; SP-host, ADR-0021).
   const grants = params.get('grants') !== '0';
   const clipboardGrant = grants && params.get('clipboard') !== '0';
+  const popupsGrant = grants && params.get('popups') !== '0';
   const focusOnReady = params.get('focus') !== '0';
+  // Entry puts focus on the tool header; the first valid ready moves it into the frame only while it is
+  // still there, and later ready messages leave focus alone (F-003.R9).
+  const header = document.querySelector('.tk-toolheader');
+  header.focus();
+  let focusIntact = true;
+  header.addEventListener('focusout', () => (focusIntact = false));
   window.addEventListener('message', (e) => {
     if (e.origin !== window.__toolOrigin) return;
     window.__received.push({ origin: e.origin, data: e.data });
-    if (focusOnReady && e.data && e.data.type === 'taro:ready') frame.focus();
+    if (!focusOnReady || !e.data || e.data.type !== 'taro:ready') return;
+    if (!focusIntact || document.activeElement !== header) return;
+    focusIntact = false;
+    frame.focus({ preventScroll: true });
   });
   frame.id = 'tool';
   frame.setAttribute('title', 'embedded tool');
   frame.setAttribute(
     'sandbox',
-    'allow-scripts allow-same-origin' + (grants ? ' allow-downloads allow-modals' : ''),
+    'allow-scripts allow-same-origin allow-forms' +
+      (grants ? ' allow-downloads allow-modals' : '') +
+      (popupsGrant ? ' allow-popups allow-popups-to-escape-sandbox' : ''),
   );
   if (clipboardGrant) frame.setAttribute('allow', 'clipboard-write');
+  frame.setAttribute('referrerpolicy', 'strict-origin');
   frame.style.cssText = 'width:100%;height:85vh;border:0';
   frame.src = toolSrc;
   window.__sendTheme = (value) =>

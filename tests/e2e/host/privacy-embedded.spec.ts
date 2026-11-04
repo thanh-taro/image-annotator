@@ -18,7 +18,7 @@ test('F-016.R3 embedded without new-tab permission, the source link is blocked a
   const tabs: string[] = [];
   context.on('page', (p) => tabs.push(p.url()));
 
-  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark'));
+  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark') + '&popups=0');
   const frame = await toolFrame(page);
   await markWindow(frame);
   const tool = page.frameLocator('#tool');
@@ -34,4 +34,21 @@ test('F-016.R3 embedded without new-tab permission, the source link is blocked a
   expect(contacted).toEqual([]);
   expect(await stillSameWindow(frame)).toBe(true);
   expect(frame.url().startsWith(TOOL_ALLOWED)).toBe(true);
+});
+
+test('F-016.R3 embedded with the portal new-tab permission, the source link opens in a new tab and the tool stays', async ({
+  page,
+  context,
+}) => {
+  await context.route('https://github.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>repo</title>' }),
+  );
+  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark'));
+  const frame = await toolFrame(page);
+  await markWindow(frame);
+  const link = page.frameLocator('#tool').getByRole('link', { name: 'Source code on GitHub (opens in a new tab)' });
+  const [tab] = await Promise.all([context.waitForEvent('page'), link.click()]);
+  await tab.waitForLoadState();
+  expect(tab.url()).toBe('https://github.com/thanh-taro/image-annotator');
+  expect(await stillSameWindow(frame)).toBe(true);
 });

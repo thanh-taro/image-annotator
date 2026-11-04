@@ -52,3 +52,7 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - Open owner question: show COPY-redact.not_secure_short in the narrow summary bar for blur/pixelate (security F-007 m4)?
 - F-005.AC7 e2e is slow (~20 s alone, marked test.slow); look at its pixel reads in QA.
 - check:full after F-012 merge: preview e2e failed once under load (PhpStorm + VM, load ~45); both e2e steps passed on rerun.
+- Deploy (phase 7), portal side (taro-kit 4c4ae94 applied D-006 as its D-070/D-071):
+  - Release order: the portal's frame change (F-003 R9 focus on ready, `dialogs` permission) must be live before or together with this tool.
+  - Catalog entry `content/tools/image-annotator.yaml` in taro-kit: `openMode: embedded`, `permissions: [downloads, clipboard-write, popups, dialogs, file-pick]` (file-pick is declarative; the portal changelog lists only the first four).
+  - Idea after M-1: the portal's new `share` permission (D-072) could offer "Save to Photos" on iPad.
