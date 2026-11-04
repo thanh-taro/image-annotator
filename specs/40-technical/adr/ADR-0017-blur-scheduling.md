@@ -16,7 +16,7 @@ confirmed the definition and RULE-10's strengths. It found two conditions for me
 - **Implementation:** the worker uses the SWAR integer blur, which packs two channels into each
   32-bit sum and loads each pixel once. The straightforward interleaved version ran at 60 ms/MP and
   is kept only as a fallback for b > 128, where the packed sums would overflow. The slow, independent
-  reference lives in the tests.
+  reference is a test-only module (`src/effects/reference.ts`); lint forbids importing it from app code.
 - **Scheduling:** no exact job is sent while a redaction, or a solid it depends on, is moving or
   resizing. The screen shows the GPU approximation. One exact job is queued on release, or after
   100 ms without movement; the latest job wins. MOD-Effects owns this rule.

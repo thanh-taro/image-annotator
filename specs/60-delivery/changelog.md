@@ -60,3 +60,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - RULE-07: step badges have no outline (D-029, owner; ADR-0009's "outline rules (RULE-07)" therefore means none).
 - F-006 review: RULE-07 numbers several duplicated steps in drawing order.
 - F-005 review: a text-tool click outside the canvas does nothing (D-030, owner; F-005.R1, new AC16); F-005.R1 edits the topmost text under the pointer; F-005.R3 editing also ends when focus leaves the text and CMP-StylePanel; F-005 edge case for a moved press; MOD-Core `hitTest`/`boundsOf` take a required `TextMeasure`; MOD-Document `commitText(text, isNew)`.
+- F-007 gaps and review: MOD-Effects `setImage` takes the source and palette, `patchesFor` a `moving` set, `exactPatches` rejects on a failed job; ADR-0017 reference is a test-only module; F-007.AC8 means the redact tool's solid colour; COPY-style.sheet_summary for redactions (kind · strength).

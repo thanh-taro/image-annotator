@@ -22,8 +22,8 @@ patch for a document is ready, which the export awaits.
 - Decoding the image (MOD-IO) or any DOM in the worker; the worker imports MOD-Core only.
 
 ## Public surface
-- Client: `setImage(pixels, width, height)`, `clearImage()`, `patchesFor(doc)` (exact or
-  approximate per redaction), `exactPatches(doc): Promise`.
+- Client: `setImage(pixels, width, height, source, palette)` (the source draws the live approximation; the palette resolves solid colours), `clearImage()`, `patchesFor(doc, moving?)` (exact or
+  approximate per redaction; `moving` lists redactions being dragged, which get no exact job, ADR-0017), `exactPatches(doc): Promise` (rejects when a job fails, so the export can report it, F-012.R7).
 - Worker protocol (typed, versioned): `image`, `job { id, box, kind, size, frame, solids }`,
   `drop`; replies `patch { id, pixels }`, `failed { id }`.
 - A slow reference implementation exported for tests only.
