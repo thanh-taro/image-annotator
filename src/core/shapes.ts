@@ -443,8 +443,14 @@ export function hitTopmost(
 /** Corner and edge handles of boxes; `tail` and `head` handles of lines and arrows. */
 export type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'tail' | 'head';
 
+/**
+ * F-008.R3: a box's eight handles on its box; a line's two end points; a stroke's or highlight's eight
+ * on the box of its points. Text and steps have none (their size is S/M/L).
+ * F-008 edge case: a stroke or highlight with no height (or width), such as a Shift highlight, cannot be
+ * scaled across it; it shows only the handles along its length
+ * (`e`, `w`, or `n`, `s`), so no two handles stack, and a dot shows none.
+ */
 export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] {
-  // F-008.R3: text and steps have no handles (their size is S/M/L).
   if (isStepAnnotation(a) || isTextAnnotation(a)) return [];
   if (isLineAnnotation(a))
     return [
@@ -456,7 +462,7 @@ export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] 
   const my = b.y + b.height / 2;
   const r = b.x + b.width;
   const d = b.y + b.height;
-  return [
+  const all: readonly (readonly [Handle, Point])[] = [
     ['nw', { x: b.x, y: b.y }],
     ['n', { x: mx, y: b.y }],
     ['ne', { x: r, y: b.y }],
@@ -466,6 +472,10 @@ export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] 
     ['sw', { x: b.x, y: d }],
     ['w', { x: b.x, y: my }],
   ];
+  if (!isPathAnnotation(a) || (b.width > 0 && b.height > 0)) return all;
+  if (b.width > 0) return all.filter(([h]) => h === 'e' || h === 'w');
+  if (b.height > 0) return all.filter(([h]) => h === 'n' || h === 's');
+  return [];
 }
 
 /** The handle within `half` image pixels of `p` (half the handle's hit area divided by the zoom). */
@@ -476,23 +486,49 @@ export function hitHandle(a: Annotation, p: Point, half: number): Handle | undef
 
 // ---------- move and resize (pure; F-008 drives them) ----------
 
+/** F-008.R2: `a` moved by (dx, dy) image pixels (a stroke or highlight: every point). */
 export function moved(a: Annotation, dx: number, dy: number): Annotation {
   const at = (p: Point): Point => ({ x: p.x + dx, y: p.y + dy });
   if (isBoxAnnotation(a)) return { ...a, box: { ...a.box, x: a.box.x + dx, y: a.box.y + dy } };
   if (isLineAnnotation(a)) return { ...a, tail: at(a.tail), head: at(a.head) };
+  if (isPathAnnotation(a)) return { ...a, points: a.points.map(at) };
   if (isStepAnnotation(a)) return { ...a, centre: at(a.centre) };
-  if (isTextAnnotation(a)) return { ...a, anchor: at(a.anchor) };
-  throw new Error(`moved: ${a.kind} arrives with its feature`);
+  return { ...a, anchor: at(a.anchor) };
 }
 
-/** `a` (as at the start of the drag) with handle `h` dragged by (dx, dy); `keepAspect` is RULE-06 Shift. */
+/**
+ * A path's points mapped from their box `b` onto the box from (x1, y1) to (x2, y2) (F-008.R3 scale). An
+ * axis on which `b` has no extent is kept as it is (a straight highlight cannot gain a height).
+ */
+function scalePoints(a: PathAnnotation, b: Box, x1: number, y1: number, x2: number, y2: number): PathAnnotation {
+  const sx = b.width > 0 ? (x2 - x1) / b.width : 1;
+  const sy = b.height > 0 ? (y2 - y1) / b.height : 1;
+  const ox = b.width > 0 ? x1 : b.x;
+  const oy = b.height > 0 ? y1 : b.y;
+  return { ...a, points: a.points.map((p) => ({ x: ox + (p.x - b.x) * sx, y: oy + (p.y - b.y) * sy })) };
+}
+
+/**
+ * F-008.R3: `a` (as at the start of the drag) with handle `h` dragged by (dx, dy): a box is resized, a
+ * line's end point moves, a stroke or highlight is scaled with its box. Text and steps have no handles
+ * and are returned as is. The box never gets smaller than MIN_EDIT_SIZE on an axis it has (the same
+ * limit as the fields and Alt+arrows, CMP-StylePanel; F-008 review m1); dragging a handle past the
+ * opposite edge flips it.
+ * `keepAspect` is RULE-06 Shift: a corner handle keeps the box's aspect ratio; an edge handle scales the
+ * other axis by the same factor about its centre; a line's moved end snaps to 45° steps about the other
+ * end (F-008 review m2).
+ */
 export function resized(a: Annotation, h: Handle, dx: number, dy: number, keepAspect = false): Annotation {
   if (isLineAnnotation(a)) {
-    const move = (p: Point): Point => ({ x: p.x + dx, y: p.y + dy });
-    return h === 'tail' ? { ...a, tail: move(a.tail) } : { ...a, head: move(a.head) };
+    const end = h === 'tail' ? a.tail : h === 'head' ? a.head : null;
+    if (!end) return a;
+    const fixed = h === 'tail' ? a.head : a.tail;
+    const free = { x: end.x + dx, y: end.y + dy };
+    const to = keepAspect ? constrain(fixed, free, a.kind) : free;
+    return h === 'tail' ? { ...a, tail: to } : { ...a, head: to };
   }
-  if (!isBoxAnnotation(a)) throw new Error(`resized: ${a.kind} arrives with its feature`);
-  const b = normalizeBox(a.box);
+  if (!isBoxAnnotation(a) && !isPathAnnotation(a)) return a;
+  const b = shapeBox(a);
   let x1 = b.x;
   let y1 = b.y;
   let x2 = b.x + b.width;
@@ -501,14 +537,265 @@ export function resized(a: Annotation, h: Handle, dx: number, dy: number, keepAs
   if (h.includes('e')) x2 += dx;
   if (h.includes('n')) y1 += dy;
   if (h.includes('s')) y2 += dy;
-  if (keepAspect && b.width > 0 && b.height > 0 && h.length === 2) {
-    const s = Math.max(Math.abs(x2 - x1) / b.width, Math.abs(y2 - y1) / b.height);
-    const w = b.width * s * sign(x2 - x1);
-    const ht = b.height * s * sign(y2 - y1);
-    if (h.includes('w')) x1 = x2 - w;
-    else x2 = x1 + w;
-    if (h.includes('n')) y1 = y2 - ht;
-    else y2 = y1 + ht;
+  if (keepAspect && b.width > 0 && b.height > 0) {
+    if (h.length === 2) {
+      const k = Math.max(Math.abs(x2 - x1) / b.width, Math.abs(y2 - y1) / b.height);
+      const w = b.width * k * sign(x2 - x1);
+      const ht = b.height * k * sign(y2 - y1);
+      if (h.includes('w')) x1 = x2 - w;
+      else x2 = x1 + w;
+      if (h.includes('n')) y1 = y2 - ht;
+      else y2 = y1 + ht;
+    } else if (h === 'e' || h === 'w') {
+      const half = (b.height * Math.abs(x2 - x1)) / b.width / 2;
+      const my = b.y + b.height / 2;
+      y1 = my - half;
+      y2 = my + half;
+    } else {
+      const half = (b.width * Math.abs(y2 - y1)) / b.height / 2;
+      const mx = b.x + b.width / 2;
+      x1 = mx - half;
+      x2 = mx + half;
+    }
   }
+  // m1: never below MIN_EDIT_SIZE on an axis the box has; the dragged edge stops short of the fixed one.
+  const isPath = isPathAnnotation(a);
+  [x1, x2] = atLeast(x1, x2, h.includes('w'), !isPath || b.width > 0);
+  [y1, y2] = atLeast(y1, y2, h.includes('n'), !isPath || b.height > 0);
+  if (isPathAnnotation(a)) return scalePoints(a, b, x1, y1, x2, y2);
   return { ...a, box: normalizeBox({ x: x1, y: y1, width: x2 - x1, height: y2 - y1 }) };
+}
+
+/** The span lo–hi widened to MIN_EDIT_SIZE (keeping its direction) by moving lo or hi, if the axis exists. */
+function atLeast(lo: number, hi: number, moveLo: boolean, has: boolean): [number, number] {
+  if (!has || Math.abs(hi - lo) >= MIN_EDIT_SIZE) return [lo, hi];
+  const dir = hi - lo < 0 ? -1 : 1;
+  return moveLo ? [hi - dir * MIN_EDIT_SIZE, hi] : [lo, lo + dir * MIN_EDIT_SIZE];
+}
+
+/** RULE-19: Alt+arrow resizes never make a box smaller than 1 × 1; the size fields keep the same limit. */
+export const MIN_EDIT_SIZE = 1;
+
+/**
+ * `a` with its box (a stroke's or highlight's points box) set to `width` × `height`, keeping its top-left
+ * corner, never below MIN_EDIT_SIZE (RULE-19, F-008.R8). Other kinds are returned as is.
+ */
+function sizedTo(a: Annotation, width: number, height: number): Annotation {
+  const b = shapeBox(a);
+  if (isPathAnnotation(a)) {
+    const w = b.width > 0 ? Math.max(MIN_EDIT_SIZE, width) : 0;
+    const h = b.height > 0 ? Math.max(MIN_EDIT_SIZE, height) : 0;
+    return scalePoints(a, b, b.x, b.y, b.x + w, b.y + h);
+  }
+  if (!isBoxAnnotation(a)) return a;
+  const box = { x: b.x, y: b.y, width: Math.max(MIN_EDIT_SIZE, width), height: Math.max(MIN_EDIT_SIZE, height) };
+  return { ...a, box };
+}
+
+/**
+ * RULE-19 Alt+arrows on a single selection: a box annotation (and a stroke's or highlight's bounding box)
+ * gets (dx, dy) wider and taller, keeping its top-left corner, never below 1 × 1; a line or arrow moves
+ * its head; text and steps do nothing (the same object is returned). Implements: F-008.R3, F-008.AC10.
+ */
+export function altResized(a: Annotation, dx: number, dy: number): Annotation {
+  if (isLineAnnotation(a)) return { ...a, head: { x: a.head.x + dx, y: a.head.y + dy } };
+  if (!isBoxAnnotation(a) && !isPathAnnotation(a)) return a;
+  const b = shapeBox(a);
+  return sizedTo(a, b.width + dx, b.height + dy);
+}
+
+/** True when the segment p–q meets the box `m` (Liang–Barsky clipping). */
+function segmentMeetsBox(p: Point, q: Point, m: Box): boolean {
+  let t0 = 0;
+  let t1 = 1;
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  const sides: readonly (readonly [number, number])[] = [
+    [-dx, p.x - m.x],
+    [dx, m.x + m.width - p.x],
+    [-dy, p.y - m.y],
+    [dy, m.y + m.height - p.y],
+  ];
+  for (const [d, r] of sides) {
+    if (d === 0) {
+      if (r < 0) return false;
+    } else {
+      const t = r / d;
+      if (d < 0) t0 = Math.max(t0, t);
+      else t1 = Math.min(t1, t);
+      if (t0 > t1) return false;
+    }
+  }
+  return true;
+}
+
+const grow = (m: Box, by: number): Box => ({
+  x: m.x - by,
+  y: m.y - by,
+  width: m.width + 2 * by,
+  height: m.height + 2 * by,
+});
+const boxesMeet = (b: Box, m: Box) =>
+  b.x <= m.x + m.width && b.x + b.width >= m.x && b.y <= m.y + m.height && b.y + b.height >= m.y;
+const boxWithin = (m: Box, b: Box) =>
+  m.x > b.x && m.y > b.y && m.x + m.width < b.x + b.width && m.y + m.height < b.y + b.height;
+const cornersOf = (m: Box): readonly Point[] => [
+  { x: m.x, y: m.y },
+  { x: m.x + m.width, y: m.y },
+  { x: m.x + m.width, y: m.y + m.height },
+  { x: m.x, y: m.y + m.height },
+];
+
+/** Segments along a stroke's or highlight's curve (each quadratic piece in a few straight steps). */
+function curveSegments(points: readonly Point[]): readonly (readonly [Point, Point])[] {
+  const pieces = strokePieces(points);
+  if (!pieces.length) return points[0] ? [[points[0], points[0]]] : [];
+  const out: [Point, Point][] = [];
+  const STEPS = 8;
+  for (const { from, control, to } of pieces) {
+    let prev = from;
+    for (let i = 1; i <= STEPS; i++) {
+      const t = i / STEPS;
+      const u = 1 - t;
+      const next = {
+        x: u * u * from.x + 2 * u * t * control.x + t * t * to.x,
+        y: u * u * from.y + 2 * u * t * control.y + t * t * to.y,
+      };
+      out.push([prev, next]);
+      prev = next;
+    }
+  }
+  return out;
+}
+
+/** True when the drawn mark of `a` meets the box `m` (normalized). */
+function markMeetsBox(a: Annotation, m: Box, shortSide: number, measure: TextMeasure): boolean {
+  if (!boxesMeet(boundsOf(a, shortSide, measure), m)) return false;
+  const hw = strokePixels(a.style, shortSide) / 2;
+  if (isBoxAnnotation(a)) {
+    const b = normalizeBox(a.box);
+    const filled = a.kind === 'redaction' || a.style.fill !== 'none';
+    if (a.kind === 'ellipse') {
+      const rx = b.width / 2;
+      const ry = b.height / 2;
+      const cx = b.x + rx;
+      const cy = b.y + ry;
+      const inside = (p: Point, ex: number, ey: number) =>
+        ex > 0 && ey > 0 && ((p.x - cx) / ex) ** 2 + ((p.y - cy) / ey) ** 2 <= 1;
+      // The box's point nearest the centre lies within the ellipse and its outline, or one of the
+      // ellipse's extreme points lies in the box (a thin ellipse).
+      const near = { x: Math.max(m.x, Math.min(cx, m.x + m.width)), y: Math.max(m.y, Math.min(cy, m.y + m.height)) };
+      const tips = [
+        { x: cx - rx, y: cy },
+        { x: cx + rx, y: cy },
+        { x: cx, y: cy - ry },
+        { x: cx, y: cy + ry },
+      ];
+      const g = grow(m, hw);
+      if (!inside(near, rx + hw, ry + hw) && !tips.some((p) => boxesMeet({ ...p, width: 0, height: 0 }, g)))
+        return false;
+      // An outline: a box wholly inside its hole does not touch it.
+      return filled || !cornersOf(m).every((p) => inside(p, rx - hw, ry - hw));
+    }
+    if (filled) return true;
+    const hole = { x: b.x + hw, y: b.y + hw, width: b.width - 2 * hw, height: b.height - 2 * hw };
+    return !(hole.width > 0 && hole.height > 0 && boxWithin(m, hole));
+  }
+  if (isLineAnnotation(a)) {
+    if (segmentMeetsBox(a.tail, a.head, grow(m, hw))) return true;
+    if (a.kind !== 'arrow') return false;
+    const head = arrowHead(a.tail, a.head, hw * 2);
+    const [t, l, r] = head;
+    return (
+      segmentMeetsBox(t, l, m) ||
+      segmentMeetsBox(l, r, m) ||
+      segmentMeetsBox(r, t, m) ||
+      cornersOf(m).some((p) => inTriangle(p, head))
+    );
+  }
+  if (isPathAnnotation(a)) {
+    const g = grow(m, markWidth(a, shortSide) / 2);
+    return curveSegments(a.points).some(([p, q]) => segmentMeetsBox(p, q, g));
+  }
+  // Text and steps are solid marks: their box (a step's badge box) is the mark.
+  return true;
+}
+
+/**
+ * F-008.R1 (MOD-Core `marqueeHits`): the ids of every annotation whose drawn shape the selection box
+ * `box` touches, in drawing order (the box may have been dragged in any direction). A line or arrow is
+ * touched only where its segment or head passes, not anywhere in its bounds; an outline not when the box
+ * sits wholly inside it; a stroke or highlight along its curve.
+ */
+export function marqueeHits(
+  annotations: readonly Annotation[],
+  box: Box,
+  shortSide: number,
+  measure: TextMeasure,
+): readonly string[] {
+  const m = normalizeBox(box);
+  return annotations.filter((a) => markMeetsBox(a, m, shortSide, measure)).map((a) => a.id);
+}
+
+// ---------- position and size fields (F-008.R8, D-008) ----------
+
+/** A field of CMP-StylePanel's position and size (COPY-geometry.*): `start…` and `end…` are a line's ends. */
+export type GeometryField = 'x' | 'y' | 'width' | 'height' | 'startX' | 'startY' | 'endX' | 'endY';
+
+/**
+ * F-008.R8: the position and size fields of an annotation, in image pixels rounded to whole pixels:
+ * rectangles, ellipses and redactions X, Y, W, H of their box; lines and arrows start and end X and Y;
+ * strokes and highlights X, Y, W, H of their points' box; text X and Y of its anchor; steps X and Y of
+ * their centre.
+ */
+export function geometryOf(a: Annotation): readonly (readonly [GeometryField, number])[] {
+  const r = Math.round;
+  if (isLineAnnotation(a))
+    return [
+      ['startX', r(a.tail.x)],
+      ['startY', r(a.tail.y)],
+      ['endX', r(a.head.x)],
+      ['endY', r(a.head.y)],
+    ];
+  if (isStepAnnotation(a))
+    return [
+      ['x', r(a.centre.x)],
+      ['y', r(a.centre.y)],
+    ];
+  if (isTextAnnotation(a))
+    return [
+      ['x', r(a.anchor.x)],
+      ['y', r(a.anchor.y)],
+    ];
+  const b = shapeBox(a);
+  return [
+    ['x', r(b.x)],
+    ['y', r(b.y)],
+    ['width', r(b.width)],
+    ['height', r(b.height)],
+  ];
+}
+
+/**
+ * F-008.R8: `a` with one position or size field set to `value` (whole image pixels). X and Y move it;
+ * W and H resize a box, or scale a stroke's or highlight's points from the top-left corner, never below
+ * 1 × 1 (the same limit as Alt+arrows); a line's start and end fields move its tail and head. A field the
+ * kind does not show returns `a` itself.
+ */
+export function withGeometry(a: Annotation, field: GeometryField, value: number): Annotation {
+  if (isLineAnnotation(a)) {
+    if (field === 'startX') return { ...a, tail: { ...a.tail, x: value } };
+    if (field === 'startY') return { ...a, tail: { ...a.tail, y: value } };
+    if (field === 'endX') return { ...a, head: { ...a.head, x: value } };
+    if (field === 'endY') return { ...a, head: { ...a.head, y: value } };
+    return a;
+  }
+  const at = isStepAnnotation(a) ? a.centre : isTextAnnotation(a) ? a.anchor : shapeBox(a);
+  if (field === 'x') return moved(a, value - at.x, 0);
+  if (field === 'y') return moved(a, 0, value - at.y);
+  if (isStepAnnotation(a) || isTextAnnotation(a)) return a;
+  const b = shapeBox(a);
+  if (field === 'width') return sizedTo(a, value, b.height);
+  if (field === 'height') return sizedTo(a, b.width, value);
+  return a;
 }

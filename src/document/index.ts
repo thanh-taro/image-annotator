@@ -1,9 +1,9 @@
 // MOD-Document — immutable session document, edit operations, history, unexported state
 // (specs/40-technical/modules/MOD-Document.md, ADR-0008). Imports MOD-Core only; no DOM.
 // The session, its history and the RULE-18 change epoch are built (F-001); `add` and `restyle` (F-003);
-// step numbering in `add`, `remove` and `duplicate` (F-006, RULE-07; F-008 wires them to the keys and
-// the panel); the text commit rules in `commitText` (F-005); the other edit operations throw until
-// F-007…F-011 build them.
+// step numbering in `add`, `remove` and `duplicate` (F-006, RULE-07); `update`, `edit` and `reorder`
+// (F-008, wired with `remove` and `duplicate` to the keys and the panel by MOD-App); the text commit rules
+// in `commitText` (F-005); the frame and padding operations throw until F-010/F-011 build them.
 import {
   DUPLICATE_OFFSET,
   HISTORY_STEPS,
@@ -108,8 +108,65 @@ export const restyle =
     return changed ? Object.freeze({ ...doc, annotations: Object.freeze(annotations) }) : doc;
   };
 
-export const update = (_id: string, _patch: Partial<Annotation>): Op => notImplemented('update');
-export const reorder = (_ids: Selection, _direction: 'forward' | 'backward'): Op => notImplemented('reorder');
+/** Two field values are the same (geometry is small plain data: points, boxes, numbers). */
+const same = (a: unknown, b: unknown): boolean => a === b || JSON.stringify(a) === JSON.stringify(b);
+
+/**
+ * F-008.R2/R3/R8: changes the annotation `id` — its geometry from a move, a resize or the position and
+ * size fields — as one step (RULE-11). Only the fields in `patch` change; when they already have these
+ * values, or the annotation does not exist, the document itself is returned (no step, ADR-0008).
+ */
+export const update =
+  (id: string, patch: Partial<Annotation>): Op =>
+  (doc) => {
+    const keys = Object.keys(patch) as (keyof Annotation)[];
+    let changed = false;
+    const annotations = doc.annotations.map((a) => {
+      if (a.id !== id || keys.every((k) => same(a[k], patch[k]))) return a;
+      changed = true;
+      return freezeAnnotation({ ...a, ...patch } as Annotation);
+    });
+    return changed ? Object.freeze({ ...doc, annotations: Object.freeze(annotations) }) : doc;
+  };
+
+/**
+ * F-008.R2/R7: the annotations in `changes` replace those with the same ids (a move or resize of a
+ * multi-selection), all in one step (RULE-11). Built from `update`.
+ */
+export const edit =
+  (changes: readonly Annotation[]): Op =>
+  (doc) =>
+    changes.reduce((d, a) => update(a.id, a)(d), doc);
+
+/**
+ * F-008.R5 bring forward / send backward, as one step (RULE-11): each selected annotation moves one place
+ * up (or down) the drawing order past the next unselected one; selected neighbours move together. When
+ * nothing can move, the document itself is returned (no step). Step numbers follow creation, not drawing
+ * order, so they never change here (RULE-07).
+ */
+export const reorder =
+  (ids: Selection, direction: 'forward' | 'backward'): Op =>
+  (doc) => {
+    const wanted = new Set(ids);
+    const list = [...doc.annotations];
+    let changed = false;
+    const swapIfUp = (i: number) => {
+      const lower = list[i];
+      const upper = list[i + 1];
+      if (!lower || !upper) return;
+      const lowerPicked = wanted.has(lower.id);
+      const upperPicked = wanted.has(upper.id);
+      if (direction === 'forward' ? lowerPicked && !upperPicked : upperPicked && !lowerPicked) {
+        list[i] = upper;
+        list[i + 1] = lower;
+        changed = true;
+      }
+    };
+    // Forward from the top down, backward from the bottom up, so a block of selected ones moves as one.
+    if (direction === 'forward') for (let i = list.length - 2; i >= 0; i--) swapIfUp(i);
+    else for (let i = 0; i < list.length - 1; i++) swapIfUp(i);
+    return changed ? Object.freeze({ ...doc, annotations: Object.freeze(list) }) : doc;
+  };
 export const setFrame = (_frame: Frame): Op => notImplemented('setFrame');
 export const setPadding = (_size: PaddingSize): Op => notImplemented('setPadding');
 export const setBackground = (_background: 'transparent' | Colour): Op => notImplemented('setBackground');

@@ -2,7 +2,7 @@
 // draw-shapes.spec.ts: a grey 1000 × 800 image at 100 % in a 1200 × 800 work area, so image pixel
 // (x, y) is at (100 + x, y). A badge's number is read by comparing its pixels with references drawn in
 // the page in the tool's face (ADR-0009), so the test also proves the face was ready (NFR-08).
-// Delete and duplicate (F-006.AC2, AC7) are wired to keys by F-008; their model tests are in
+// Delete and duplicate (F-006.AC2, AC7) are wired to keys by F-008 (tested here); their model tests are in
 // tests/unit/document.steps.test.ts.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -319,10 +319,40 @@ test.describe('F-006 numbered steps', () => {
     measured.forEach((w, i) => expect(Math.abs(w - (core[i] ?? 0)), `${w}`).toBeLessThanOrEqual(1));
   });
 
-  // Delete and duplicate are wired to keys and the panel by F-008; their model tests are in
-  // tests/unit/document.steps.test.ts. F-008 turns these on.
-  test.fixme('F-006.AC2 deleting step 2 of 1, 2, 3 leaves 1 and 2; undo restores 1, 2, 3 (wired by F-008)', async () => {});
-  test.fixme('F-006.AC7 duplicating step 1 of 1, 2, 3 makes step 4 (wired by F-008)', async () => {});
+  // F-008 wires delete and duplicate to the keys and the panel. The undo half of F-006.AC2 waits for the
+  // undo controls (F-009); its model test is in tests/unit/document.steps.test.ts.
+  test('F-006.AC2 deleting step 2 of 1, 2, 3 with Delete leaves steps reading 1 and 2', async ({ page }) => {
+    await open(page);
+    await toolButton(page, 'Step (N)').click();
+    for (const x of [200, 400, 600]) await clickImage(page, x, 200);
+    await toolButton(page, 'Select (V)').click();
+    await clickImage(page, 400, 200); // selects step 2
+    await workArea(page).focus();
+    await page.keyboard.press('Delete');
+    await expect(summary(page)).toHaveText(count(2));
+    await expect(page.locator('[role="status"]')).toContainText('1 annotation deleted');
+    await deselect(page);
+    const read = async (x: number) => (await readStep(page, x, 200, HEX.red, HEX.white, ['1', '2', '3'])).label;
+    expect(await read(200)).toBe('1');
+    expect(await read(600)).toBe('2');
+  });
+
+  test('F-006.AC7 duplicating step 1 of 1, 2, 3 with Mod+D makes step 4, 10 px right and down', async ({ page }) => {
+    await open(page);
+    await toolButton(page, 'Step (N)').click();
+    for (const x of [200, 400, 600]) await clickImage(page, x, 200);
+    await toolButton(page, 'Select (V)').click();
+    await clickImage(page, 200, 200);
+    await workArea(page).focus();
+    await page.keyboard.press('ControlOrMeta+D');
+    await expect(summary(page)).toHaveText(count(4));
+    // The copy is selected: its position fields show its centre.
+    const fields = page.getByRole('complementary', { name: 'Style' }).getByRole('group', { name: 'Position and size' });
+    await expect(fields.getByRole('textbox', { name: 'X' })).toHaveValue('210');
+    await expect(fields.getByRole('textbox', { name: 'Y' })).toHaveValue('210');
+    await deselect(page);
+    expect((await readStep(page, 210, 210, HEX.red, HEX.white, ['1', '2', '3', '4', '5'])).label).toBe('4');
+  });
 
   test('NFR-06 axe finds no violations with steps placed and one selected', async ({ page }) => {
     await open(page);

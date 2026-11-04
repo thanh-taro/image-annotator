@@ -6,5 +6,6 @@
 @import './base.css';
 @import './components.css';
 @import './drawing.css';
+@import './edit.css';
 @import './zoom.css';
 @import './export.css';

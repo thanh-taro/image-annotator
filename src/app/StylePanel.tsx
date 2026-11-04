@@ -1,8 +1,8 @@
 // CMP-StylePanel (F-003 scope): the colour swatches, size and fill of the active drawing tool's current
 // style, or of the selection (only the choices every selected kind shares; a choice whose selected
-// annotations differ has nothing marked). Changes apply immediately (RULE-04). Position and size
-// fields and selection actions (F-008), canvas settings (F-011) and crop fields (F-010) are added in the
-// slots marked below. Redactions (F-007) show COPY-redact.kind first (solid with a check icon; blur and
+// annotations differ has nothing marked). Changes apply immediately (RULE-04). F-008 adds the position
+// and size fields of a single selection and the selection actions (not while a text is edited); canvas
+// settings (F-011) and crop fields (F-010) are added in the slots marked below. Redactions (F-007) show COPY-redact.kind first (solid with a check icon; blur and
 // pixelate tagged COPY-redact.not_secure_short); blur and pixelate add the inline not-secure note
 // (COPY-redact.not_secure, not a dialog) with COPY-redact.use_solid, then COPY-style.strength; solid has
 // colour only — never opacity, fill or size (F-007.R2).
@@ -13,15 +13,17 @@
 // Opening it does not move focus. Selecting annotations updates the bar and does not open it.
 // Implements: CMP-StylePanel (anatomy: colour, size, fill; variants tool, selection, narrow), F-003.R3,
 // RULE-04, NFR-06 (colour choices named, not shown by colour alone); F-007.R2/R4/R6, RULE-10 (not-secure
-// labels wherever blur and pixelate are shown or chosen), style.md principle 5 (honest safety).
-import { useLayoutEffect, useRef } from 'preact/hooks';
+// labels wherever blur and pixelate are shown or chosen), style.md principle 5 (honest safety);
+// F-008.R4/R5/R8, D-008, NFR-06 (the position and size fields are the non-drag alternative).
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { viewCommands } from '../canvas';
 import { t, type MessageId } from '../copy';
 import type { ComponentChildren } from 'preact';
-import { PALETTE_NAMES, type Colour, type Fill, type RedactionKind, type Size } from '../core';
+import { PALETTE_NAMES, type Colour, type Fill, type GeometryField, type RedactionKind, type Size } from '../core';
 import { panelModel, setStyle, sizeLabel, summaryDetail, type PanelModel } from './drawing';
+import { deleteSelection, duplicateSelection, reorderSelection, setGeometry } from './editing';
 import { Icon } from './icons';
-import { currentStyles, doc, layout, selection, sheetOpen, tool } from './state';
+import { currentStyles, doc, layout, selection, sheetOpen, textEditing, tool } from './state';
 
 const COLOUR_COPY = {
   red: 'color.red',
@@ -179,13 +181,164 @@ function Sections({ model }: { model: PanelModel }) {
           onPick={(strength) => setStyle({ strength })}
         />
       )}
-      {/* Slot: position and size fields, selection actions (F-008). */}
+      {model.geometry && <Geometry geometry={model.geometry} />}
+      {model.actions && <Actions />}
     </>
   );
 }
 
+const GEOMETRY_COPY = {
+  x: 'geometry.x',
+  y: 'geometry.y',
+  width: 'geometry.width',
+  height: 'geometry.height',
+  startX: 'geometry.x',
+  startY: 'geometry.y',
+  endX: 'geometry.x',
+  endY: 'geometry.y',
+} as const satisfies Record<GeometryField, MessageId>;
+
+/** Whole image pixels, optionally negative (a selection may sit partly off the canvas, F-008 edge case). */
+const WHOLE = /^-?\d+$/;
+
+/**
+ * F-008.R8 / CMP-StylePanel "Behavior": one position or size field. It takes whole image pixels and
+ * applies on Enter or when focus leaves it, as one undo step; while focused, every key is the field's
+ * own (RULE-19 scope, F-008.AC16). Anything else typed goes back to the current value.
+ */
+function NumberField({ field, value }: { field: GeometryField; value: number }) {
+  const [draft, setDraft] = useState(String(value));
+  // Typed into since it last applied: retyping the shown (rounded) number still applies it, so a
+  // fractional position snaps to whole pixels (F-008 review m8); leaving an untouched field changes nothing.
+  const typed = useRef(false);
+  useEffect(() => setDraft(String(value)), [value]);
+  const apply = () => {
+    const text = draft.trim();
+    if (typed.current && WHOLE.test(text)) setGeometry(field, Number(text));
+    typed.current = false;
+    setDraft(String(value)); // the new value arrives with the next render
+  };
+  return (
+    <label class="tk-geometry__field">
+      <span>{t(GEOMETRY_COPY[field])}</span>
+      <input
+        class="tk-geometry__input"
+        type="text"
+        inputMode="numeric"
+        autocomplete="off"
+        spellcheck={false}
+        value={draft}
+        onInput={(e) => {
+          typed.current = true;
+          setDraft(e.currentTarget.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          apply();
+        }}
+        onBlur={apply}
+      />
+    </label>
+  );
+}
+
+/**
+ * F-008.R8 (D-008, NFR-06): the position and size fields of a single selection under COPY-geometry.title —
+ * the non-drag alternative to moving and resizing. A line's are grouped under COPY-geometry.start and
+ * COPY-geometry.end, so each X and Y is named with its end.
+ */
+function Geometry({ geometry }: { geometry: NonNullable<PanelModel['geometry']> }) {
+  const fields = (list: readonly (readonly [GeometryField, number])[]) => (
+    <div class="tk-geometry__fields">
+      {list.map(([field, value]) => (
+        <NumberField key={field} field={field} value={value} />
+      ))}
+    </div>
+  );
+  return (
+    <fieldset class="tk-panel__section">
+      <legend class="tk-panel__heading">{t('geometry.title')}</legend>
+      {geometry.kind === 'line' ? (
+        <>
+          <fieldset class="tk-panel__section">
+            <legend class="tk-geometry__sub">{t('geometry.start')}</legend>
+            {fields(geometry.fields.slice(0, 2))}
+          </fieldset>
+          <fieldset class="tk-panel__section">
+            <legend class="tk-geometry__sub">{t('geometry.end')}</legend>
+            {fields(geometry.fields.slice(2))}
+          </fieldset>
+        </>
+      ) : (
+        fields(geometry.fields)
+      )}
+    </fieldset>
+  );
+}
+
+/** Stands for the subject inside the translated COPY-style.sheet_summary, so the tag can follow it. */
+const SUBJECT = '\uE000';
+
+/**
+ * COPY-style.sheet_summary in the narrow summary bar: "{subject} · {detail}" (just the subject without a
+ * detail). D-031 / RULE-10: a blur or pixelate subject is followed by COPY-redact.not_secure_short, shown
+ * as the same tag as on the panel's kind choices; it is part of the bar's accessible name.
+ */
+function Summary({ model, detail }: { model: PanelModel; detail: string }) {
+  const text = detail ? t('style.sheet_summary', { subject: SUBJECT, detail }) : SUBJECT;
+  const [before = '', after = ''] = text.split(SUBJECT);
+  return (
+    <>
+      {before}
+      {model.subject}
+      {model.subjectNotSecure && (
+        <>
+          {' '}
+          <span class="tk-tag tk-panel__tag">
+            <Icon name="warning" />
+            {t('redact.not_secure_short')}
+          </span>
+        </>
+      )}
+      {after}
+    </>
+  );
+}
+
+/** F-008.R5: the selection actions, in the artboard's order. */
+function Actions() {
+  return (
+    <div class="tk-panel__section">
+      <div class="tk-actions">
+        <button type="button" class="tk-button tk-button--outlined" onClick={duplicateSelection}>
+          {t('action.duplicate')}
+        </button>
+        <button
+          type="button"
+          class="tk-button tk-button--outlined"
+          onClick={() => {
+            // F-008 review M3 (NFR-06): the actions go with the selection, so focus moves to the canvas
+            // region (its Tab stop with nothing selected, CMP-Canvas) and the Edit keys keep working.
+            document.querySelector<HTMLElement>('.tk-work-area')?.focus({ preventScroll: true });
+            deleteSelection();
+          }}
+        >
+          {t('action.delete')}
+        </button>
+        <button type="button" class="tk-button tk-button--outlined" onClick={() => reorderSelection('forward')}>
+          {t('action.bring_forward')}
+        </button>
+        <button type="button" class="tk-button tk-button--outlined" onClick={() => reorderSelection('backward')}>
+          {t('action.send_backward')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function StylePanel() {
-  const model = panelModel(tool.value, selection.value, doc.value, currentStyles.value);
+  const model = panelModel(tool.value, selection.value, doc.value, currentStyles.value, textEditing.value !== null);
   const narrow = layout.value === 'narrow';
   const open = narrow && sheetOpen.value;
   const ref = useRef<HTMLElement>(null);
@@ -229,7 +382,6 @@ export function StylePanel() {
   };
 
   const detail = summaryDetail(model);
-  const summary = detail ? t('style.sheet_summary', { subject: model.subject, detail }) : model.subject;
   return (
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Esc closes the sheet (D-019)
     <aside
@@ -251,7 +403,9 @@ export function StylePanel() {
           >
             <span class="tk-sr">{`${t('style.sheet_toggle')}: `}</span>
             {model.color && <span class={`tk-panel__chip tk-swatch--${model.color}`} aria-hidden="true" />}
-            <span class="tk-panel__summary">{summary}</span>
+            <span class="tk-panel__summary">
+              <Summary model={model} detail={detail} />
+            </span>
             <Icon name="chevronUp" class="tk-panel__chevron" />
           </button>
         )}

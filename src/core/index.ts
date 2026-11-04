@@ -2,8 +2,8 @@
 // (specs/40-technical/modules/MOD-Core.md). Pure, synchronous, dependency-free: usable on the main
 // thread and in the effects worker; no DOM, clock or language. Results carry codes and numbers.
 // Types, constants, size tables, the format sniff (F-001), the canvas/fit maths and the view maths
-// (F-002), the tools and shape geometry (F-003), step numbering (F-006), text (F-005), redaction geometry (F-007) and the export's file name and PNG chunk whitelist (F-012) are real; the rest throws until its feature is built.
-import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize } from './types';
+// (F-002), the tools and shape geometry (F-003), step numbering (F-006), text (F-005), redaction geometry (F-007), the export's file name and PNG chunk whitelist (F-012) and the edit geometry (F-008: move, resize, Alt+arrows, marquee, position and size fields) are real; the rest throws until its feature is built.
+import type { Frame, ImageInfo, Padding, PaddingSize } from './types';
 
 export * from './types';
 export * from './limits';
@@ -37,8 +37,4 @@ export function clampFrame(_frame: Frame, _image: Pick<ImageInfo, 'width' | 'hei
 /** F-011.R6: the largest padding size that still fits after a frame change. */
 export function stepDownPadding(_frame: Frame, _padding: Padding): Padding {
   return notImplemented('stepDownPadding');
-}
-
-export function marqueeHits(_annotations: readonly Annotation[], _box: Box): readonly string[] {
-  return notImplemented('marqueeHits');
 }

@@ -4,7 +4,7 @@
 // system clipboard is read back too. Every PNG is decoded in Node (ADR-0019). Also the deferred F-001.AC10
 // (export, then paste replaces without asking), F-002.AC7 (zoom and pan change nothing exported) and
 // F-018.AC5 (byte-identical in every language).
-// F-012.AC8 moves an annotation, which needs F-008: its placeholder is at the end. F-012.AC13's
+// F-012.AC8 moves an annotation with the select tool (F-008), at the end. F-012.AC13's
 // "closing the tab still warns" needs F-014: here the session is shown to stay unexported by the replace
 // confirmation (F-001.R7), which reads the same RULE-18 state.
 import AxeBuilder from '@axe-core/playwright';
@@ -464,5 +464,25 @@ test.describe('F-012 copy and download', () => {
     await expect(downloadButton(page)).toBeDisabled();
   });
 
-  test.fixme('F-012.AC8 after copying, moving an annotation and copying again reflects the move (needs F-008 move)', async () => {});
+  test('F-012.AC8 after copying, moving an annotation and copying again reflects the move', async ({ page }) => {
+    await open(page);
+    await rectangle(page, [40, 40], [200, 160]);
+    await workArea(page).focus();
+    await page.keyboard.press('ControlOrMeta+C');
+    const first = expectCleanPng(await copied(page, 0));
+    expect(maxDiff(pngRegion(first, 40, 70, 1, 1), RED)).toBeLessThanOrEqual(2);
+    // F-008: the select tool drags the rectangle by its left edge (away from its handles) 60 px right.
+    await toolButton(page, 'Select (V)').click();
+    const o = await origin(page, 400, 300);
+    await page.mouse.move(o.x + 40, o.y + 70);
+    await page.mouse.down();
+    await page.mouse.move(o.x + 70, o.y + 70, { steps: 4 });
+    await page.mouse.move(o.x + 100, o.y + 70, { steps: 4 });
+    await page.mouse.up();
+    await workArea(page).focus();
+    await page.keyboard.press('ControlOrMeta+C');
+    const second = expectCleanPng(await copied(page, 1));
+    expect(maxDiff(pngRegion(second, 100, 70, 1, 1), RED)).toBeLessThanOrEqual(2);
+    expect(maxDiff(pngRegion(second, 40, 70, 1, 1), pngRegion(first, 40, 70, 1, 1))).toBeGreaterThan(2);
+  });
 });

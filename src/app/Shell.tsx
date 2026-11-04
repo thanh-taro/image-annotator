@@ -15,7 +15,8 @@ import { DropOverlay } from './DropOverlay';
 import { EmptyState } from './EmptyState';
 import { NoticeView } from './NoticeView';
 import { PrivacyStatus } from './PrivacyStatus'; // F-016
-import { createAnnotation, textEditEnded, textEditStarted } from './drawing';
+import { createAnnotation, select, textEditEnded, textEditStarted } from './drawing';
+import { commitDrag } from './editing'; // F-008
 import { StylePanel } from './StylePanel';
 import { Toolbar } from './Toolbar';
 import { ZoomControl } from './ZoomControl';
@@ -125,6 +126,8 @@ export function Shell() {
                 onTextEdit={textEditStarted}
                 onTextEnd={textEditEnded}
                 keepsTextEdit={inPanel}
+                onSelect={select}
+                onEdit={commitDrag}
               />
               <span id="tk-canvas-summary" class="tk-sr">
                 {t('a11y.canvas_summary', {

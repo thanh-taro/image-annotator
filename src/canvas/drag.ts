@@ -12,7 +12,15 @@
 // re-stamps the whole document's solids over its patches (ADR-0006 step 3).
 // Implements: ADR-0022, NFR-02, RULE-10 (a solid shows whatever the order), F-007.R3.
 import { isEffectRedaction, isSolidRedaction, type Annotation } from '../core';
-import { paintAnnotations, type Backdrop, type Patches, type Scene, type SceneImage, type Transform } from '../render';
+import {
+  paintAnnotations,
+  type Backdrop,
+  type PatchImage,
+  type Patches,
+  type Scene,
+  type SceneImage,
+  type Transform,
+} from '../render';
 
 export type Surface = OffscreenCanvas | HTMLCanvasElement;
 type Surface2D = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
@@ -137,7 +145,7 @@ export class DragLayers {
 
   /**
    * ADR-0022 / NFR-02: builds the layers a drag about to start will use (called at pointerdown for a
-   * draw — lo = n, hi = n − 1 — and, from F-008, for a move or resize with its lo and hi), drawing
+   * draw — lo = n, hi = n − 1 — and for a move or resize with its lo and hi from `dragRange`), drawing
    * nothing. The first drag frame then finds them fresh. `f.middle` is not read.
    */
   prepare(f: DragFrame): boolean {
@@ -180,8 +188,8 @@ export class DragLayers {
  * frame. Normally the lowest and highest dragged ones; when a solid redaction is dragged, every blur and
  * pixelate above the lowest dragged solid is drawn each frame too (RULE-10: the solid shows wherever it
  * moves), so the upper bound reaches the highest of them. Everything between the bounds is drawn each frame.
- * TODO(F-008): move and resize must take lo and hi from here at prepare() / pointerdown (review m5,
- * security m5); drawing a new annotation (always on top) uses lo = n, hi = n − 1 and does not need it.
+ * F-008: a move or resize takes its lo and hi from here, at prepare() (pointerdown) and every frame
+ * (<Canvas> `moveRange`); drawing a new annotation (always on top) uses lo = n, hi = n − 1.
  */
 export function dragRange(annotations: readonly Annotation[], dragged: readonly number[]): { lo: number; hi: number } {
   const lo = Math.min(...dragged);
@@ -201,4 +209,36 @@ export function dragRange(annotations: readonly Annotation[], dragged: readonly 
     }
   }
   return { lo, hi };
+}
+
+/** What `movePatches` asks of MOD-Effects (its `patchesFor`, ADR-0017). */
+export interface PatchSource {
+  patchesFor(doc: Scene, moving: ReadonlySet<string>): Patches;
+}
+
+/**
+ * The patches of one move or resize frame (F-008.R2/R3, ADR-0017, ADR-0022, NFR-02). `now` is the
+ * document with the dragged annotations as they are now; [lo, hi] is their `dragRange`. Only the blur and
+ * pixelate redactions inside the range are asked of `effects` (approximated, with no exact job while they
+ * or a solid they read move); those outside keep `still`, the patches the cached layers were built with,
+ * so the layers are not rebuilt and no approximation is computed for them each frame (F-008 review M1).
+ * Every solid stays in the document asked about, since effects read them (RULE-10).
+ */
+export function movePatches(
+  effects: PatchSource,
+  now: Scene,
+  moving: ReadonlySet<string>,
+  still: Patches,
+  lo: number,
+  hi: number,
+): Patches {
+  const inRange = (i: number) => i >= lo && i <= hi;
+  const asked = { ...now, annotations: now.annotations.filter((a, i) => inRange(i) || !isEffectRedaction(a)) };
+  const fresh = effects.patchesFor(asked, moving);
+  const out = new Map<string, PatchImage>();
+  now.annotations.forEach((a, i) => {
+    const p = inRange(i) ? fresh.get(a.id) : still.get(a.id);
+    if (p) out.set(a.id, p);
+  });
+  return out;
 }

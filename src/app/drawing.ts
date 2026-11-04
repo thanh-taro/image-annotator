@@ -13,8 +13,10 @@
 import { canvasCommands, type TextEdit, type TextEndReason } from '../canvas';
 import { t, type MessageId } from '../copy';
 import {
+  geometryOf,
   hasFill,
   isBlankText,
+  isLineAnnotation,
   isEffectRedaction,
   isDrawingTool,
   TOOL_KIND,
@@ -23,6 +25,7 @@ import {
   type Colour,
   type DrawingTool,
   type Fill,
+  type GeometryField,
   type RedactionKind,
   type Size,
   type Style,
@@ -224,6 +227,8 @@ export interface PanelModel {
   readonly variant: 'tool' | 'selection' | 'canvas';
   /** The summary bar's subject (COPY-style.sheet_summary): the tool, the selected kind, or the count. */
   readonly subject: string;
+  /** D-031 / RULE-10: the subject is a blur or pixelate redaction, so COPY-redact.not_secure_short follows it. */
+  readonly subjectNotSecure?: true;
   /** Offered unless a subject is a blur or pixelate redaction (RULE-10: only solid has a colour). */
   readonly color?: Colour | null;
   /** Offered unless a subject is a redaction (RULE-10: redactions have no stroke size). */
@@ -236,6 +241,22 @@ export interface PanelModel {
   readonly strength?: Size | null;
   /** RULE-10 / F-007.R4: COPY-redact.not_secure and COPY-redact.use_solid show (a subject is blur or pixelate). */
   readonly notSecure?: boolean;
+  /**
+   * F-008.R8: the position and size fields of a single selection (COPY-geometry.title): a box's X, Y, W, H
+   * (also a stroke's or highlight's bounding box), a line's start and end, or a text's or step's X and Y.
+   */
+  readonly geometry?: {
+    readonly kind: 'box' | 'line' | 'point';
+    readonly fields: readonly (readonly [GeometryField, number])[];
+  };
+  /** F-008.R5: the selection actions (duplicate, delete, bring forward, send backward) are offered. */
+  readonly actions?: true;
+}
+
+/** F-008.R8: the position and size fields of `a`, grouped as CMP-StylePanel lays them out. */
+function geometryModel(a: Annotation): NonNullable<PanelModel['geometry']> {
+  const fields = geometryOf(a);
+  return { kind: isLineAnnotation(a) ? 'line' : fields.length === 2 ? 'point' : 'box', fields };
 }
 
 /** The redaction choices (and which general ones apply) for subjects with these styles and kinds. */
@@ -258,12 +279,17 @@ function choices(
 const shared = <T>(values: readonly T[]): T | null =>
   values.every((v) => v === values[0]) ? (values[0] ?? null) : null;
 
-/** CMP-StylePanel "tool", "selection" and "canvas" variants for the current state (RULE-04, F-008.R4). */
+/**
+ * CMP-StylePanel "tool", "selection" and "canvas" variants for the current state (RULE-04, F-008.R4); a
+ * selection also offers its actions (F-008.R5) and, when single, its position and size fields (F-008.R8).
+ * While a text is edited (`editing`, SCR-Annotator "editing-text") only its colour and size are shown.
+ */
 export function panelModel(
   active: ToolName,
   ids: Selection,
   d: Doc | null,
   styles: Readonly<Record<DrawingTool, Style>>,
+  editing = false,
 ): PanelModel {
   const picked = selectedAnnotations(d, ids);
   if (picked.length) {
@@ -272,13 +298,26 @@ export function panelModel(
     const subject =
       kinds.size === 1 && first ? toolLabel(toolOf(first.kind)) : t('a11y.selected_count', { count: picked.length });
     const c = choices(picked);
-    return { variant: 'selection', subject: c.kind ? kindLabel(c.kind) : subject, ...c };
+    const edits =
+      editing || !first
+        ? {}
+        : { actions: true as const, ...(picked.length === 1 ? { geometry: geometryModel(first) } : {}) };
+    return { variant: 'selection', ...subjectOf(c, subject), ...c, ...edits };
   }
   if (isDrawingTool(active)) {
     const c = choices([{ kind: TOOL_KIND[active], style: styles[active] }]);
-    return { variant: 'tool', subject: c.kind ? kindLabel(c.kind) : toolLabel(active), ...c };
+    return { variant: 'tool', ...subjectOf(c, toolLabel(active)), ...c };
   }
   return { variant: 'canvas', subject: t('canvas.title') };
+}
+
+/**
+ * COPY-style.sheet_summary's subject: a redaction's kind when the subjects share one, else `otherwise`;
+ * a blur or pixelate kind carries the not-secure tag (D-031, RULE-10).
+ */
+function subjectOf(c: { readonly kind?: RedactionKind | null }, otherwise: string) {
+  if (!c.kind) return { subject: otherwise };
+  return { subject: kindLabel(c.kind), ...(c.kind !== 'solid' ? { subjectNotSecure: true as const } : {}) };
 }
 
 // COPY-style.sheet_summary: for a redaction the subject is its kind (COPY-redact.solid/blur/pixelate).

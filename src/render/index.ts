@@ -118,6 +118,8 @@ export interface Overlays {
   readonly look?: OverlayLook;
   /** The checkerboard shown where a patch replaces pixels with a transparent background (screen only). */
   readonly backdrop?: Backdrop;
+  /** F-008.R1: the selection box being dragged with the select tool (image pixels, any direction). */
+  readonly marquee?: Box | null;
 }
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -170,8 +172,44 @@ export function paint(
     scene.annotations.length,
     overlays?.backdrop ? { backdrop: overlays.backdrop } : {},
   );
-  if (overlays?.look && overlays.selection?.length)
-    paintSelection(ctx, scene, transform, overlays.selection, overlays.look, Math.min(image.width, image.height));
+  if (overlays) paintOverlays(ctx, scene, image, transform, overlays);
+}
+
+/**
+ * The screen-only overlays alone (CMP-Canvas "selected"): the selection outline and handles, then the
+ * marquee. `paint` calls it; a drag frame (ADR-0022, MOD-Canvas) calls it after compositing its layers,
+ * with the dragged annotations as they are now in `scene`.
+ */
+export function paintOverlays(
+  ctx: Ctx,
+  scene: Scene,
+  image: SceneImage,
+  transform: Transform,
+  overlays: Overlays,
+): void {
+  const look = overlays.look;
+  if (!look) return;
+  if (overlays.selection?.length)
+    paintSelection(ctx, scene, transform, overlays.selection, look, Math.min(image.width, image.height));
+  if (overlays.marquee) paintMarquee(ctx, overlays.marquee, transform, look);
+}
+
+/** F-008.R1: the selection box, in the selection outline's colour with its halo, in context pixels. */
+function paintMarquee(ctx: Ctx, box: Box, { scale, dx, dy }: Transform, look: OverlayLook): void {
+  const x = dx + Math.min(box.x, box.x + box.width) * scale;
+  const y = dy + Math.min(box.y, box.y + box.height) * scale;
+  const w = Math.abs(box.width) * scale;
+  const h = Math.abs(box.height) * scale;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = look.lineWidth + 2;
+  ctx.strokeStyle = look.halo;
+  ctx.strokeRect(x, y, w, h);
+  ctx.lineWidth = look.lineWidth;
+  ctx.strokeStyle = look.outline;
+  ctx.strokeRect(x, y, w, h);
+  ctx.restore();
 }
 
 /**
@@ -459,9 +497,8 @@ function paintSelection(
   ctx.rect(c.x, c.y, c.width, c.height);
   ctx.clip();
   for (const a of selected) {
-    // TODO(F-008): a straight (e.g. Shift) highlight's points box has zero height, so its outline is a
-    // line through the band and the n/s handles stack; F-008 decides the box, scaling H from 0 and
-    // which of overlapping handles a press picks (review F-004 round 1, finding 4).
+    // F-008: a straight (Shift) highlight's points box has zero height, so its outline is a line through
+    // the band; MOD-Core `handlesOf` gives it only the handles along its length, so none stack.
     if (!single || !isLineAnnotation(a)) {
       // F-006: a step's outline is its badge (no stroke), which needs the image's shorter side; F-005:
       // a text's is its box (RULE-08, ADR-0020), measured in the tool's face.
