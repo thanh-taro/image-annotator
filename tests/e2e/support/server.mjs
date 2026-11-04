@@ -77,8 +77,10 @@ const HOST_PAGE = `<!doctype html>
   const frame = document.createElement('iframe');
   // The portal's frame grants (D-006, RULE-16, A2): sandbox with downloads and leave-page dialogs,
   // clipboard writing, and focus moved into the tool after its ready signal. \`grants=0\` drops the
-  // grants and \`focus=0\` skips the focus, for the fallback cases (F-015.R7; SP-host, ADR-0021).
+  // grants, \`clipboard=0\` only the clipboard grant (F-015.AC10) and \`focus=0\` skips the focus, for the
+  // fallback cases (F-015.R7; SP-host, ADR-0021).
   const grants = params.get('grants') !== '0';
+  const clipboardGrant = grants && params.get('clipboard') !== '0';
   const focusOnReady = params.get('focus') !== '0';
   window.addEventListener('message', (e) => {
     if (e.origin !== window.__toolOrigin) return;
@@ -91,7 +93,7 @@ const HOST_PAGE = `<!doctype html>
     'sandbox',
     'allow-scripts allow-same-origin' + (grants ? ' allow-downloads allow-modals' : ''),
   );
-  if (grants) frame.setAttribute('allow', 'clipboard-write');
+  if (clipboardGrant) frame.setAttribute('allow', 'clipboard-write');
   frame.style.cssText = 'width:100%;height:85vh;border:0';
   frame.src = toolSrc;
   window.__sendTheme = (value) =>

@@ -2,9 +2,10 @@
 // language from the address before first display, live taro:language messages, the browser
 // fallback, the origin/source/value checks, 320 px and the Vietnamese faces in the initial load.
 // Deferred ACs (need later features): AC2 (image, annotations, selection, tool, zoom, history),
-// AC5 (export, F-012), AC7 (every SCR-Annotator state), AC10 (text and download offline, F-005/F-012/F-017).
+// AC7 (every SCR-Annotator state), AC10's offline half (F-017). AC5 (export) is in tests/e2e/export.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
 import { CATALOG } from '../../../src/copy/messages.gen';
+import { download, expectCleanPng, pngRegion } from '../support/export';
 import { HOST_ALLOWED, TOOL_ALLOWED, hostPageUrl } from '../support/urls';
 import {
   markWindow,
@@ -203,4 +204,71 @@ test('F-018.R7 F-005.R5 vi-VN: the text "Đường dẫn lỗi" is drawn in the 
   expect(await page.evaluate(() => document.fonts.check('600 16px Manrope', 'Đường dẫn lỗi'))).toBe(true);
   const log = (await (await page.request.get(`${TOOL_ALLOWED}/__log/dump`)).json()) as { path: string }[];
   expect(log.map((r) => r.path).filter((p) => /\.woff2?$/.test(p))).toEqual([]);
+});
+
+test.describe('F-018.AC10 download', () => {
+  // One device pixel per CSS pixel, so the 100 % view and the 1:1 export can be compared pixel for pixel.
+  test.use({ deviceScaleFactor: 1 });
+
+  // The download half of F-018.AC10, online: opened in en-US first, then in vi-VN, "Đường dẫn lỗi" is
+  // downloaded with every diacritic drawn as on screen (in the tool's face), and no font is requested.
+  test('F-018.AC10 F-012.R2 vi-VN: "Đường dẫn lỗi" downloads with every diacritic as on screen and no font request (download half)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1472, height: 868 });
+    await page.goto(`${TOOL_ALLOWED}/?theme=dark&lang=en-US`);
+    await expect(page.locator(SHELL)).toBeVisible();
+    await page.goto(`${TOOL_ALLOWED}/?theme=dark&lang=vi-VN`);
+    await expect(page.locator(SHELL)).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await page.request.get(`${TOOL_ALLOWED}/__log/reset`);
+    await page.evaluate(async () => {
+      const c = new OffscreenCanvas(400, 300);
+      const ctx = c.getContext('2d');
+      if (!ctx) throw new Error('no 2d context');
+      ctx.fillStyle = '#c8c8c8';
+      ctx.fillRect(0, 0, 400, 300);
+      const dt = new DataTransfer();
+      dt.items.add(new File([await c.convertToBlob({ type: 'image/png' })], 'grey.png', { type: 'image/png' }));
+      document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    });
+    await expect(page.locator('#tk-canvas-summary')).toContainText(', 0 chú thích');
+    await expect(page.locator('.tk-zoom__level')).toHaveText('100 %');
+    await page.getByRole('radio', { name: `${CATALOG['vi-VN']['tool.text'] as string} (T)` }).click();
+    const area = await page.locator('main.tk-work-area').boundingBox();
+    if (!area) throw new Error('no work area');
+    await page.mouse.click(area.x + area.width / 2 - 180, area.y + area.height / 2 - 40);
+    const field = page.getByRole('textbox', { name: CATALOG['vi-VN']['tool.text'] as string });
+    await expect(field).toBeFocused();
+    await page.keyboard.insertText('Đường dẫn lỗi');
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape'); // clear the selection, so the view shows no outline
+    await expect(page.locator('#tk-canvas-summary')).toContainText(', 1 chú thích');
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null)))));
+    const file = await download(page, () =>
+      page.getByRole('button', { name: CATALOG['vi-VN']['action.download'] as string, exact: true }).click(),
+    );
+    const png = expectCleanPng(file.bytes);
+    // The text's area (image x 10–399, y 100–200) in the export against the 100 % view (the same paint()).
+    const got = pngRegion(png, 10, 100, 390, 100);
+    const diff = await page.locator('canvas.tk-canvas').evaluate((el, got) => {
+      const c = el as HTMLCanvasElement;
+      const x0 = Math.round((c.width - 400) / 2) + 10;
+      const y0 = Math.round((c.height - 300) / 2) + 100;
+      const shown = c.getContext('2d', { colorSpace: 'srgb' })?.getImageData(x0, y0, 390, 100).data ?? [];
+      let d = 0;
+      let ink = 0;
+      for (let i = 0; i < got.length; i++) {
+        d += Math.abs((got[i] ?? 0) - (shown[i] ?? 0));
+        if (i % 4 === 0 && (got[i] ?? 0) !== 200) ink++;
+      }
+      return { mean: d / got.length, ink };
+    }, got);
+    expect(diff.ink, 'the text is in the export').toBeGreaterThan(500);
+    expect(diff.mean).toBeLessThan(1.5);
+    const log = (await (await page.request.get(`${TOOL_ALLOWED}/__log/dump`)).json()) as { path: string }[];
+    expect(log.map((r) => r.path).filter((p) => /\.woff2?$/.test(p))).toEqual([]);
+  });
+
+  test.fixme('F-018.AC10 reopened offline in vi-VN, the download has every diacritic and no font request (offline half, needs F-017)', async () => {});
 });

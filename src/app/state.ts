@@ -7,6 +7,7 @@ import { computed, signal } from '@preact/signals';
 import { startSession, type Doc, type Restore, type Selection, type Session } from '../document';
 import { DEFAULT_STYLES, type DrawingTool, type Style, type ToolName, type View } from '../core';
 import { feedEffects, type DecodedImage, type Size } from '../io';
+import { toolbarCount } from './export';
 import type { Notice } from './notice';
 
 export interface Loaded {
@@ -58,11 +59,18 @@ export const layout = signal<Layout>('wide');
 /** D-019: the narrow bottom sheet of CMP-StylePanel is open. */
 export const sheetOpen = signal(false);
 
-/** Records a successful export (RULE-18; F-012 calls this). */
-export function exported(): void {
-  loaded.value?.session.markExported();
+/**
+ * Records a successful export (RULE-18; F-012): `session` exported at change epoch `at` — by default the
+ * current session as it is now. An export of a session that was replaced meanwhile records nothing.
+ */
+export function exported(session: Session | undefined = loaded.value?.session, at = session?.epoch): void {
+  if (!session || loaded.value?.session !== session) return;
+  session.markExported(at);
   version.value++;
 }
+
+/** RULE-20 / F-012.R8: the live redaction count next to the export actions (hidden at 0). */
+export const redactions = computed(() => toolbarCount(doc.value));
 
 /**
  * Starts a new session with this image (ENT-Session, F-001.R7): empty history, the whole image as

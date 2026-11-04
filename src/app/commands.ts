@@ -1,5 +1,8 @@
 // MOD-App — the app-level commands (MOD-App public surface). Phase 3.3 scaffold: each throws until
-// its feature is built; the signals of ADR-0008 are added with F-008/F-009.
+// its feature is built; the signals of ADR-0008 are added with F-008/F-009. `copy` and `download` are
+// built (F-012, ./exporter.ts).
+import { copyNow, downloadNow } from './exporter';
+
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-App ${name}`);
 };
@@ -15,7 +18,7 @@ export const commands = {
   resetFrame: (): void => notImplemented('resetFrame'),
   setPadding: (_size: string): void => notImplemented('setPadding'),
   setBackground: (_background: string): void => notImplemented('setBackground'),
-  copy: (): void => notImplemented('copy'),
-  download: (): void => notImplemented('download'),
+  copy: copyNow,
+  download: downloadNow,
   showShortcuts: (): void => notImplemented('showShortcuts'),
 };

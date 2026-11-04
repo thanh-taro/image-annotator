@@ -10,6 +10,7 @@ import {
   type ApproxRequest,
   type EffectsDeps,
   type FromWorker,
+  type HeldPatches,
   type ToWorker,
   type WorkerLike,
 } from '../../src/effects';
@@ -24,6 +25,7 @@ function harness() {
   }[] = [];
   const approxRequests: ApproxRequest[] = [];
   let bitmapFails = false;
+  const bitmaps: { closed: boolean }[] = [];
   let bitmapGate: Promise<void> = Promise.resolve();
   const timers: { fn: () => void; at: number; done: boolean }[] = [];
   let now = 0;
@@ -47,7 +49,9 @@ function harness() {
     toBitmap: async (_p, width, height) => {
       await bitmapGate;
       if (bitmapFails) throw new Error('decode');
-      return { width, height, exact: true } as unknown as CanvasImageSource;
+      const b = { width, height, exact: true, closed: false, close: () => void (b.closed = true) };
+      bitmaps.push(b);
+      return b as unknown as CanvasImageSource;
     },
     approximate: (r) => {
       approxRequests.push(r);
@@ -97,7 +101,7 @@ function harness() {
     return open;
   };
   const failBitmaps = () => (bitmapFails = true);
-  return { client, workers, load, jobs, answer, fail, advance, settle, gate, failBitmaps, approxRequests };
+  return { client, workers, load, jobs, answer, fail, advance, settle, gate, failBitmaps, approxRequests, bitmaps };
 }
 
 const frame: Box = { x: 0, y: 0, width: 1000, height: 800 };
@@ -292,7 +296,7 @@ describe('MOD-Effects client', () => {
     h.load();
     const two = doc(blurAt(100), red('p', { x: 500, y: 100, width: 64, height: 64 }, { redactionKind: 'pixelate' }));
     let done: ReadonlyMap<string, unknown> | null = null;
-    void h.client.exactPatches(two).then((m) => (done = m));
+    void h.client.exactPatches(two).then((m) => (done = m.patches));
     await h.answer();
     expect(done).toBeNull();
     await h.answer();
@@ -322,5 +326,89 @@ describe('MOD-Effects client', () => {
       h.client.patchesFor(doc(red('o', { x: 1100, y: 10, width: 50, height: 50 }, { redactionKind: 'blur' }))).size,
     ).toBe(0);
     expect(h.jobs()).toHaveLength(0);
+  });
+
+  // F-012 review M1 / security m1–m2: the export holds what it waits for and paints.
+  const whole = (id: string, kind: 'blur' | 'pixelate', size: 'S' | 'M' | 'L' = 'M') =>
+    red(id, { x: 0, y: 0, width: 1000, height: 800 }, { redactionKind: kind, strength: size });
+  /** Answers every job the client sends until `until()` or 200 answers (a thrash would never stop). */
+  const answerAll = async (h: ReturnType<typeof harness>, until: () => boolean) => {
+    for (let i = 0; i < 200 && !until(); i++) await h.answer();
+  };
+
+  it('F-012.R7 F-012 review M1 three whole-frame blurs and pixelates (over 2 image areas) resolve, none closed', async () => {
+    const h = harness();
+    h.load();
+    const three = doc(whole('a', 'blur', 'M'), whole('b', 'blur', 'S'), whole('c', 'pixelate', 'M'));
+    let held: HeldPatches | null = null;
+    void h.client.exactPatches(three).then((r) => (held = r));
+    await answerAll(h, () => held !== null);
+    expect(h.jobs()).toHaveLength(3); // each asked once: no evict-and-ask-again loop
+    const r = held as HeldPatches | null;
+    expect([...r!.patches.keys()].sort()).toEqual(['a', 'b', 'c']);
+    expect([...r!.patches.values()].every((p) => p.exact && !(p.bitmap as unknown as { closed: boolean }).closed)).toBe(
+      true,
+    );
+    r!.release();
+  });
+
+  it('F-012.R7 F-012 review M1 more than 48 effect redactions resolve with every patch open', async () => {
+    const h = harness();
+    h.load();
+    const many = Array.from({ length: 60 }, (_, i) =>
+      red(`r${i}`, { x: (i % 10) * 90, y: Math.floor(i / 10) * 120, width: 40, height: 40 }, { redactionKind: 'blur' }),
+    );
+    let held: HeldPatches | null = null;
+    void h.client.exactPatches(doc(...many)).then((r) => (held = r));
+    await answerAll(h, () => held !== null);
+    const r = held as HeldPatches | null;
+    expect(r?.patches.size).toBe(60);
+    expect(h.jobs()).toHaveLength(60);
+    expect(h.bitmaps.some((b) => b.closed)).toBe(false);
+    r!.release();
+  });
+
+  it('F-012 security m1 a held patch is not closed by a screen job until the export releases it', async () => {
+    const h = harness();
+    h.load();
+    const big = (id: string, x: number) => red(id, { x, y: 0, width: 900, height: 800 }, { redactionKind: 'blur' });
+    let held: HeldPatches | null = null;
+    void h.client.exactPatches(doc(big('e', 0))).then((r) => (held = r));
+    await h.answer();
+    const r = held as HeldPatches | null;
+    const bitmap = r!.patches.get('e')!.bitmap as unknown as { closed: boolean };
+    for (const x of [10, 20, 30]) {
+      // the user nudges other blurs meanwhile: their patches would evict the export's
+      h.client.patchesFor(doc(big('s', x)));
+      await h.answer();
+    }
+    expect(bitmap.closed).toBe(false);
+    r!.release();
+    h.client.patchesFor(doc(big('s', 40)));
+    await h.answer();
+    expect(bitmap.closed).toBe(true); // let go: evicted and closed as usual
+  });
+
+  it('F-012 security m2 replacing the image rejects a pending export and sends nothing for the new image', async () => {
+    const h = harness();
+    h.load();
+    const result = h.client.exactPatches(doc(blurAt(100)));
+    expect(h.jobs(0)).toHaveLength(1);
+    h.load(); // a new image while the export waits
+    await expect(result).rejects.toThrow(/replaced/);
+    await h.settle();
+    expect(h.jobs(1)).toHaveLength(0);
+  });
+
+  it('F-012.R7 an aborted wait rejects and releases what it held; the worker keeps no waiter', async () => {
+    const h = harness();
+    h.load();
+    const stop = new AbortController();
+    const result = h.client.exactPatches(doc(blurAt(100), whole('w', 'pixelate')), stop.signal);
+    await h.answer(); // the blur arrives and is held; the pixelate never does
+    stop.abort();
+    await expect(result).rejects.toThrow();
+    h.client.clearImage();
+    expect(h.bitmaps.every((b) => b.closed)).toBe(true); // nothing kept open by the abandoned export
   });
 });

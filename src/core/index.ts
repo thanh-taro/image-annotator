@@ -2,7 +2,7 @@
 // (specs/40-technical/modules/MOD-Core.md). Pure, synchronous, dependency-free: usable on the main
 // thread and in the effects worker; no DOM, clock or language. Results carry codes and numbers.
 // Types, constants, size tables, the format sniff (F-001), the canvas/fit maths and the view maths
-// (F-002), the tools and shape geometry (F-003), step numbering (F-006), text (F-005) and redaction geometry (F-007) are real; the rest throws until its feature is built.
+// (F-002), the tools and shape geometry (F-003), step numbering (F-006), text (F-005), redaction geometry (F-007) and the export's file name and PNG chunk whitelist (F-012) are real; the rest throws until its feature is built.
 import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize } from './types';
 
 export * from './types';
@@ -18,6 +18,7 @@ export * from './shapes';
 export * from './steps';
 export * from './text';
 export * from './redaction';
+export * from './export';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Core ${name}`);
@@ -40,14 +41,4 @@ export function stepDownPadding(_frame: Frame, _padding: Padding): Padding {
 
 export function marqueeHits(_annotations: readonly Annotation[], _box: Box): readonly string[] {
   return notImplemented('marqueeHits');
-}
-
-/** RULE-15 download name; the caller passes the local time (MOD-Core never reads the clock). */
-export function downloadName(_sourceName: string | null, _localTime: Date): string {
-  return notImplemented('downloadName');
-}
-
-/** ADR-0007 / ADR-0019 PNG chunk whitelist, failing closed. */
-export function stripPngChunks(_bytes: Uint8Array): Uint8Array {
-  return notImplemented('stripPngChunks');
 }

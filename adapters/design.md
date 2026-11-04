@@ -44,3 +44,13 @@ token string) drawn in HTML/CSS inside the artboard — no real product, person 
 Each artboard's title links its spec ID. The design-auditor checks coverage (state × viewport ×
 theme), COPY IDs and tokens; the ui-critic reviews screenshots; the a11y-auditor checks contrast,
 targets and reading order. Token pairs are already validated (`tools/token_contrast.py`).
+
+## Recorded differences from the artboards
+Accepted in review, so the build is not "corrected" back to the artboard:
+- **CMP-Toolbar redaction count (F-012):** the full form is text only; the count fallback (compact
+  and narrow, when the full text does not fit) shows the redact tool's icon (`redact`,
+  RectangleEllipsis) and the number, with the full text as its accessible name. The artboards'
+  filled-bar icon is not used.
+- **COPY-action.more (F-012):** shown on narrow widths only, holding the download, until F-013
+  (shortcuts) and F-014 (clear) add their items; they add it on wide and compact too and move the
+  overflow from `ExportActions` into `Toolbar` (the zoom-pan tab-order test changes then).

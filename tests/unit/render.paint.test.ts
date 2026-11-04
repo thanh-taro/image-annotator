@@ -247,4 +247,14 @@ describe('MOD-Canvas split drag layers (ADR-0022)', () => {
     expect(shape(dragOut.calls)).toEqual(shape(settledOut.calls));
     expect(shape(dragOut.calls)).toContain('rect(100,100,200,100)');
   });
+
+  it('F-012 security m4 RULE-14 crisp paints the image without smoothing (the export); the screen default smooths', () => {
+    const crisp = recorder();
+    paint(crisp.ctx, scene([]), image, T, new Map(), undefined, undefined, true);
+    expect(crisp.calls).toContain('imageSmoothingEnabled=false');
+    expect(crisp.calls).not.toContain('imageSmoothingEnabled=true');
+    const screen = recorder();
+    paint(screen.ctx, scene([]), image, T, new Map());
+    expect(screen.calls).toContain('imageSmoothingEnabled=true');
+  });
 });

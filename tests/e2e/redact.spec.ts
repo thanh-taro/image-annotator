@@ -4,11 +4,13 @@
 // shows image pixel (x, y) at a fixed offset, drawn 1:1 by MOD-Render `paint` — the same function the
 // export uses (ADR-0004, NFR-08). The blur is compared with the slow reference of ADR-0006
 // (src/effects/reference.ts) computed here in Node from the image's own pixels.
-// The parts of F-007.AC3, AC7, AC9, AC10, AC11 and AC13 that inspect the exported file wait for export
-// (F-012) or crop (F-010) and are the named `test.fixme` placeholders at the end.
+// The exported file (F-012) is checked too: downloaded, decoded in Node (ADR-0019) and compared with the
+// same reference. Still waiting: AC9's "sent behind" and AC10's "brought to front" (the order controls,
+// F-008) and AC13 (crop and padding, F-010/F-011) — the named `test.fixme` placeholders at the end.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { referenceBlur, referencePixelate } from '../../src/effects/reference';
+import { download, downloadButton, expectCleanPng, pngRegion } from './support/export';
 import { summary } from './support/load';
 
 const PANEL = 272;
@@ -368,10 +370,136 @@ test.describe('F-007 redact', () => {
     });
   }
 
-  test.fixme('F-007.AC3 every exported pixel inside a solid redaction is exactly its colour at full opacity (needs F-012)', async () => {});
-  test.fixme('F-007.AC7 the downloaded blur equals the reference within ±1 and the file holds one image, no extra blocks (needs F-012)', async () => {});
-  test.fixme('F-007.AC9 exported: the blur shows the image alone; sent behind the arrow, the arrow is drawn over it (needs F-012, F-008)', async () => {});
-  test.fixme('F-007.AC10 exported: every pixel in the solid box is the solid colour with a later blur brought to the front (needs F-012, F-008)', async () => {});
-  test.fixme('F-007.AC11 a solid drawn from x = 10.4 at 33 % exports column 10 entirely in its colour (needs F-012)', async () => {});
-  test.fixme('F-007.AC13 a blur spanning a cropped frame’s edge exports white in the padding and reads no pixel outside the frame (needs F-010, F-011, F-012)', async () => {});
+  test('F-007.AC3 INV-02 every exported pixel inside a solid redaction over text is exactly its colour, fully opaque', async ({
+    page,
+  }) => {
+    const { shot } = await open(page, 400, 300);
+    await toolButton(page, 'Redact (X)').click();
+    await dragImage(page, shot, [30, 48], [230, 74]);
+    await page.mouse.up();
+    await deselect(page);
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    expect(allEqual(pngRegion(png, 30, 48, 200, 26), BLACK)).toBe(true);
+    // The image around the box is still there (the export is not blank).
+    expect(allEqual(pngRegion(png, 30, 46, 200, 1), BLACK)).toBe(false);
+  });
+
+  test('F-007.AC7 INV-02 the downloaded blur equals the reference within ±1 and the file holds one image, no extra blocks', async ({
+    page,
+  }) => {
+    const { shot, pixels } = await open(page, 400, 300);
+    await toolButton(page, 'Redact (X)').click();
+    await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
+    await dragImage(page, shot, [30, 44], [230, 78]);
+    await page.mouse.up();
+    await deselect(page);
+    // Downloaded at once: the export waits for the exact patch itself (never the approximation, ADR-0007).
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    const ref = referenceBlur(
+      { data: pixels, width: 400, height: 300 },
+      { x: 0, y: 0, width: 400, height: 300 },
+      { x: 30, y: 44, width: 200, height: 34 },
+      BLUR_M_300,
+      [],
+    );
+    expect(maxDiff(pngRegion(png, 30, 44, 200, 34), ref!.data)).toBeLessThanOrEqual(1);
+  });
+
+  test('F-007.AC9 exported: inside a later blur over an arrow the pixels are the reference blur of the image alone', async ({
+    page,
+  }) => {
+    const { shot, pixels } = await open(page, 400, 300);
+    await toolButton(page, 'Arrow (A)').click();
+    await dragImage(page, shot, [40, 200], [360, 200]);
+    await page.mouse.up();
+    await toolButton(page, 'Redact (X)').click();
+    await deselect(page);
+    await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
+    await dragImage(page, shot, [150, 170], [250, 230]);
+    await page.mouse.up();
+    await deselect(page);
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    const ref = referenceBlur(
+      { data: pixels, width: 400, height: 300 },
+      { x: 0, y: 0, width: 400, height: 300 },
+      { x: 150, y: 170, width: 100, height: 60 },
+      BLUR_M_300,
+      [],
+    );
+    expect(maxDiff(pngRegion(png, 150, 170, 100, 60), ref!.data)).toBeLessThanOrEqual(1);
+    // The arrow's shaft outside the box is unchanged.
+    expect(maxDiff(pngRegion(png, 100, 200, 1, 1), RED)).toBeLessThanOrEqual(24);
+  });
+
+  test('F-007.AC10 INV-02 exported: a blur drawn later over half a solid never shows through it', async ({ page }) => {
+    const { shot, pixels } = await open(page, 400, 300);
+    await toolButton(page, 'Redact (X)').click();
+    await dragImage(page, shot, [30, 128], [230, 154]);
+    await page.mouse.up();
+    await deselect(page);
+    await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
+    await dragImage(page, shot, [130, 110], [330, 170]);
+    await page.mouse.up();
+    await deselect(page);
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    expect(allEqual(pngRegion(png, 30, 128, 200, 26), BLACK)).toBe(true);
+    const ref = referenceBlur(
+      { data: pixels, width: 400, height: 300 },
+      { x: 0, y: 0, width: 400, height: 300 },
+      { x: 130, y: 110, width: 200, height: 60 },
+      BLUR_M_300,
+      [{ box: { x: 30, y: 128, width: 200, height: 26 }, rgb: [0, 0, 0] }],
+    );
+    expect(maxDiff(pngRegion(png, 130, 110, 200, 18), ref!.data.slice(0, 200 * 18 * 4))).toBeLessThanOrEqual(1);
+  });
+
+  test('F-007.AC11 F-007.R2 INV-02 a solid drawn from a fractional x at 33 % exports its first column entirely in its colour', async ({
+    page,
+    browserName,
+  }) => {
+    // 3490 × 2000 fits the 1200 × 800 work area (less Fit's 24 px margin, space.6) at 1152 / 3490 ≈ 33 %; a pointer
+    // 3.43 screen pixels right of the canvas edge is at image x ≈ 10.4 (rounded to 3 by an engine: x ≈ 9.1).
+    await page.setViewportSize(VIEWPORT);
+    await page.goto('/');
+    await page.evaluate(async () => {
+      const c = new OffscreenCanvas(3490, 2000);
+      const ctx = c.getContext('2d');
+      if (!ctx) throw new Error('no 2d context');
+      ctx.fillStyle = '#c8c8c8';
+      ctx.fillRect(0, 0, 3490, 2000);
+      const dt = new DataTransfer();
+      dt.items.add(new File([await c.convertToBlob({ type: 'image/png' })], 'big.png', { type: 'image/png' }));
+      document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    });
+    await expect(summary(page)).toHaveText('3,490 × 2,000 px canvas, 0 annotations');
+    await expect(page.locator('.tk-zoom__level')).toHaveText('33 %');
+    const zoom = (AREA.width - 48) / 3490;
+    const area = await workArea(page).boundingBox();
+    if (!area) throw new Error('no work area');
+    const top = area.y + (AREA.height - 2000 * zoom) / 2;
+    const left = area.x + (AREA.width - 3490 * zoom) / 2;
+    await toolButton(page, 'Redact (X)').click();
+    await page.mouse.move(left + 3.43, top + 300 * zoom);
+    await page.mouse.down();
+    await page.mouse.move(left + 40, top + 450 * zoom, { steps: 4 });
+    await page.mouse.move(left + 63.43, top + 600 * zoom, { steps: 4 });
+    await page.mouse.up();
+    await expect(summary(page)).toHaveText('3,490 × 2,000 px canvas, 1 annotation');
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    // The box's first column: the first black pixel on a middle row.
+    const row = pngRegion(png, 0, 450, 40, 1);
+    const first = Array.from({ length: 40 }, (_, x) => x).find((x) => allEqual(row.slice(x * 4, x * 4 + 4), BLACK));
+    expect([9, 10]).toContain(first);
+    // Chromium keeps the pointer's fraction (x ≈ 10.4): INV-02's floor gives exactly column 10.
+    if (browserName === 'chromium') expect(first).toBe(10);
+    // Whatever the engine's rounding, pixel column 10 (the AC's) is entirely the redaction colour.
+    expect(allEqual(pngRegion(png, 10, 305, 1, 290), BLACK)).toBe(true);
+    // That column is entirely the redaction colour over the box's rows; the one before it is untouched.
+    expect(allEqual(pngRegion(png, first!, 305, 1, 290), BLACK)).toBe(true);
+    expect(allEqual(pngRegion(png, first! - 1, 305, 1, 290), [200, 200, 200, 255])).toBe(true);
+  });
+
+  test.fixme('F-007.AC9 sent behind the arrow, the arrow is drawn over the blur (needs the order controls, F-008)', async () => {});
+  test.fixme('F-007.AC10 with the blur brought to the front, every pixel in the solid box is still the solid colour (needs F-008)', async () => {});
+  test.fixme('F-007.AC13 a blur spanning a cropped frame’s edge exports white in the padding and reads no pixel outside the frame (needs F-010, F-011)', async () => {});
 });

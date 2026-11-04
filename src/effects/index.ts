@@ -9,13 +9,14 @@ import {
   EffectsClient,
   type ApproxRequest,
   type EffectsDoc,
+  type HeldPatches,
   type Patch,
   type SourceImage,
   type WorkerLike,
 } from './client';
 
 export { CACHE_IMAGE_AREAS, CACHE_LIMIT, EffectsClient, hexRgb, IDLE_MS } from './client';
-export type { ApproxRequest, EffectsDeps, EffectsDoc, Patch, SourceImage, WorkerLike } from './client';
+export type { ApproxRequest, EffectsDeps, EffectsDoc, HeldPatches, Patch, SourceImage, WorkerLike } from './client';
 export type { FromWorker, ToWorker, WireSolid } from './protocol';
 export { PROTOCOL_VERSION } from './protocol';
 
@@ -109,7 +110,10 @@ export function patchesFor(doc: EffectsDoc, moving?: ReadonlySet<string>): Reado
   return effects().patchesFor(doc, moving);
 }
 
-/** MOD-Effects `exactPatches`: resolves once every exact patch of `doc` is ready, rejects if a job failed. */
-export function exactPatches(doc: EffectsDoc): Promise<ReadonlyMap<string, Patch>> {
-  return effects().exactPatches(doc);
+/**
+ * MOD-Effects `exactPatches`: resolves once every exact patch of `doc` is ready (held until `release()`),
+ * rejects if a job failed, the image was replaced or `signal` aborted.
+ */
+export function exactPatches(doc: EffectsDoc, signal?: AbortSignal): Promise<HeldPatches> {
+  return effects().exactPatches(doc, signal);
 }

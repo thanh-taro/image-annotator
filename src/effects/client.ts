@@ -54,6 +54,12 @@ export interface Patch {
   readonly at?: Box;
 }
 
+/** What `exactPatches` resolves with: the exact patches by redaction id, held until `release()`. */
+export interface HeldPatches {
+  readonly patches: ReadonlyMap<string, Patch>;
+  release(): void;
+}
+
 /** The worker as the client uses it (a real `Worker`, or a fake in the tests). */
 export interface WorkerLike {
   postMessage(message: ToWorker, transfer?: Transferable[]): void;
@@ -141,6 +147,15 @@ export class EffectsClient {
   private readonly moving = new Map<string, { key: string; timer: unknown; fired: boolean }>();
   private readonly listeners = new Set<() => void>();
   private readonly waiters = new Set<() => void>();
+  /**
+   * F-012 review M1: patches an export holds (collected by a pending `exactPatches`, or resolved and not
+   * yet painted), with a count per export. The bounded cache never evicts them, and a held patch that is
+   * replaced or cleared is closed only when its last holder releases it.
+   */
+  private readonly held = new Map<Patch, number>();
+  private readonly doomed = new Set<Patch>();
+  /** Bumped when an image is cleared: an `exactPatches` of the old image rejects (F-012 security m2). */
+  private generation = 0;
   /** Bumped whenever an exact patch arrives (MOD-Canvas rebuilds cached drag layers that used approximations). */
   version = 0;
   /** Exact jobs sent so far (the ADR-0017 scheduling is checked with it). */
@@ -184,6 +199,7 @@ export class EffectsClient {
 
   /** The image is replaced or cleared: the worker is terminated and its pixels freed (ADR-0022, NFR-04). */
   clearImage(): void {
+    if (this.worker || this.source) this.generation++;
     if (this.worker) {
       this.worker.postMessage({ v: PROTOCOL_VERSION, type: 'drop' });
       this.worker.terminate();
@@ -199,9 +215,28 @@ export class EffectsClient {
     this.pending.clear();
     for (const m of this.moving.values()) this.deps.clearTimer(m.timer);
     this.moving.clear();
-    for (const p of [...this.exact.values(), ...this.approx.values()]) close(p.bitmap);
+    for (const p of this.exact.values()) this.drop(p);
+    for (const p of this.approx.values()) close(p.bitmap);
     this.exact.clear();
     this.approx.clear();
+    for (const w of [...this.waiters]) w(); // an export of the cleared image rejects
+  }
+
+  /** Closes a patch no longer cached, unless an export holds it (then on its last release). */
+  private drop(p: Patch): void {
+    if (this.held.has(p)) this.doomed.add(p);
+    else close(p.bitmap);
+  }
+
+  private hold(p: Patch): void {
+    this.held.set(p, (this.held.get(p) ?? 0) + 1);
+  }
+
+  private release(p: Patch): void {
+    const n = (this.held.get(p) ?? 1) - 1;
+    if (n > 0) return void this.held.set(p, n);
+    this.held.delete(p);
+    if (this.doomed.delete(p)) close(p.bitmap);
   }
 
   /** Called whenever an exact patch arrives (MOD-Canvas repaints). */
@@ -391,14 +426,18 @@ export class EffectsClient {
         this.converting.delete(job.key);
         const patch: Patch = { box, bitmap, exact: true, smooth: !job.key.startsWith('pixelate') };
         const old = this.exact.get(job.key);
-        if (old) close(old.bitmap);
+        if (old) this.drop(old);
         this.exact.delete(job.key);
         this.exact.set(job.key, patch);
         const area = () => [...this.exact.values()].reduce((sum, p) => sum + p.box.width * p.box.height, 0);
+        // The least recently used patch goes first; patches an export holds are skipped (F-012 review
+        // M1: evicting them made the export ask again forever), so the budget may be exceeded during an
+        // export (NFR-04 allows the export's memory).
         while (this.exact.size > 1 && (this.exact.size > CACHE_LIMIT || area() > CACHE_IMAGE_AREAS * this.imageArea)) {
-          const [oldest, p] = this.exact.entries().next().value as [string, Patch];
-          this.exact.delete(oldest);
-          close(p.bitmap);
+          const victim = [...this.exact.entries()].find(([key, p]) => key !== job.key && !this.held.has(p));
+          if (!victim) break;
+          this.exact.delete(victim[0]);
+          close(victim[1].bitmap);
         }
         const a = this.approx.get(job.key);
         if (a) {
@@ -428,11 +467,32 @@ export class EffectsClient {
   /**
    * MOD-Effects `exactPatches`: resolves with the exact patch of every blur and pixelate redaction of
    * `doc` once all are ready (the export waits for them, ADR-0006, ADR-0007); rejects when one of
-   * their jobs failed (F-012.R7 reports it; the export never falls back to approximations).
+   * their jobs failed, when the image is cleared or replaced, or when `signal` aborts (F-012.R7 reports
+   * it; the export never falls back to approximations). The patches are held from the moment each is
+   * collected until `release()` (on rejection, at once), so the bounded cache cannot evict or close what
+   * the export waits for or paints (F-012 review M1, security m1). Call `release()` after painting.
    */
-  exactPatches(doc: EffectsDoc): Promise<ReadonlyMap<string, Patch>> {
+  exactPatches(doc: EffectsDoc, signal?: AbortSignal): Promise<HeldPatches> {
+    const generation = this.generation;
+    const mine = new Set<Patch>();
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      for (const p of mine) this.release(p);
+      mine.clear();
+    };
     return new Promise((resolve, reject) => {
+      const stop = (why: string) => {
+        this.waiters.delete(waiter);
+        signal?.removeEventListener('abort', aborted);
+        release();
+        reject(new Error(why));
+        return true;
+      };
+      const aborted = () => void stop('effects: the export stopped waiting');
       const check = () => {
+        if (generation !== this.generation) return stop('effects: the image was replaced');
         // Until the image's pixels arrive, no effect can be computed: wait for them.
         if (!this.palette && doc.annotations.some(isEffectRedaction)) return false;
         const out = new Map<string, Patch>();
@@ -441,22 +501,33 @@ export class EffectsClient {
           const spec = this.spec(a, doc);
           if (!spec) continue;
           const p = this.exact.get(spec.key);
-          if (p) out.set(a.id, p);
-          else if (this.failed.has(spec.key)) {
-            this.waiters.delete(waiter);
-            reject(new Error('effects: a blur or pixelate job failed'));
-            return true;
-          } else {
+          if (p) {
+            out.set(a.id, p);
+            if (!mine.has(p)) {
+              mine.add(p);
+              this.hold(p);
+            }
+          } else if (this.failed.has(spec.key)) return stop('effects: a blur or pixelate job failed');
+          else {
             missing = true;
             this.request(a.id, spec);
           }
         }
         if (missing) return false;
         this.waiters.delete(waiter);
-        resolve(out);
+        signal?.removeEventListener('abort', aborted);
+        // Only the patches painted stay held (a key's older patch, replaced meanwhile, is let go).
+        for (const p of [...mine])
+          if (![...out.values()].includes(p)) {
+            mine.delete(p);
+            this.release(p);
+          }
+        resolve({ patches: out, release });
         return true;
       };
       const waiter = () => void check();
+      if (signal?.aborted) return void stop('effects: the export stopped waiting');
+      signal?.addEventListener('abort', aborted);
       this.waiters.add(waiter);
       check();
     });

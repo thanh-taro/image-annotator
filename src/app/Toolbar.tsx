@@ -2,13 +2,15 @@
 // shortcut (COPY-tool.shortcut_hint, NFR-06), arrow keys moving between tools, all disabled with no image.
 // Narrow widths (D-014) use two rows: actions, then the tools scrolling sideways with a fade on each edge
 // only while tools are hidden beyond it, the active or focused tool scrolled into view; tapping the
-// active tool again opens or closes the style sheet (D-019). Undo/redo (F-009), the redaction count,
-// copy, download and the overflow menu (F-012, F-013) are added in the slots marked below.
+// active tool again opens or closes the style sheet (D-019). The redaction count, copy, download and, on
+// narrow widths, the overflow holding the download are F-012's (./ExportActions.tsx); undo/redo (F-009) and
+// the overflow's other items (F-013, F-014) are added in the slots marked below.
 // Implements: CMP-Toolbar (tool group, variants no image, compact and narrow; behaviour), F-003 UX notes.
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { t } from '../copy';
 import { TOOL_KEYS, type ToolName } from '../core';
 import { BUILT_TOOLS, setTool, toolLabel } from './drawing';
+import { ExportActions } from './ExportActions';
 import { Icon, type IconName } from './icons';
 import { openImage } from './loader';
 import { modShortcut } from './platform';
@@ -163,7 +165,8 @@ export function Toolbar() {
           <OpenButton icon />
           {/* Slot: undo/redo as icons (F-009). */}
           <div class="tk-toolbar__spacer" />
-          {/* Slot: redaction count, copy, more (F-012, F-013). */}
+          {/* F-012: redaction count, copy, and the overflow holding the download. */}
+          <ExportActions />
         </div>
         <div class="tk-toolbar__row tk-toolbar__row--tools">
           <ToolGroup narrow />
@@ -179,7 +182,8 @@ export function Toolbar() {
       <ToolGroup narrow={false} />
       {/* Slot: undo/redo (F-009). */}
       <div class="tk-toolbar__spacer" />
-      {/* Slot: redaction count, copy, download, more (F-012, F-013). */}
+      {/* F-012: redaction count, copy, download. Slot: the overflow with clear and shortcuts (F-013, F-014). */}
+      <ExportActions />
     </div>
   );
 }

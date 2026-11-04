@@ -138,6 +138,8 @@ export function measureWith(ctx: Ctx): TextMeasure {
  * image layer, ADR-0016) it copies that layer instead of scene steps 1–2; the export never passes one
  * and gets the background and the image clipped to the frame from the image itself. Then the
  * annotations in painter's order, clipped to the canvas (RULE-14), then the screen-only overlays.
+ * `crisp` draws the image without smoothing: the export passes it (F-012 security m4: at scale 1 on whole
+ * pixels nothing changes, and no filter can ever read past the frame's source rectangle, RULE-14).
  * Implements: F-003.R1/R2/R3, F-004.R1/R2, F-005.R2/R5, F-006.R3/R4, F-007.R2/R3/R5, INV-02, RULE-07, RULE-08,
  * RULE-09, RULE-10, NFR-08.
  */
@@ -149,13 +151,14 @@ export function paint(
   patches: Patches,
   overlays?: Overlays,
   layer?: CanvasImageSource,
+  crisp = false,
 ): void {
   ctx.save();
   if (layer) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
     ctx.drawImage(layer, 0, 0);
-  } else paintScene(ctx, scene, image, transform, false);
+  } else paintScene(ctx, scene, image, transform, crisp);
   ctx.restore();
   paintAnnotations(
     ctx,

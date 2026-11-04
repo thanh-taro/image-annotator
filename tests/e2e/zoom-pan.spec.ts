@@ -251,9 +251,9 @@ test.describe('F-002 zoom and pan the view', () => {
     const box = await workArea(page).boundingBox();
     if (!box) throw new Error('no work area');
     const clip = { x: box.x + box.width / 2 - 20, y: box.y, width: 40, height: 4 };
-    // The tab stop before the canvas: the active tool (F-003; the style panel has no controls with the
-    // select tool and nothing selected until F-011).
-    await page.getByRole('radio', { name: 'Select (V)' }).focus();
+    // The tab stop before the canvas: the toolbar's last control, COPY-action.download (F-012; the style
+    // panel has no controls with the select tool and nothing selected until F-011).
+    await page.getByRole('button', { name: 'Download', exact: true }).focus();
     const before = await page.screenshot({ clip });
     await page.keyboard.press('Tab'); // keyboard focus: :focus-visible
     await expect(workArea(page)).toBeFocused();
