@@ -10,8 +10,10 @@ import {
   Circle,
   CircleAlert,
   CircleCheck,
+  CircleDashed,
   CodeXml,
   Download,
+  Grid2x2,
   Highlighter,
   Image,
   ListOrdered,
@@ -21,9 +23,11 @@ import {
   MoveUpRight,
   Pen,
   Plus,
+  RectangleEllipsis,
   RectangleHorizontal,
   ShieldCheck,
   Slash,
+  TriangleAlert,
   Type,
   X,
 } from 'lucide-static';
@@ -54,6 +58,12 @@ const SOURCES = {
   text: Type,
   // F-006: the step tool (lucide has no numbered circle; the ordered list stands for numbered steps).
   step: ListOrdered,
+  // F-007: the redaction tool (a box over a line of text, as in the designs), the kinds — solid with the
+  // shield and check (style.md principle 5), blur, pixelate — and the not-secure warning.
+  redact: RectangleEllipsis,
+  blur: CircleDashed,
+  pixelate: Grid2x2,
+  warning: TriangleAlert,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
   chevronUp: ChevronUp,

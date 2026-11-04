@@ -1,11 +1,11 @@
 // MOD-Canvas — the drawing part of the tool state machine (promoted from the SP-engine spike's
 // controller, ADR-0004 §5): a DOM-free `ToolInput` that turns one pointer gesture of a shape tool (F-003)
 // or of the pen or highlight tool (F-004) into one new annotation, and a click of the step tool (F-006)
-// into one step. Transient drag state stays here, in plain mutable data; only the finished shape
+// into one step; the redaction tool (F-007) draws a box of the current kind like a rectangle. Transient drag state stays here, in plain mutable data; only the finished shape
 // leaves (one undo step, RULE-11). Text, steps and redactions add their tools beside it; selecting,
 // moving and resizing are F-008. A pen or highlight gesture keeps every pointer sample (the coalesced
 // events of each move included) from the press on, as image pixels; a repeated sample is kept once.
-// Implements: F-003.R1/R2/R4/R5, F-004.R1/R2/R3/R4, F-006.R1/R4 (a step per click, centred on the press
+// Implements: F-003.R1/R2/R4/R5, F-004.R1/R2/R3/R4, F-007.R1, F-006.R1/R4 (a step per click, centred on the press
 // point; nothing is dragged, so no preview and no drag layers), RULE-05 (a drag under 4 screen pixels is a click; a
 // pen or highlight click places a dot), RULE-06 (Shift),
 // RULE-19 (Esc cancels the current drag), F-003 edge case "Esc during a drag → nothing is created".
@@ -44,14 +44,15 @@ export interface DrawSetup {
 /** The id a shape has while it is drawn; MOD-App gives it its session id when it is created. */
 export const DRAFT_ID = 'draft';
 
-/** The kinds a pointer drag draws: the shapes (F-003) and the paths (F-004). */
-export type DragKind = ShapeKind | PathAnnotation['kind'];
+/** The kinds a pointer drag draws: the shapes (F-003), the paths (F-004) and redactions (F-007). */
+export type DragKind = ShapeKind | PathAnnotation['kind'] | 'redaction';
 
 /** The kind a tool draws by dragging, or null for tools that do not draw this way. */
 export function drawKindOf(tool: ToolName): DragKind | null {
   if (!isDrawingTool(tool)) return null;
   const kind = TOOL_KIND[tool];
-  return isShapeKind(kind) || isPathKind(kind) ? kind : null;
+  // F-007.R1: a redaction is drawn like a rectangle (RULE-05 click, RULE-06 Shift keeps it square).
+  return isShapeKind(kind) || isPathKind(kind) || kind === 'redaction' ? kind : null;
 }
 
 /** The kinds the pointer and RULE-19 Enter place: the drag kinds and steps (F-006). */

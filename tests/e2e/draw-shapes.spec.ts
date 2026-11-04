@@ -346,11 +346,11 @@ test.describe('F-003 draw shapes', () => {
     await expect(page.getByRole('radiogroup', { name: 'Drawing tools' })).toBeVisible();
     await expect(toolButton(page, 'Rectangle (R)')).toHaveAttribute('aria-checked', 'true');
     await expect(toolButton(page, 'Select (V)')).toHaveAttribute('aria-checked', 'false');
-    await page.keyboard.press('End'); // the last built tool (F-006)
-    await expect(toolButton(page, 'Step (N)')).toBeFocused();
+    await page.keyboard.press('End'); // the last built tool (F-007)
+    await expect(toolButton(page, 'Redact (X)')).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(toolButton(page, 'Step (N)')).toHaveAttribute('aria-checked', 'true');
-    await expect(toolButton(page, 'Step (N)')).toHaveAttribute('tabindex', '0');
+    await expect(toolButton(page, 'Redact (X)')).toHaveAttribute('aria-checked', 'true');
+    await expect(toolButton(page, 'Redact (X)')).toHaveAttribute('tabindex', '0');
     await expect(toolButton(page, 'Select (V)')).toHaveAttribute('tabindex', '-1');
   });
 

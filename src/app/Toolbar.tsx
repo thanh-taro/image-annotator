@@ -24,6 +24,7 @@ const TOOL_ICONS: Partial<Record<ToolName, IconName>> = {
   highlight: 'highlight',
   text: 'text',
   step: 'step',
+  redact: 'redact',
 };
 
 function OpenButton({ icon }: { icon: boolean }) {

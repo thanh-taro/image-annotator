@@ -6,9 +6,13 @@
 // The layers are rebuilt when an image-layer input changes, and dropped when the drag ends. They are
 // built at pointerdown (`prepare`, before the RULE-05 threshold), so the first visible drag frame only
 // composites (NFR-02); a gesture that ends as a click or is cancelled releases them.
-// (F-007 adds: with a solid redaction dragged, blur and pixelate above it are drawn each frame.)
-// Implements: ADR-0022, NFR-02.
-import { paintAnnotations, type Patches, type Scene, type SceneImage, type Transform } from '../render';
+// F-007: with a solid redaction dragged, every blur and pixelate above the lowest dragged solid is drawn
+// each frame, not cached, so the solid shows wherever it moves (`dragRange`); the patches drawn into the
+// cached layers are part of their key (an exact patch arriving rebuilds them), and the dragged part
+// re-stamps the whole document's solids over its patches (ADR-0006 step 3).
+// Implements: ADR-0022, NFR-02, RULE-10 (a solid shows whatever the order), F-007.R3.
+import { isEffectRedaction, isSolidRedaction, type Annotation } from '../core';
+import { paintAnnotations, type Backdrop, type Patches, type Scene, type SceneImage, type Transform } from '../render';
 
 export type Surface = OffscreenCanvas | HTMLCanvasElement;
 type Surface2D = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
@@ -25,6 +29,8 @@ interface Key {
   readonly hi: number;
   readonly width: number;
   readonly height: number;
+  /** The patches the cached layers drew, in order (only those outside the dragged range, NFR-02). */
+  readonly patches: readonly unknown[];
 }
 
 export interface DragFrame {
@@ -36,6 +42,8 @@ export interface DragFrame {
   readonly image: SceneImage;
   readonly transform: Transform;
   readonly patches: Patches;
+  /** Screen-only checkerboard under patches with a transparent background. */
+  readonly backdrop?: Backdrop;
   readonly width: number;
   readonly height: number;
   /** Index of the lowest dragged annotation (= n while drawing a new one on top). */
@@ -65,7 +73,9 @@ export class DragLayers {
       a.lo !== k.lo ||
       a.hi !== k.hi ||
       a.width !== k.width ||
-      a.height !== k.height
+      a.height !== k.height ||
+      a.patches.length !== k.patches.length ||
+      a.patches.some((p, i) => p !== k.patches[i])
     );
   }
 
@@ -81,7 +91,8 @@ export class DragLayers {
     lc.setTransform(1, 0, 0, 1, 0, 0);
     lc.clearRect(0, 0, f.width, f.height);
     lc.drawImage(f.base, 0, 0);
-    paintAnnotations(lc, f.scene, f.image, f.transform, f.patches, 0, f.lo);
+    const options = f.backdrop ? { backdrop: f.backdrop } : {};
+    paintAnnotations(lc, f.scene, f.image, f.transform, f.patches, 0, f.lo, options);
     if (f.hi + 1 < n) {
       this.upper ??= this.surface();
       const upper = this.upper;
@@ -91,7 +102,7 @@ export class DragLayers {
       if (!uc) return false;
       uc.setTransform(1, 0, 0, 1, 0, 0);
       uc.clearRect(0, 0, f.width, f.height);
-      paintAnnotations(uc, f.scene, f.image, f.transform, f.patches, f.hi + 1, n);
+      paintAnnotations(uc, f.scene, f.image, f.transform, f.patches, f.hi + 1, n, options);
     } else if (this.upper) {
       this.upper.width = 0;
       this.upper.height = 0;
@@ -114,6 +125,9 @@ export class DragLayers {
       hi: f.hi,
       width: f.width,
       height: f.height,
+      // An exact patch replacing an approximation rebuilds a cached layer only when that layer draws it
+      // (the dragged annotations' own patches are drawn in the middle pass each frame anyway).
+      patches: f.scene.annotations.flatMap((a, i) => (i >= f.lo && i <= f.hi ? [] : [f.patches.get(a.id)])),
     };
     if (!this.stale(key)) return true;
     if (!this.build(f)) return false;
@@ -135,7 +149,14 @@ export class DragLayers {
     if (!this.ensure(f)) return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (this.lower) ctx.drawImage(this.lower, 0, 0);
-    paintAnnotations(ctx, f.middle, f.image, f.transform, f.patches);
+    // ADR-0006 step 3: the dragged part's patches re-stamp every solid of the document, not just its own.
+    // The dragged ones count as they are now, not where the document still has them.
+    const now = new Set(f.middle.annotations.map((a) => a.id));
+    const solids = [...f.scene.annotations.filter((a) => !now.has(a.id)), ...f.middle.annotations];
+    paintAnnotations(ctx, f.middle, f.image, f.transform, f.patches, 0, f.middle.annotations.length, {
+      solids,
+      ...(f.backdrop ? { backdrop: f.backdrop } : {}),
+    });
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (this.upper) ctx.drawImage(this.upper, 0, 0);
   }
@@ -152,4 +173,32 @@ export class DragLayers {
     this.upper = null;
     this.key = null;
   }
+}
+
+/**
+ * ADR-0022 (F-007 rule): the lowest and highest indexes a drag of the annotations at `dragged` draws each
+ * frame. Normally the lowest and highest dragged ones; when a solid redaction is dragged, every blur and
+ * pixelate above the lowest dragged solid is drawn each frame too (RULE-10: the solid shows wherever it
+ * moves), so the upper bound reaches the highest of them. Everything between the bounds is drawn each frame.
+ * TODO(F-008): move and resize must take lo and hi from here at prepare() / pointerdown (review m5,
+ * security m5); drawing a new annotation (always on top) uses lo = n, hi = n − 1 and does not need it.
+ */
+export function dragRange(annotations: readonly Annotation[], dragged: readonly number[]): { lo: number; hi: number } {
+  const lo = Math.min(...dragged);
+  let hi = Math.max(...dragged);
+  const solids = dragged.filter((i) => {
+    const a = annotations[i];
+    return !!a && isSolidRedaction(a);
+  });
+  if (solids.length) {
+    const lowestSolid = Math.min(...solids);
+    for (let i = annotations.length - 1; i > hi; i--) {
+      const a = annotations[i];
+      if (i > lowestSolid && a && isEffectRedaction(a)) {
+        hi = i;
+        break;
+      }
+    }
+  }
+  return { lo, hi };
 }

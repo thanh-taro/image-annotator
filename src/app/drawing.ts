@@ -4,14 +4,18 @@
 // current style and no step (RULE-04, RULE-11). Tool changes and placing are announced (NFR-06).
 // A text edit (F-005) mirrors into `textEditing`; when it ends the text is committed with MOD-Document
 // `commitText` (create + first edit one step, an emptied text one deletion step, RULE-11).
+// The redaction tool (F-007) has a kind (solid when first used), a colour for solid and a strength for blur
+// and pixelate, which carry the not-secure note and the "Use solid" offer (RULE-10); switching a redaction
+// to solid gives it the current solid colour (F-007.AC8).
 // Implements: F-003.R3/R6, F-004.R1/R2 (the pen and highlight tools), F-006.R1 (the step tool), F-005.R1/R3/R4/R6
-// (the text tool), RULE-04, RULE-08, RULE-11, RULE-19 (Esc chain, Enter on a text), CMP-Toolbar "Behavior",
+// (the text tool), F-007.R1/R2/R4/R6 (the redaction tool and its choices), RULE-04, RULE-10, RULE-08, RULE-11, RULE-19 (Esc chain, Enter on a text), CMP-Toolbar "Behavior",
 // CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed, deleted_count).
 import { canvasCommands, type TextEdit, type TextEndReason } from '../canvas';
 import { t, type MessageId } from '../copy';
 import {
   hasFill,
   isBlankText,
+  isEffectRedaction,
   isDrawingTool,
   TOOL_KIND,
   toolOf,
@@ -19,12 +23,13 @@ import {
   type Colour,
   type DrawingTool,
   type Fill,
+  type RedactionKind,
   type Size,
   type Style,
   type TextAnnotation,
   type ToolName,
 } from '../core';
-import { add, commitText, restyle, type Doc, type Selection } from '../document';
+import { add, commitText, restyle, type Doc, type Op, type Selection } from '../document';
 import { announcePolite, commit, currentStyles, doc, loaded, selection, sheetOpen, textEditing, tool } from './state';
 
 /** The tools built so far, in CMP-Toolbar order; the others join with their features (F-005…F-010). */
@@ -38,6 +43,7 @@ export const BUILT_TOOLS: readonly ToolName[] = [
   'highlight',
   'text',
   'step',
+  'redact',
 ];
 
 const TOOL_COPY = {
@@ -124,7 +130,7 @@ export function editSelectedText(): void {
 }
 
 /** The style choices CMP-StylePanel offers (RULE-04). */
-export type StylePatch = Partial<Pick<Style, 'color' | 'strokeSize' | 'fill'>>;
+export type StylePatch = Partial<Pick<Style, 'color' | 'strokeSize' | 'fill' | 'redactionKind' | 'strength'>>;
 
 function selectedAnnotations(d: Doc | null, ids: Selection): Annotation[] {
   if (!d || !ids.length) return [];
@@ -132,12 +138,29 @@ function selectedAnnotations(d: Doc | null, ids: Selection): Annotation[] {
   return d.annotations.filter((a) => wanted.has(a.id));
 }
 
-/** The part of a patch that applies to a kind (fill only to rectangles and ellipses, RULE-04). */
+/**
+ * The part of a patch that applies to a kind: fill only to rectangles and ellipses (RULE-04); the
+ * redaction kind and strength only to redactions, which have no stroke size (RULE-10).
+ */
 const patchFor = (patch: StylePatch, kind: Annotation['kind']): StylePatch => {
-  if (hasFill(kind) || patch.fill === undefined) return patch;
-  const { fill: _fill, ...rest } = patch;
-  return rest;
+  const out: { -readonly [K in keyof StylePatch]: StylePatch[K] } = { ...patch };
+  if (!hasFill(kind)) delete out.fill;
+  if (kind === 'redaction') delete out.strokeSize;
+  else {
+    delete out.redactionKind;
+    delete out.strength;
+  }
+  return out;
 };
+
+/**
+ * F-007.AC8: a redaction switched to solid becomes an opaque box in the current solid colour (the
+ * redaction tool's current colour, RULE-04); one already solid keeps its own.
+ */
+const toSolid = (patch: StylePatch, a: Annotation, current: Style): StylePatch =>
+  patch.redactionKind === 'solid' && patch.color === undefined && isEffectRedaction(a)
+    ? { ...patch, color: current.color }
+    : patch;
 
 /**
  * RULE-04: changing a style while annotations are selected changes them (one undo step, RULE-11) and
@@ -149,8 +172,17 @@ export function setStyle(patch: StylePatch): void {
   const picked = selectedAnnotations(doc.value, selection.value);
   const styles = { ...currentStyles.value };
   if (l && picked.length) {
-    const ids = picked.map((a) => a.id);
-    commit(l.session.history.apply(restyle(ids, patch), selection.value));
+    // One step (RULE-11) of one restyle per distinct patch (only F-007.AC8 makes them differ).
+    const groups = new Map<string, { patch: StylePatch; ids: string[] }>();
+    for (const a of picked) {
+      const p = toSolid(patchFor(patch, a.kind), a, styles.redact);
+      const key = JSON.stringify(p);
+      const g = groups.get(key) ?? { patch: p, ids: [] };
+      g.ids.push(a.id);
+      groups.set(key, g);
+    }
+    const op: Op = (d) => [...groups.values()].reduce((acc, g) => restyle(g.ids, g.patch)(acc), d);
+    commit(l.session.history.apply(op, selection.value));
     for (const a of picked) {
       const owner = toolOf(a.kind);
       styles[owner] = { ...styles[owner], ...patchFor(patch, a.kind) };
@@ -192,10 +224,35 @@ export interface PanelModel {
   readonly variant: 'tool' | 'selection' | 'canvas';
   /** The summary bar's subject (COPY-style.sheet_summary): the tool, the selected kind, or the count. */
   readonly subject: string;
+  /** Offered unless a subject is a blur or pixelate redaction (RULE-10: only solid has a colour). */
   readonly color?: Colour | null;
+  /** Offered unless a subject is a redaction (RULE-10: redactions have no stroke size). */
   readonly size?: Size | null;
   /** Offered only when every subject kind has a fill (rectangle, ellipse). */
   readonly fill?: Fill | null;
+  /** COPY-redact.kind: offered when every subject is a redaction (F-007.R4/R6). */
+  readonly kind?: RedactionKind | null;
+  /** COPY-style.strength: offered when every subject is a blur or pixelate redaction (RULE-10). */
+  readonly strength?: Size | null;
+  /** RULE-10 / F-007.R4: COPY-redact.not_secure and COPY-redact.use_solid show (a subject is blur or pixelate). */
+  readonly notSecure?: boolean;
+}
+
+/** The redaction choices (and which general ones apply) for subjects with these styles and kinds. */
+function choices(
+  subjects: readonly { kind: Annotation['kind']; style: Style }[],
+): Omit<PanelModel, 'variant' | 'subject'> {
+  const styles = subjects.map((x) => x.style);
+  const redactions = subjects.filter((x) => x.kind === 'redaction');
+  const effects = redactions.filter((x) => x.style.redactionKind !== 'solid');
+  const allRedactions = redactions.length === subjects.length;
+  return {
+    ...(effects.length ? {} : { color: shared(styles.map((x) => x.color)) }),
+    ...(redactions.length ? {} : { size: shared(styles.map((x) => x.strokeSize)) }),
+    ...(subjects.every((x) => hasFill(x.kind)) ? { fill: shared(styles.map((x) => x.fill)) } : {}),
+    ...(allRedactions ? { kind: shared(styles.map((x) => x.redactionKind)), notSecure: effects.length > 0 } : {}),
+    ...(allRedactions && effects.length === subjects.length ? { strength: shared(styles.map((x) => x.strength)) } : {}),
+  };
 }
 
 const shared = <T>(values: readonly T[]): T | null =>
@@ -214,27 +271,22 @@ export function panelModel(
     const [first] = picked;
     const subject =
       kinds.size === 1 && first ? toolLabel(toolOf(first.kind)) : t('a11y.selected_count', { count: picked.length });
-    const fill = picked.every((a) => hasFill(a.kind)) ? { fill: shared(picked.map((a) => a.style.fill)) } : {};
-    return {
-      variant: 'selection',
-      subject,
-      color: shared(picked.map((a) => a.style.color)),
-      size: shared(picked.map((a) => a.style.strokeSize)),
-      ...fill,
-    };
+    const c = choices(picked);
+    return { variant: 'selection', subject: c.kind ? kindLabel(c.kind) : subject, ...c };
   }
   if (isDrawingTool(active)) {
-    const s = styles[active];
-    return {
-      variant: 'tool',
-      subject: toolLabel(active),
-      color: s.color,
-      size: s.strokeSize,
-      ...(hasFill(TOOL_KIND[active]) ? { fill: s.fill } : {}),
-    };
+    const c = choices([{ kind: TOOL_KIND[active], style: styles[active] }]);
+    return { variant: 'tool', subject: c.kind ? kindLabel(c.kind) : toolLabel(active), ...c };
   }
   return { variant: 'canvas', subject: t('canvas.title') };
 }
+
+// COPY-style.sheet_summary: for a redaction the subject is its kind (COPY-redact.solid/blur/pixelate).
+const KIND_COPY = { solid: 'redact.solid', blur: 'redact.blur', pixelate: 'redact.pixelate' } as const satisfies Record<
+  RedactionKind,
+  MessageId
+>;
+export const kindLabel = (kind: RedactionKind): string => t(KIND_COPY[kind]);
 
 const SIZE_COPY = { S: 'style.size_s', M: 'style.size_m', L: 'style.size_l' } as const satisfies Record<
   Size,
@@ -242,8 +294,9 @@ const SIZE_COPY = { S: 'style.size_s', M: 'style.size_m', L: 'style.size_l' } as
 >;
 export const sizeLabel = (size: Size): string => t(SIZE_COPY[size]);
 
-/** COPY-style.sheet_summary's detail: the size, or for the canvas "Padding None" (F-011 fills in the rest). */
+/** COPY-style.sheet_summary's detail: the size (a blur or pixelate redaction's strength; none for solid), or for the canvas "Padding None" (F-011 fills in the rest). */
 export function summaryDetail(model: PanelModel): string {
   if (model.variant === 'canvas') return `${t('canvas.padding')} ${t('canvas.padding_none')}`;
-  return model.size ? sizeLabel(model.size) : '';
+  const size = model.size ?? model.strength;
+  return size ? sizeLabel(size) : '';
 }

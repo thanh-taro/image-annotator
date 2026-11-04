@@ -6,7 +6,7 @@
 import { computed, signal } from '@preact/signals';
 import { startSession, type Doc, type Restore, type Selection, type Session } from '../document';
 import { DEFAULT_STYLES, type DrawingTool, type Style, type ToolName, type View } from '../core';
-import type { DecodedImage, Size } from '../io';
+import { feedEffects, type DecodedImage, type Size } from '../io';
 import type { Notice } from './notice';
 
 export interface Loaded {
@@ -76,6 +76,8 @@ export function startNewSession(image: DecodedImage): Session {
   selection.value = [];
   version.value++;
   previous?.image.bitmap.close();
+  // F-007: the new image's pixels go to a fresh effects worker (ADR-0005 §5, ADR-0022).
+  feedEffects(image.bitmap);
   return session;
 }
 
