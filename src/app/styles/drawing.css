@@ -396,6 +396,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* D-031: the not-secure tag right after the redaction kind, as on the kind choices. */
+  .tk-panel__tag {
+    margin-inline-start: 0;
+    font-weight: var(--tk-font-weight-regular);
+    vertical-align: middle;
+  }
   .tk-panel__chevron {
     margin-inline-start: auto;
     color: var(--tk-color-muted);

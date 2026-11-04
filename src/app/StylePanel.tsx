@@ -208,10 +208,14 @@ const WHOLE = /^-?\d+$/;
  */
 function NumberField({ field, value }: { field: GeometryField; value: number }) {
   const [draft, setDraft] = useState(String(value));
+  // Typed into since it last applied: retyping the shown (rounded) number still applies it, so a
+  // fractional position snaps to whole pixels (F-008 review m8); leaving an untouched field changes nothing.
+  const typed = useRef(false);
   useEffect(() => setDraft(String(value)), [value]);
   const apply = () => {
     const text = draft.trim();
-    if (WHOLE.test(text) && Number(text) !== value) setGeometry(field, Number(text));
+    if (typed.current && WHOLE.test(text)) setGeometry(field, Number(text));
+    typed.current = false;
     setDraft(String(value)); // the new value arrives with the next render
   };
   return (
@@ -224,7 +228,10 @@ function NumberField({ field, value }: { field: GeometryField; value: number }) 
         autocomplete="off"
         spellcheck={false}
         value={draft}
-        onInput={(e) => setDraft(e.currentTarget.value)}
+        onInput={(e) => {
+          typed.current = true;
+          setDraft(e.currentTarget.value);
+        }}
         onKeyDown={(e) => {
           if (e.key !== 'Enter') return;
           e.preventDefault();
@@ -270,6 +277,35 @@ function Geometry({ geometry }: { geometry: NonNullable<PanelModel['geometry']> 
   );
 }
 
+/** Stands for the subject inside the translated COPY-style.sheet_summary, so the tag can follow it. */
+const SUBJECT = '\uE000';
+
+/**
+ * COPY-style.sheet_summary in the narrow summary bar: "{subject} · {detail}" (just the subject without a
+ * detail). D-031 / RULE-10: a blur or pixelate subject is followed by COPY-redact.not_secure_short, shown
+ * as the same tag as on the panel's kind choices; it is part of the bar's accessible name.
+ */
+function Summary({ model, detail }: { model: PanelModel; detail: string }) {
+  const text = detail ? t('style.sheet_summary', { subject: SUBJECT, detail }) : SUBJECT;
+  const [before = '', after = ''] = text.split(SUBJECT);
+  return (
+    <>
+      {before}
+      {model.subject}
+      {model.subjectNotSecure && (
+        <>
+          {' '}
+          <span class="tk-tag tk-panel__tag">
+            <Icon name="warning" />
+            {t('redact.not_secure_short')}
+          </span>
+        </>
+      )}
+      {after}
+    </>
+  );
+}
+
 /** F-008.R5: the selection actions, in the artboard's order. */
 function Actions() {
   return (
@@ -278,7 +314,16 @@ function Actions() {
         <button type="button" class="tk-button tk-button--outlined" onClick={duplicateSelection}>
           {t('action.duplicate')}
         </button>
-        <button type="button" class="tk-button tk-button--outlined" onClick={deleteSelection}>
+        <button
+          type="button"
+          class="tk-button tk-button--outlined"
+          onClick={() => {
+            // F-008 review M3 (NFR-06): the actions go with the selection, so focus moves to the canvas
+            // region (its Tab stop with nothing selected, CMP-Canvas) and the Edit keys keep working.
+            document.querySelector<HTMLElement>('.tk-work-area')?.focus({ preventScroll: true });
+            deleteSelection();
+          }}
+        >
           {t('action.delete')}
         </button>
         <button type="button" class="tk-button tk-button--outlined" onClick={() => reorderSelection('forward')}>
@@ -337,7 +382,6 @@ export function StylePanel() {
   };
 
   const detail = summaryDetail(model);
-  const summary = detail ? t('style.sheet_summary', { subject: model.subject, detail }) : model.subject;
   return (
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Esc closes the sheet (D-019)
     <aside
@@ -359,7 +403,9 @@ export function StylePanel() {
           >
             <span class="tk-sr">{`${t('style.sheet_toggle')}: `}</span>
             {model.color && <span class={`tk-panel__chip tk-swatch--${model.color}`} aria-hidden="true" />}
-            <span class="tk-panel__summary">{summary}</span>
+            <span class="tk-panel__summary">
+              <Summary model={model} detail={detail} />
+            </span>
             <Icon name="chevronUp" class="tk-panel__chevron" />
           </button>
         )}

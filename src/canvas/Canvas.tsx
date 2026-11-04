@@ -55,7 +55,7 @@ import {
   type Patches,
   type Transform,
 } from '../render';
-import { DragLayers, dragRange } from './drag';
+import { DragLayers, dragRange, movePatches } from './drag';
 import { DRAFT_ID, DrawTool } from './draw';
 import { SelectTool } from './select';
 import { bindTextField } from './editor';
@@ -102,6 +102,8 @@ export interface ActiveCanvas {
   setBottomInset(px: number): void;
   /** RULE-19 Esc: cancels the current drag; true if there was one. */
   cancelDrag(): boolean;
+  /** A pointer gesture of the select or drawing tools is in progress. */
+  dragging(): boolean;
   /** RULE-19 Enter: places the active tool's default annotation at the centre of the view; true if placed. */
   placeAtCentre(): boolean;
   /** F-005.R4 / RULE-19 Enter: edits the text with this id (caret at the end); true if started. */
@@ -237,6 +239,8 @@ export function Canvas({
     let raf = 0;
     // The patches of the last paint with nothing being drawn (the cached lower layer's, NFR-02).
     let stillPatches: Patches = new Map();
+    // An exact patch arrived while a move or resize was in progress (F-007.R3).
+    let stillStale = false;
     let box = { width: 0, height: 0 };
     let inset = 0;
     let media: MediaQueryList | undefined;
@@ -445,7 +449,10 @@ export function Canvas({
               preview ? { ...scene, annotations: [...scene.annotations, preview] } : scene,
               preview ? DRAWING : NOTHING_MOVING,
             );
-      if (!preview) stillPatches = patches;
+      if (!preview) {
+        stillPatches = patches;
+        stillStale = false;
+      }
       const backdrop = themed(th, ratio).view;
       // ADR-0022: while drawing, the new shape is on top, so only the lower layer is used.
       const n = scene.annotations.length;
@@ -520,8 +527,17 @@ export function Canvas({
       const ids = new Set(f.moving.keys());
       const now = { ...f.scene, annotations: f.scene.annotations.map((a) => f.moving.get(a.id) ?? a) };
       const redaction = [...f.moving.values()].some((a) => a.kind === 'redaction');
-      const patches = redaction ? effects().patchesFor(now, ids) : stillPatches;
       const { lo, hi } = moveRange(f.scene, ids);
+      // F-008 review m4: an exact patch that arrived while something other than a redaction moves is shown
+      // at once (the cached layer that draws it rebuilds once). Effects never read such annotations
+      // (RULE-10), so the still document's patches are the right ones; a redaction's move keeps its own
+      // timers (ADR-0017) and the rest refresh on release.
+      if (stillStale && !redaction) {
+        stillStale = false;
+        stillPatches = effects().patchesFor(f.scene, NOTHING_MOVING);
+      }
+      // NFR-02 (F-008 review M1): effects outside [lo, hi] keep the patches the cached layers were built with.
+      const patches = redaction ? movePatches(effects(), now, ids, stillPatches, lo, hi) : stillPatches;
       const backdrop = themed(f.th, f.ratio).view;
       drag.paint(ctx, {
         base: f.source,
@@ -545,7 +561,10 @@ export function Canvas({
     live.current.schedule = schedule;
     const stopFonts = connectFontGate(fonts, el, schedule);
     // F-007.R3: an exact blur or pixelate patch replaced an approximation.
-    const stopPatches = effects().onPatch(schedule);
+    const stopPatches = effects().onPatch(() => {
+      if (select.preview) stillStale = true;
+      schedule();
+    });
     live.current.onViewChanged = () => {
       draw.viewChanged();
       select.viewChanged();
@@ -639,6 +658,7 @@ export function Canvas({
         measure();
       },
       cancelDrag: () => draw.cancel() || select.cancel(),
+      dragging: () => select.active || draw.dragging,
       // RULE-19 Enter: the active tool's default annotation at the centre of the view (./draw.ts); with
       // the text tool, a new text there, editing (./text.ts).
       placeAtCentre: () => text.placeAt(view.centreImage()) || draw.placeAt(view.centreImage()),

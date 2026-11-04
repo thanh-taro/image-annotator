@@ -75,6 +75,8 @@ describe('F-007 the redaction tool (MOD-App)', () => {
       expect(summaryDetail(model())).toBe('Medium');
       // COPY-style.sheet_summary: a redaction's subject is its kind.
       expect(model().subject).toBe(kind === 'blur' ? 'Blur' : 'Pixelate');
+      // D-031: the narrow summary bar's subject carries COPY-redact.not_secure_short.
+      expect(model().subjectNotSecure).toBe(true);
     }
     // COPY-redact.use_solid: with nothing selected it switches the tool's current kind to solid.
     setStyle({ redactionKind: 'solid' });
@@ -82,6 +84,7 @@ describe('F-007 the redaction tool (MOD-App)', () => {
     expect(model()).toMatchObject({ kind: 'solid', notSecure: false });
     expect(model()).not.toHaveProperty('strength');
     expect(summaryDetail(model())).toBe(''); // solid has no detail
+    expect(model()).not.toHaveProperty('subjectNotSecure'); // D-031: solid is secure, no tag
   });
 
   it('F-007.AC8 F-007.R6 a selected pixelate redaction switched to solid becomes an opaque box in the current solid colour, one step', () => {

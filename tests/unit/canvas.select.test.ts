@@ -22,7 +22,13 @@ const text: Annotation = { id: 't', kind: 'text', style: DEFAULT_STYLES.text, an
 
 /** A select tool over `annotations` at 100 % (screen = image pixels) with a mutable selection. */
 function setup(annotations: Annotation[], opts: { tool?: ToolName; selection?: string[]; zoom?: number } = {}) {
-  const state = { selection: opts.selection ?? [], commits: [] as Annotation[][], prepares: 0 };
+  const state = {
+    selection: opts.selection ?? [],
+    commits: [] as Annotation[][],
+    prepares: 0,
+    previews: 0,
+    events: [] as string[],
+  };
   const zoom = opts.zoom ?? 1;
   const tool = new SelectTool(
     () => ({
@@ -37,8 +43,14 @@ function setup(annotations: Annotation[], opts: { tool?: ToolName; selection?: s
     }),
     {
       select: (ids) => (state.selection = [...ids]),
-      commit: (changes) => state.commits.push([...changes]),
-      preview: () => {},
+      commit: (changes) => {
+        state.commits.push([...changes]);
+        state.events.push('commit');
+      },
+      preview: () => {
+        state.previews++;
+        state.events.push('preview');
+      },
       prepare: () => state.prepares++,
     },
   );
@@ -157,5 +169,63 @@ describe('MOD-Canvas select tool', () => {
     tool.up(at(200, 120));
     expect(state.commits).toEqual([]);
     expect(tool.preview).toBeNull();
+  });
+
+  it('F-008.R1 D-032 Shift + dragging a selection box adds what it touches to the current selection', () => {
+    const { tool, state } = setup([rect('r1', 100, 100), rect('r2', 300, 100), rect('r3', 700, 500)], {
+      selection: ['r3'],
+    });
+    drag(tool, { x: 250, y: 50 }, { x: 450, y: 200 }, { shift: true });
+    expect(state.selection).toEqual(['r3', 'r2']);
+    // Touching one already selected keeps it once.
+    drag(tool, { x: 50, y: 50 }, { x: 450, y: 200 }, { shift: true });
+    expect(state.selection).toEqual(['r3', 'r2', 'r1']);
+    // Without Shift the box replaces the selection.
+    drag(tool, { x: 50, y: 50 }, { x: 250, y: 200 });
+    expect(state.selection).toEqual(['r1']);
+  });
+
+  it('F-008 edge case (review M2) a selected 100 × 20 box pressed at its centre moves; a press just outside its edge resizes', () => {
+    const thin = rect('r', 0, 0, 100, 20);
+    const { tool, state } = setup([thin], { selection: ['r'] });
+    // (50, 10) is within 12 px of the n and s handles, but on the body: a move.
+    drag(tool, { x: 50, y: 10 }, { x: 80, y: 40 });
+    expect(state.commits[0]?.[0]).toMatchObject({ box: { x: 30, y: 30, width: 100, height: 20 } });
+    // Just below the s edge (outside the body): the s handle.
+    const { tool: t2, state: s2 } = setup([thin], { selection: ['r'] });
+    expect(t2.handleAt({ x: 50, y: 31 })).toBe('s');
+    drag(t2, { x: 50, y: 31 }, { x: 50, y: 51 });
+    expect(s2.commits[0]?.[0]).toMatchObject({ box: { x: 0, y: 0, width: 100, height: 40 } });
+    // An outline (no fill): a press inside its box is still on its body, so it moves.
+    const hollow = { ...thin, style: DEFAULT_STYLES.rectangle } as Annotation;
+    const { tool: t3, state: s3 } = setup([hollow], { selection: ['r'] });
+    drag(t3, { x: 50, y: 10 }, { x: 60, y: 10 });
+    expect(s3.commits[0]?.[0]).toMatchObject({ box: { x: 10, y: 0, width: 100, height: 20 } });
+  });
+
+  it('F-008 edge case (review M2) a short selected arrow moves from its body; a long one keeps its end handles', () => {
+    const short = { ...arrow, tail: { x: 100, y: 400 }, head: { x: 130, y: 400 } } as Annotation;
+    const { tool, state } = setup([short], { selection: ['a'] });
+    expect(tool.handleAt({ x: 128, y: 400 })).toBeUndefined(); // on the arrow: its body
+    expect(tool.handleAt({ x: 140, y: 400 })).toBe('head'); // past its end
+    drag(tool, { x: 115, y: 400 }, { x: 115, y: 450 });
+    expect(state.commits[0]?.[0]).toMatchObject({ tail: { x: 100, y: 450 }, head: { x: 130, y: 450 } });
+    const { tool: t2 } = setup([arrow], { selection: ['a'] });
+    expect(t2.handleAt({ x: 298, y: 400 })).toBe('head');
+  });
+
+  it('F-008.R6 RULE-19 (review m5) Alt+press with the crop tool is not the select tool’s', () => {
+    const { tool } = setup([rect('r', 100, 100)], { tool: 'crop' });
+    expect(tool.down(at(150, 120, { alt: true }))).toBe(false);
+  });
+
+  it('ADR-0022 (review m3) a move that ends where it began still asks for a repaint, so the drag layers go', () => {
+    const { tool, state } = setup([rect('r', 100, 100)], { selection: ['r'] });
+    tool.down(at(150, 120));
+    tool.move(at(200, 120));
+    tool.move(at(150, 120));
+    tool.up(at(150, 120));
+    expect(state.events.slice(-2)).toEqual(['commit', 'preview']);
+    expect(tool.pending).toBeNull();
   });
 });

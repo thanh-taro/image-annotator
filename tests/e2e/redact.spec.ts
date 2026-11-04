@@ -552,5 +552,36 @@ test.describe('F-007 redact', () => {
     const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
     expect(allEqual(pngRegion(png, 30, 128, 200, 26), BLACK)).toBe(true);
   });
+  test('D-031 RULE-10 CMP-StylePanel narrow: the summary bar shows the Not secure tag after blur and pixelate, in its name', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 760 });
+    await page.goto('/');
+    await page.evaluate(async () => {
+      const c = new OffscreenCanvas(400, 300);
+      const ctx = c.getContext('2d');
+      if (!ctx) throw new Error('no 2d context');
+      ctx.fillStyle = '#c8c8c8';
+      ctx.fillRect(0, 0, 400, 300);
+      const dt = new DataTransfer();
+      dt.items.add(new File([await c.convertToBlob({ type: 'image/png' })], 'g.png', { type: 'image/png' }));
+      document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    });
+    await expect(summary(page)).toHaveText('400 × 300 px canvas, 0 annotations');
+    await toolButton(page, 'Redact (X)').click();
+    const bar = page.locator('.tk-panel__bar');
+    // Solid is secure: no tag.
+    await expect(bar).toHaveAccessibleName('Style options: Solid (secure)');
+    await expect(bar.locator('.tk-tag')).toHaveCount(0);
+    await bar.click();
+    const sheet = page.locator('#tk-style-sheet');
+    for (const kind of ['Blur', 'Pixelate']) {
+      await sheet.getByRole('radio', { name: new RegExp(`^${kind}`) }).check();
+      await expect(bar).toHaveAccessibleName(`Style options: ${kind} Not secure · Medium`);
+      const tag = bar.locator('.tk-tag');
+      await expect(tag).toHaveText('Not secure');
+      await expect(tag).toBeVisible();
+    }
+  });
   test.fixme('F-007.AC13 a blur spanning a cropped frame’s edge exports white in the padding and reads no pixel outside the frame (needs F-010, F-011)', async () => {});
 });

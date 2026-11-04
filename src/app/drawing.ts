@@ -227,6 +227,8 @@ export interface PanelModel {
   readonly variant: 'tool' | 'selection' | 'canvas';
   /** The summary bar's subject (COPY-style.sheet_summary): the tool, the selected kind, or the count. */
   readonly subject: string;
+  /** D-031 / RULE-10: the subject is a blur or pixelate redaction, so COPY-redact.not_secure_short follows it. */
+  readonly subjectNotSecure?: true;
   /** Offered unless a subject is a blur or pixelate redaction (RULE-10: only solid has a colour). */
   readonly color?: Colour | null;
   /** Offered unless a subject is a redaction (RULE-10: redactions have no stroke size). */
@@ -300,13 +302,22 @@ export function panelModel(
       editing || !first
         ? {}
         : { actions: true as const, ...(picked.length === 1 ? { geometry: geometryModel(first) } : {}) };
-    return { variant: 'selection', subject: c.kind ? kindLabel(c.kind) : subject, ...c, ...edits };
+    return { variant: 'selection', ...subjectOf(c, subject), ...c, ...edits };
   }
   if (isDrawingTool(active)) {
     const c = choices([{ kind: TOOL_KIND[active], style: styles[active] }]);
-    return { variant: 'tool', subject: c.kind ? kindLabel(c.kind) : toolLabel(active), ...c };
+    return { variant: 'tool', ...subjectOf(c, toolLabel(active)), ...c };
   }
   return { variant: 'canvas', subject: t('canvas.title') };
+}
+
+/**
+ * COPY-style.sheet_summary's subject: a redaction's kind when the subjects share one, else `otherwise`;
+ * a blur or pixelate kind carries the not-secure tag (D-031, RULE-10).
+ */
+function subjectOf(c: { readonly kind?: RedactionKind | null }, otherwise: string) {
+  if (!c.kind) return { subject: otherwise };
+  return { subject: kindLabel(c.kind), ...(c.kind !== 'solid' ? { subjectNotSecure: true as const } : {}) };
 }
 
 // COPY-style.sheet_summary: for a redaction the subject is its kind (COPY-redact.solid/blur/pixelate).

@@ -2,8 +2,8 @@
 // canvas, fills, arrowheads, the selection overlay, and the split drag layers built once per drag.
 // Contexts are recording fakes; pixels are checked end to end in tests/e2e/draw-shapes.spec.ts.
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_STYLES, type Annotation } from '../../src/core';
-import { DragLayers, type Surface } from '../../src/canvas/drag';
+import { DEFAULT_STYLES, type Annotation, type BoxAnnotation } from '../../src/core';
+import { DragLayers, dragRange, movePatches, type Surface } from '../../src/canvas/drag';
 import { paint, paintAnnotations, PALETTE_HEX, type OverlayLook, type Scene, type SceneImage } from '../../src/render';
 
 function recorder(width = 1000, height = 800) {
@@ -256,5 +256,69 @@ describe('MOD-Canvas split drag layers (ADR-0022)', () => {
     const screen = recorder();
     paint(screen.ctx, scene([]), image, T, new Map());
     expect(screen.calls).toContain('imageSmoothingEnabled=true');
+  });
+
+  // A blur at index 0, a solid at 1 that overlaps it, and an arrow on top.
+  const redaction = (id: string, kind: 'solid' | 'blur', x: number): BoxAnnotation => ({
+    id,
+    kind: 'redaction',
+    style: { ...DEFAULT_STYLES.redact, redactionKind: kind },
+    box: { x, y: 100, width: 200, height: 40 },
+  });
+  /** A MOD-Effects stand-in whose every answer is a new patch object (as a new spec key gives). */
+  function freshEffects() {
+    const asked: { ids: string[]; moving: string[] }[] = [];
+    return {
+      asked,
+      patchesFor(doc: Scene, moving: ReadonlySet<string>) {
+        asked.push({ ids: doc.annotations.map((a) => a.id), moving: [...moving] });
+        const out = new Map<
+          string,
+          { box: { x: number; y: number; width: number; height: number }; bitmap: CanvasImageSource }
+        >();
+        for (const a of doc.annotations)
+          if (a.kind === 'redaction' && a.style.redactionKind !== 'solid')
+            out.set(a.id, { box: { x: 0, y: 0, width: 1, height: 1 }, bitmap: {} as CanvasImageSource });
+        return out;
+      },
+    };
+  }
+
+  it('NFR-02 ADR-0022 F-008 review M1 a solid moved over an earlier blur builds the drag layers once', () => {
+    const { create } = surfaces();
+    const layers = new DragLayers(create);
+    const blur = redaction('b', 'blur', 100);
+    const solid = redaction('s', 'solid', 150);
+    const doc = scene([blur, solid, arrow]);
+    const effects = freshEffects();
+    const still = effects.patchesFor(doc, new Set());
+    const ids = new Set(['s']);
+    const { lo, hi } = dragRange(doc.annotations, [1]);
+    expect({ lo, hi }).toEqual({ lo: 1, hi: 1 }); // no effect above the solid: the blur stays below
+    const out = recorder();
+    for (let x = 150; x < 200; x += 10) {
+      const now = { ...doc, annotations: [blur, { ...solid, box: { ...solid.box, x } }, arrow] };
+      const patches = movePatches(effects, now, ids, still, lo, hi);
+      expect(patches.get('b')).toBe(still.get('b')); // the cached layer's patch, not a new one
+      layers.paint(out.ctx, { ...frame(doc, lo, hi, [now.annotations[1] as Annotation]), patches });
+    }
+    expect(layers.builds).toBe(1);
+    // The blur below the range is not asked about (no approximation per frame); the solid stays, as
+    // effects read it; the dragged one is passed as moving (ADR-0017: no exact job while it moves).
+    expect(effects.asked.slice(1).every((q) => !q.ids.includes('b') && q.ids.includes('s'))).toBe(true);
+    expect(effects.asked.slice(1).every((q) => q.moving.join() === 's')).toBe(true);
+  });
+
+  it('RULE-10 ADR-0022 F-008 review m7 a solid moved under a later blur draws that blur each frame, with fresh patches', () => {
+    const solid = redaction('s', 'solid', 150);
+    const blur = redaction('b', 'blur', 100);
+    const doc = scene([solid, arrow, blur]);
+    const { lo, hi } = dragRange(doc.annotations, [0]);
+    expect({ lo, hi }).toEqual({ lo: 0, hi: 2 }); // widened to the later blur
+    const effects = freshEffects();
+    const still = effects.patchesFor(doc, new Set());
+    const patches = movePatches(effects, doc, new Set(['s']), still, lo, hi);
+    expect(patches.get('b')).not.toBe(still.get('b')); // asked again: it reads the moving solid
+    expect(effects.asked.at(-1)).toEqual({ ids: ['s', 'a', 'b'], moving: ['s'] });
   });
 });

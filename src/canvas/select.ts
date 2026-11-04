@@ -10,15 +10,21 @@
 // scale a stroke or highlight; Shift keeps the aspect ratio, RULE-06), F-008.R6 (Alt+drag with a drawing
 // tool moves; a plain drag always draws), RULE-05 (a press that moves under 4 screen pixels is a
 // selection click and records nothing; past it, the move or resize follows from the press point),
-// RULE-19 (Esc cancels the current drag).
+// RULE-19 (Esc cancels the current drag), D-032 (Shift + a selection box adds to the selection).
 import {
   CLICK_THRESHOLD_PX,
   boxBetween,
+  handlesOf,
   hitHandle,
+  hitTest,
   hitTopmost,
+  isBoxAnnotation,
+  isLineAnnotation,
+  isDrawingTool,
   marqueeHits,
   moved,
   resized,
+  shapeBox,
   type Annotation,
   type Box,
   type Handle,
@@ -72,6 +78,8 @@ interface Gesture {
   readonly measure: TextMeasure;
   readonly annotations: readonly Annotation[];
   readonly selection: readonly string[];
+  /** D-032: a Shift selection box adds what it touches to the selection. */
+  readonly add?: boolean;
   last: Point;
   shift: boolean;
   dragging: boolean;
@@ -108,12 +116,40 @@ export class SelectTool implements ToolInput {
     return g && !g.cancelled && g.mode !== 'marquee' ? g.dragged.map((a) => a.id) : null;
   }
 
-  /** The handle of the single selected annotation at `p` (image pixels), if any (F-008.R3). */
+  /**
+   * The handle of the single selected annotation at `p` (image pixels), if any (F-008.R3). F-008 edge
+   * case: when the annotation is too small for its handles and its body to be told apart, a press on its
+   * body is not a handle's (`smallBody`); its handles take only presses outside it.
+   */
   handleAt(p: Point): Handle | undefined {
     const s = this.setup();
     if (!s || s.selection.length !== 1) return undefined;
     const a = s.annotations.find((x) => x.id === s.selection[0]);
-    return a && hitHandle(a, p, s.handleHalf);
+    if (!a) return undefined;
+    const h = hitHandle(a, p, s.handleHalf);
+    return h && !this.smallBody(s, p) ? h : undefined;
+  }
+
+  /**
+   * F-008 edge case: the single selected annotation when it is too small for its handles and its body to
+   * be told apart (under two handle targets: a line's length, a box's shorter side, a stroke's or
+   * highlight's shorter extent among the axes it has) and `p` is on its body (on its mark, or inside a
+   * box annotation's box); else undefined. A press there moves it.
+   */
+  private smallBody(s: SelectSetup, p: Point): Annotation | undefined {
+    if (s.selection.length !== 1) return undefined;
+    const a = s.annotations.find((x) => x.id === s.selection[0]);
+    // Text and steps have no handles (F-008.R3).
+    if (!a || !handlesOf(a).length) return undefined;
+    const b = shapeBox(a);
+    const extents = isLineAnnotation(a)
+      ? [Math.hypot(b.width, b.height)]
+      : isBoxAnnotation(a)
+        ? [b.width, b.height]
+        : [b.width, b.height].filter((e) => e > 0);
+    if (!extents.length || Math.min(...extents) >= 4 * s.handleHalf) return undefined;
+    const inBox = isBoxAnnotation(a) && p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
+    return inBox || hitTest(a, p, s.tolerance, s.shortSide, s.measure) ? a : undefined;
   }
 
   down(input: PointerInput): boolean {
@@ -122,7 +158,8 @@ export class SelectTool implements ToolInput {
     if (!s) return false;
     const select = s.tool === 'select';
     // F-008.R6 / RULE-19: with a drawing tool only Alt+press reaches the select tool; a plain one draws.
-    if (!select && !input.alt) return false;
+    // Other tools (crop) never move annotations (F-008 review m5).
+    if (!select && !(input.alt && isDrawingTool(s.tool))) return false;
     const from = s.toImage(input.point);
     const shift = !!input.shift;
     const base = {
@@ -147,12 +184,13 @@ export class SelectTool implements ToolInput {
       this.callbacks.prepare();
       return true;
     }
-    const hit = hitTopmost(s.annotations, from, s.tolerance, s.shortSide, s.measure);
+    const hit = this.smallBody(s, from) ?? hitTopmost(s.annotations, from, s.tolerance, s.shortSide, s.measure);
     if (!hit) {
       // Alt on empty canvas with a drawing tool: the press is the drawing tool's.
       if (!select) return false;
       // RULE-05: a click on empty canvas clears the selection; beyond 4 px it draws a selection box.
-      this.gesture = { ...base, mode: 'marquee', click: [], dragged: [] };
+      // D-032: with Shift, the box adds to the selection (a Shift click on empty canvas still clears it).
+      this.gesture = { ...base, mode: 'marquee', click: [], dragged: [], add: shift };
       return true;
     }
     const picked = s.selection.includes(hit.id);
@@ -228,11 +266,15 @@ export class SelectTool implements ToolInput {
       return;
     }
     if (g.mode === 'marquee' && marquee) {
-      this.callbacks.select(marqueeHits(g.annotations, marquee, g.shortSide, g.measure));
+      const hits = marqueeHits(g.annotations, marquee, g.shortSide, g.measure);
+      const ids = g.add ? [...g.selection, ...hits.filter((id) => !g.selection.includes(id))] : hits;
+      if (!sameIds(ids, g.selection)) this.callbacks.select(ids);
       this.callbacks.preview();
       return;
     }
     if (preview) this.callbacks.commit(g.dragged.map((a) => preview.get(a.id) ?? a));
+    // A move or resize that ended where it began changes nothing: the drag layers still go (m3).
+    this.callbacks.preview();
   }
 
   /** RULE-19 Esc (and a second finger): the current drag ends and nothing changes. True if there was one. */

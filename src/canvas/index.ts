@@ -26,7 +26,7 @@ export {
   type PlaceKind,
 } from './draw';
 export { connectFontGate, FontGate, fontGate } from './fonts';
-export { DragLayers, dragRange, type DragFrame } from './drag';
+export { DragLayers, dragRange, movePatches, type DragFrame, type PatchSource } from './drag';
 export { SelectTool, type SelectCallbacks, type SelectSetup } from './select';
 export { TextTool, type TextEdit, type TextEndReason, type TextField, type TextSetup } from './text';
 
@@ -53,8 +53,10 @@ export const canvasCommands = {
   placeAtCentre: (): boolean => activeCanvas()?.placeAtCentre() ?? false,
   /** RULE-19 Esc: cancels the current drag; true if there was one (nothing is created). */
   cancelDrag: (): boolean => activeCanvas()?.cancelDrag() ?? false,
+  /** True while a pointer draw, move or resize is in progress (F-008 review m6: edit keys wait for it). */
+  dragging: (): boolean => activeCanvas()?.dragging() ?? false,
   // F-008: arrow-key nudges and Alt+arrow resizes are document edits, so they are MOD-App commands
-  // (app/editing.ts `nudgeSelection`, `altResizeSelection`), not canvas commands (spec gap, F-008 report).
+  // (app/editing.ts `nudgeSelection`, `altResizeSelection`, MOD-App.md).
   selectNext: (): void => notImplemented('canvasCommands.selectNext'),
   selectPrevious: (): void => notImplemented('canvasCommands.selectPrevious'),
   /** F-005.R4 / RULE-19 Enter with the select tool: edits the selected text; true if started. */

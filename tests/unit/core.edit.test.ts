@@ -12,6 +12,7 @@ import {
   shapeBox,
   withGeometry,
   type Annotation,
+  type LineAnnotation,
 } from '../../src/core';
 
 const measure = (_font: string, line: string) => line.length * 10;
@@ -160,5 +161,69 @@ describe('MOD-Core edit geometry', () => {
   it('F-008.R8 text moves by its anchor and a step by its centre', () => {
     expect(withGeometry(text, 'x', 7)).toMatchObject({ anchor: { x: 7, y: 50 } });
     expect(withGeometry(step, 'y', 9)).toMatchObject({ centre: { x: 300, y: 9 } });
+  });
+});
+
+describe('MOD-Core edit geometry — F-008 review round 1', () => {
+  it('F-008.R1 MOD-Core marqueeHits tests the drawn shape: a box in the empty corner of a diagonal arrow’s bounds misses it', () => {
+    const long = { ...arrow, tail: { x: 0, y: 0 }, head: { x: 400, y: 400 } } as Annotation;
+    // The bounds are 0…400 on both axes; the box at the lower-left corner is far from the segment.
+    expect(marqueeHits([long], { x: 10, y: 330, width: 40, height: 40 }, 800, measure)).toEqual([]);
+    // A box across the segment selects it.
+    expect(marqueeHits([long], { x: 190, y: 180, width: 20, height: 40 }, 800, measure)).toEqual(['a']);
+    // A box only over the arrowhead selects it.
+    expect(marqueeHits([long], { x: 396, y: 396, width: 2, height: 2 }, 800, measure)).toEqual(['a']);
+  });
+
+  it('F-008.R1 MOD-Core marqueeHits: an outline is not touched by a box wholly inside it; a filled box is', () => {
+    const outline = rect('o', 100, 100, 300, 300);
+    const filled = {
+      ...rect('f', 100, 100, 300, 300),
+      style: { ...DEFAULT_STYLES.rectangle, fill: 'solid' },
+    } as Annotation;
+    const inside = { x: 200, y: 200, width: 50, height: 50 };
+    expect(marqueeHits([outline, filled], inside, 800, measure)).toEqual(['f']);
+    expect(marqueeHits([outline], { x: 390, y: 200, width: 50, height: 50 }, 800, measure)).toEqual(['o']);
+    const ellipse = { ...outline, id: 'e', kind: 'ellipse' } as Annotation;
+    expect(marqueeHits([ellipse], inside, 800, measure)).toEqual([]);
+    // The corner of the ellipse's bounds lies outside the ellipse itself.
+    expect(marqueeHits([ellipse], { x: 100, y: 100, width: 20, height: 20 }, 800, measure)).toEqual([]);
+    expect(marqueeHits([ellipse], { x: 390, y: 240, width: 20, height: 20 }, 800, measure)).toEqual(['e']);
+  });
+
+  it('F-008.R1 MOD-Core marqueeHits follows a stroke’s curve, not its bounds', () => {
+    const h = highlight([
+      { x: 0, y: 0 },
+      { x: 200, y: 200 },
+    ]);
+    expect(marqueeHits([h], { x: 150, y: 0, width: 40, height: 40 }, 800, measure)).toEqual([]);
+    expect(marqueeHits([h], { x: 90, y: 90, width: 20, height: 20 }, 800, measure)).toEqual(['h']);
+  });
+
+  it('F-008 review m1 CMP-StylePanel a handle drag never makes a box smaller than 1 × 1, and a scaled stroke can be widened again', () => {
+    // Dragging the e handle exactly onto the w edge stops 1 pixel short.
+    expect(resized(rect(), 'e', -100, 0)).toMatchObject({ box: { x: 100, width: 1, height: 50 } });
+    // Past it, the box flips: still at least 1 wide.
+    expect(resized(rect(), 'e', -100.5, 0)).toMatchObject({ box: { width: 1 } });
+    const s = resized(highlight(), 'e', -100, 0);
+    expect(shapeBox(s).width).toBe(1);
+    expect(handlesOf(s).map(([h]) => h)).toContain('e');
+    expect(shapeBox(resized(s, 'e', 99, 0)).width).toBe(100);
+  });
+
+  it('F-008.R3 RULE-06 Shift on an edge handle scales the other axis by the same factor about its centre', () => {
+    // 100 × 50 at (100, 100): e by +100 doubles the width; the height doubles about y = 125.
+    expect(resized(rect(), 'e', 100, 0, true)).toMatchObject({ box: { x: 100, y: 75, width: 200, height: 100 } });
+    expect(resized(rect(), 's', 0, 50, true)).toMatchObject({ box: { x: 50, y: 100, width: 200, height: 100 } });
+  });
+
+  it('F-008.R3 RULE-06 Shift on a line’s end handle snaps it to 45° steps about the other end', () => {
+    // Tail (10, 10), head (110, 60) dragged to (110, 100): nearest 45°.
+    const r = resized(line, 'head', 0, 40, true) as LineAnnotation;
+    expect(r.tail).toEqual({ x: 10, y: 10 });
+    expect(r.head.x - 10).toBeCloseTo(r.head.y - 10, 6);
+    const t = resized(arrow, 'tail', 0, 45, true) as LineAnnotation;
+    expect(t.head).toEqual({ x: 110, y: 60 });
+    expect(t.tail.y).toBeCloseTo(60, 6); // horizontal: closer to 0° than 45°
   });
 });

@@ -6,7 +6,7 @@
 // arrow-key moves, Alt+arrow resizes); F-013 completes the map.
 // Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected, Tools keys, Enter, Esc, Edit),
 // F-002.R2/R4, F-003.R5, F-005.R2/R4, F-008.R1/R2/R3/R5, F-012.R1/R2.
-import { viewCommands } from '../canvas';
+import { canvasCommands, viewCommands } from '../canvas';
 import type { ToolName } from '../core';
 import { isEditing } from '../io';
 import { resolveKey, type Scope } from '../keys';
@@ -81,7 +81,10 @@ function onKeyDown(e: KeyboardEvent): void {
   if (action.kind === 'named' && action.group === 'canvas' && action.name === 'place') return placeAtCentre();
   if (action.kind === 'named' && action.group === 'canvas' && action.name === 'editText') return editSelectedText();
   if (action.kind === 'named' && action.group === 'edit' && action.name === 'escape') return escape();
-  // F-008 / RULE-19 Edit keys.
+  // F-008 / RULE-19 Edit keys. A pointer move or resize in progress commits the annotations as they were
+  // at its press, so an edit key meanwhile would be lost: it waits for the drag to end (review m6).
+  if ((action.kind === 'nudge' || action.kind === 'resize' || action.group === 'edit') && canvasCommands.dragging())
+    return;
   if (action.kind === 'nudge') return nudgeSelection(action.dx, action.dy);
   if (action.kind === 'resize') return altResizeSelection(action.dx, action.dy);
   if (action.kind === 'named' && action.group === 'edit') {

@@ -307,6 +307,71 @@ test.describe('F-008 select and edit', () => {
     await expect(geometry(page)).toHaveCount(0);
   });
 
+  test('F-008.R5 NFR-06 (review M3) after the panel’s Delete, focus is on the canvas region and the Edit keys work', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [200, 160]);
+    await rectangle(page, [300, 100], [400, 160]);
+    await panel(page).getByRole('button', { name: 'Delete' }).click();
+    await expect(summary(page)).toHaveText(count(1));
+    await expect(workArea(page)).toBeFocused();
+    await page.keyboard.press('ControlOrMeta+A');
+    await expect(geometry(page)).toHaveCount(1);
+  });
+
+  test('F-008.R1 D-032 Shift + dragging a selection box adds to the current selection', async ({ page }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [200, 160]);
+    await rectangle(page, [300, 100], [400, 160]);
+    await rectangle(page, [700, 500], [800, 560]);
+    await toolButton(page, 'Select (V)').click();
+    await clickImage(page, 700, 530); // the third alone
+    await expect(geometry(page)).toHaveCount(1);
+    await dragImage(page, [60, 60], [250, 200], ['Shift']); // around the first
+    await expect(geometry(page)).toHaveCount(0); // two selected
+    await workArea(page).focus();
+    await page.keyboard.press('Delete');
+    await expect(summary(page)).toHaveText(count(1));
+    expect(near(await pixel(page, 300, 130), RED), 'the second, outside both, stays').toBe(true);
+  });
+
+  test('F-008 edge case (review M2) a selected 100 × 20 rectangle dragged from its centre moves, not resizes', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [200, 120]);
+    await toolButton(page, 'Select (V)').click();
+    await dragImage(page, [150, 110], [180, 150]);
+    await expect(field(page, 'X')).toHaveValue('130');
+    await expect(field(page, 'Y')).toHaveValue('140');
+    await expect(field(page, 'Width')).toHaveValue('100');
+    await expect(field(page, 'Height')).toHaveValue('20');
+  });
+
+  test('F-008.R2 RULE-19 (review m6) Delete and arrow keys pressed during a pointer move are ignored; the move is kept', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [300, 200]);
+    await toolButton(page, 'Select (V)').click();
+    await workArea(page).focus();
+    const box = await workArea(page).boundingBox();
+    if (!box) throw new Error('no work area');
+    const a = screen(100, 120); // on the left edge, off the handles
+    await page.mouse.move(box.x + a.x, box.y + a.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + a.x + 20, box.y + a.y, { steps: 4 });
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Delete');
+    await page.mouse.move(box.x + a.x + 40, box.y + a.y, { steps: 4 });
+    await page.mouse.up();
+    await frame(page);
+    await expect(summary(page)).toHaveText(count(1));
+    await expect(field(page, 'X')).toHaveValue('140');
+    await expect(field(page, 'Y')).toHaveValue('100');
+  });
+
   for (const theme of ['light', 'dark'] as const)
     test(`NFR-06 F-008 the selection actions and position fields have no axe violations (${theme})`, async ({
       page,
