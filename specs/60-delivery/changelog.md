@@ -64,3 +64,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-012 gaps and review: RULE-15 cleans the source name (control and bidi characters, leading dots removed, 100 characters) and falls back to the pasted-image name when empty; F-012.R7 bounds the wait for effects and fonts at 10 s, with an edge case.
 - F-012 review round 1: MOD-Effects `exactPatches` holds the patches it collects until released and rejects when the image is replaced or the wait aborts; MOD-IO bounds the effects and font wait at `EXPORT_WAIT_MS` (10 s).
 - Portal applied the frame-grant change request (taro-kit 4c4ae94, its D-070/D-071): architecture.md A2 records the grants, the first-ready focus rule and the catalog permissions (adds `file-pick`); the e2e stub host mirrors the portal frame.
+- D-031 (owner): the narrow summary bar shows COPY-redact.not_secure_short after the kind for blur and pixelate (COPY-style.sheet_summary, CMP-StylePanel narrow; security review F-007 m4).

@@ -49,7 +49,7 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - Open design difference (F-005): placeholder opacity 0.5 is a raw value (no opacity token) and the artboard's 120 px editor minimum width is not applied; settle in QA or a token change.
 - F-008: wire `dragRange` for moving solids (TODO(F-008) in canvas/drag.ts; security review F-007 m5).
 - F-012 (security review F-007): export 1:1 on whole pixels, only exact patches (`exactPatches`), fail with an error (F-012.R7) rather than use the preview, single-image PNG.
-- Open owner question: show COPY-redact.not_secure_short in the narrow summary bar for blur/pixelate (security F-007 m4)?
+- D-031: show the Not secure tag in the narrow summary bar for blur/pixelate; implemented in the F-008 fix round.
 - F-005.AC7 e2e is slow (~20 s alone, marked test.slow); look at its pixel reads in QA.
 - check:full after F-012 merge: preview e2e failed once under load (PhpStorm + VM, load ~45); both e2e steps passed on rerun.
 - Deploy (phase 7), portal side (taro-kit 4c4ae94 applied D-006 as its D-070/D-071):
