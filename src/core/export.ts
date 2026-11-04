@@ -135,17 +135,21 @@ export function pngChunkTypes(bytes: Uint8Array): string[] | null {
 
 const two = (n: number) => String(n).padStart(2, '0');
 
+/** RULE-15: the source name keeps at most this many characters. */
+export const SOURCE_NAME_MAX = 100;
+
 /**
  * RULE-15 download name: `<source name without extension>-annotated.png` when the image was opened from
- * a file, else `annotated-<YYYYMMDD-HHMMSS>.png` in the local time the caller passes. The extension is
- * the part after the last dot (a leading dot alone is not one).
+ * a file, else `annotated-<YYYYMMDD-HHMMSS>.png` in the local time the caller passes. The source name has
+ * control and bidirectional formatting characters (Unicode Cc, Cf) and leading dots removed, then its
+ * extension (the part after the last dot), and is cut to SOURCE_NAME_MAX characters; if nothing is left,
+ * the pasted-image name is used.
  */
 export function downloadName(sourceName: string | null, localTime: Date): string {
-  if (sourceName) {
-    const dot = sourceName.lastIndexOf('.');
-    const base = dot > 0 ? sourceName.slice(0, dot) : sourceName;
-    if (base) return `${base}-annotated.png`;
-  }
+  const clean = (sourceName ?? '').replace(/[\p{Cc}\p{Cf}]/gu, '').replace(/^\.+/, '');
+  const dot = clean.lastIndexOf('.');
+  const base = [...(dot > 0 ? clean.slice(0, dot) : clean)].slice(0, SOURCE_NAME_MAX).join('');
+  if (base) return `${base}-annotated.png`;
   const d = localTime;
   const date = `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}`;
   const time = `${two(d.getHours())}${two(d.getMinutes())}${two(d.getSeconds())}`;

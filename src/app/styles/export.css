@@ -38,11 +38,18 @@
     font-weight: var(--tk-font-weight-semibold);
     white-space: nowrap;
   }
-  /* The full text, measured off-screen to decide the count fallback (CMP-Toolbar). */
-  .tk-count--probe {
+  /* The full text, measured to decide the count fallback (CMP-Toolbar). Its box is empty and clips
+     it, so the probe never widens the row or the page (F-018.R7, review m3). */
+  .tk-count-probe {
     position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
     visibility: hidden;
     pointer-events: none;
+  }
+  .tk-count-probe > .tk-count {
+    width: max-content;
   }
 
   /* COPY-action.more: the overflow menu below its button, aligned to its end. */

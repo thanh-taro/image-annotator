@@ -4,14 +4,14 @@
 // (frame plus padding, RULE-14/15) → MOD-Render `paint()` — the same function as the screen — at scale 1
 // with the canvas's top-left corner at the origin, so every image pixel is one export pixel on whole pixels
 // → `toBlob('image/png')` → the export canvas is freed → the chunk whitelist (MOD-Core `stripPngChunks`,
-// checked against the canvas size). Any failure on the way is `export_failed` (F-012.R7): there is no
-// fallback. Copy creates the `ClipboardItem` with a *promised* blob in the gesture's task (WebKit requires
+// checked against the canvas size). Any failure on the way, or effects and fonts not ready within
+// EXPORT_WAIT_MS, is `export_failed` (F-012.R7): there is no fallback. Copy creates the `ClipboardItem` with a *promised* blob in the gesture's task (WebKit requires
 // it); download hands an `<a download>` with an object URL to the browser and revokes it afterwards.
 // Nothing here makes a network request (NFR-01). Only this module touches the clipboard and downloads.
 // Implements: F-012.R1/R2/R3/R5/R6/R7, RULE-15, INV-02, INV-03, NFR-01, NFR-08, ADR-0007, ADR-0019,
 // ADR-0021, ADR-0022 ("Export memory").
 import { canvasRect, downloadName, isStepAnnotation, isTextAnnotation, stripPngChunks, TEXT_WEIGHT } from '../core';
-import { exactPatches } from '../effects';
+import { exactPatches, type HeldPatches } from '../effects';
 import { paint, type Scene } from '../render';
 import type { DecodedImage } from './decode';
 
@@ -47,6 +47,45 @@ async function assertFonts(scene: Scene): Promise<void> {
 }
 
 /**
+ * F-012.R7: an export whose redaction effects and fonts are not ready within this time counts as not
+ * produced. Only that wait is bounded (a stuck worker, pixels that never arrive); encoding cannot be
+ * cancelled and is not.
+ */
+export const EXPORT_WAIT_MS = 10_000;
+
+/**
+ * The exact patches and the typeface, or ExportFailed after EXPORT_WAIT_MS (F-012.R7). On any failure
+ * the patches are released; on success the caller releases them after painting.
+ */
+async function ready(scene: Scene): Promise<HeldPatches> {
+  const stop = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      stop.abort();
+      reject(new ExportFailed('effects or fonts not ready in time'));
+    }, EXPORT_WAIT_MS);
+  });
+  // ADR-0006 / F-007 security review: exact patches only; a failed job fails the export.
+  const patches = exactPatches(scene, stop.signal).catch(() => {
+    throw new ExportFailed('effects failed');
+  });
+  try {
+    const [held] = await Promise.race([Promise.all([patches, assertFonts(scene)]), timeout]);
+    return held;
+  } catch (e) {
+    stop.abort(); // a still-pending wait rejects and lets its patches go
+    void patches.then(
+      (held) => held.release(),
+      () => {},
+    ); // fonts failed after the patches resolved
+    throw e instanceof ExportFailed ? e : new ExportFailed('fonts failed');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * The stripped PNG of the canvas (ADR-0007 §1–3). Rejects with ExportFailed on any failure; the export
  * canvas is freed whatever happens (ADR-0022).
  */
@@ -56,23 +95,23 @@ export async function renderPng(scene: Scene, image: DecodedImage): Promise<Uint
   if (![area.x, area.y, area.width, area.height].every(isWhole) || area.width < 1 || area.height < 1)
     throw new ExportFailed('canvas not on whole pixels');
   if (image.bitmap.width === 0) throw new ExportFailed('image closed');
-  let patches;
-  try {
-    // ADR-0006 / F-007 security review: exact patches only; a failed job fails the export.
-    patches = await exactPatches(scene);
-  } catch {
-    throw new ExportFailed('effects failed');
-  }
-  await assertFonts(scene);
+  const held = await ready(scene);
   const canvas = document.createElement('canvas');
   try {
+    // F-012 security m2: the image was replaced or cleared while waiting: nothing is painted.
+    if (image.bitmap.width === 0) throw new ExportFailed('image closed');
     canvas.width = area.width;
     canvas.height = area.height;
     // ADR-0005 §4 / INV-03: an sRGB canvas, so the untagged PNG means sRGB.
     const ctx = canvas.getContext('2d', { colorSpace: 'srgb' });
     if (!ctx || canvas.width !== area.width || canvas.height !== area.height) throw new ExportFailed('no canvas');
-    // INV-05: no view, theme or language reaches paint(); no overlays, no layer (RULE-15).
-    paint(ctx, scene, image.bitmap, { scale: 1, dx: -area.x, dy: -area.y }, patches);
+    // INV-05: no view, theme or language reaches paint(); no overlays, no layer (RULE-15); the image
+    // without smoothing (security m4). The held patches stay open until painted (security m1).
+    try {
+      paint(ctx, scene, image.bitmap, { scale: 1, dx: -area.x, dy: -area.y }, held.patches, undefined, undefined, true);
+    } finally {
+      held.release();
+    }
     const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new ExportFailed('encoder returned nothing');
     const bytes = new Uint8Array(await blob.arrayBuffer());
@@ -80,6 +119,7 @@ export async function renderPng(scene: Scene, image: DecodedImage): Promise<Uint
     if (!stripped.ok) throw new ExportFailed(stripped.error);
     return stripped.bytes;
   } catch (e) {
+    held.release();
     throw e instanceof ExportFailed ? e : new ExportFailed('render failed');
   } finally {
     // ADR-0022: the export canvas is freed right after encoding, whether it succeeded or not.

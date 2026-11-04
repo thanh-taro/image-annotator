@@ -21,6 +21,8 @@ export type ExportKind = 'copy' | 'download';
 export interface ExportPorts {
   /** The loaded image, its session and the current document, or null in the empty state. */
   current(): { readonly image: DecodedImage; readonly session: Session; readonly doc: Doc } | null;
+  /** The current session, even while a dialog is open (null in the empty state). */
+  session(): Session | null;
   /** Ends a text edit, keeping the text (F-012 edge case: the text is included). */
   endTextEdit(): void;
   /** MOD-IO `copyResult`: must start synchronously (the clipboard item is created in the gesture). */
@@ -92,6 +94,9 @@ export async function exportResult(kind: ExportKind, ports: ExportPorts): Promis
     busy = false;
   }
   if (shown) ports.notify(null); // the progress message ends before any result (CMP-Notice)
+  // F-012 review m1: the image or session was replaced while exporting: its result is dropped silently
+  // (nothing is recorded or shown over the new image).
+  if (ports.session() !== session) return;
   if (result.ok) {
     ports.exported(session, epoch);
     ports.notify(successNotice(kind, count, result.fileName ?? ''));

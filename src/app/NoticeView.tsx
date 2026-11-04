@@ -58,6 +58,9 @@ export function NoticeView({ notice }: { notice: Notice }) {
           class="tk-button tk-button--outlined"
           onClick={() => {
             const run = notice.action?.run;
+            // F-012 review m2: the button goes with the notice, so focus moves to the canvas region first
+            // (not to the page) and keyboard users keep their place.
+            document.querySelector<HTMLElement>('.tk-work-area')?.focus();
             setNotice(null);
             run?.();
           }}

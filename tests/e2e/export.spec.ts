@@ -314,6 +314,8 @@ test.describe('F-012 copy and download', () => {
     );
     expect(file.name).toMatch(/^annotated-\d{8}-\d{6}\.png$/);
     await expect(notice(page)).toContainText('Downloaded');
+    // Review m2: the notice's button is gone, and focus is on the canvas region, not the page.
+    await expect(page.getByRole('main')).toBeFocused();
   });
 
   test('F-012.AC13 F-012.R7 when the image cannot be produced: COPY-error.export_failed, nothing saved, still unexported', async ({
@@ -423,6 +425,36 @@ test.describe('F-012 copy and download', () => {
     await more.click();
     const file = await download(page, () => menu.getByRole('menuitem', { name: 'Download' }).click());
     expect(file.name).toMatch(/^annotated-\d{8}-\d{6}\.png$/);
+  });
+
+  test('CMP-Toolbar count fallback: when the full count would not fit, icon and number with the full text as its name', async ({
+    page,
+  }) => {
+    await open(page);
+    await redaction(page, 'Solid', [20, 20], [120, 60]);
+    await redaction(page, 'Solid', [20, 100], [120, 140]);
+    const row = page.locator('.tk-toolbar__row').filter({ has: page.locator('.tk-count') });
+    // Compact: the full text fits.
+    await page.setViewportSize({ width: 900, height: VIEWPORT.height });
+    await expect(toolbar(page).locator('.tk-count:visible')).toHaveText('2 redactions');
+    await expect(toolbar(page).getByRole('img', { name: '2 redactions' })).toHaveCount(0);
+    // Forced: the count's text is made wider than the row has room for (a long translation).
+    await page.addStyleTag({ content: '.tk-count { letter-spacing: 40px; }' });
+    await page.setViewportSize({ width: 880, height: VIEWPORT.height }); // the row is measured again
+    const short = toolbar(page).getByRole('img', { name: '2 redactions' });
+    await expect(short).toBeVisible();
+    await expect(short).toHaveText('2');
+    await expect(short.locator('svg')).toHaveCount(1);
+    // F-018.R7: neither the row nor the page scrolls sideways (the hidden probe adds no width).
+    // No toolbar item is squeezed either (the hidden probe clips itself by design).
+    const fits = await row.evaluate((el) =>
+      [el, ...el.children]
+        .filter((c) => !c.classList.contains('tk-count-probe'))
+        .every((c) => c.scrollWidth <= c.clientWidth),
+    );
+    expect(fits).toBe(true);
+    const page_ = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+    expect(page_).toBe(true);
   });
 
   test('CMP-Toolbar no image: copy and download are disabled', async ({ page }) => {

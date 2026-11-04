@@ -35,8 +35,10 @@ function setup(annotations: Annotation[], results: { copy?: ExportResult; downlo
   const timers: (() => void)[] = [];
   const order: string[] = [];
   let resolveCopy: (r: ExportResult) => void = () => undefined;
+  let current: Session | null = session;
   const p = {
-    current: () => ({ image, session, doc: session.doc }),
+    current: () => (current ? { image, session: current, doc: current.doc } : null),
+    session: () => current,
     endTextEdit: vi.fn(() => order.push('endTextEdit')),
     copy: vi.fn((_doc: Doc, _img: DecodedImage) => {
       order.push('copy');
@@ -61,7 +63,15 @@ function setup(annotations: Annotation[], results: { copy?: ExportResult; downlo
     },
     exported: vi.fn((s: Session, at: number) => s.markExported(at)),
   } satisfies ExportPorts;
-  return { p, session, notices, timers, order, resolve: (r: ExportResult) => resolveCopy(r) };
+  return {
+    p,
+    session,
+    notices,
+    timers,
+    order,
+    resolve: (r: ExportResult) => resolveCopy(r),
+    replace: (next: Session | null) => (current = next),
+  };
 }
 
 const lastNotice = (notices: (Notice | null)[]) => notices.filter(Boolean).at(-1);
@@ -194,5 +204,31 @@ describe('MOD-App exportResult', () => {
     const none = { ...s.p, current: () => null };
     await exportResult('download', none);
     expect(s.p.download).not.toHaveBeenCalled();
+  });
+
+  it('F-012 review m1 a result arriving after the image was replaced is dropped: no notice, nothing recorded', async () => {
+    for (const result of [{ ok: true }, { ok: false, code: 'export_failed' }] as ExportResult[]) {
+      const s = setup([rect('r')]);
+      const run = exportResult('copy', s.p);
+      s.timers[0]!(); // past 0.5 s: COPY-export.preparing shows
+      s.replace(startSession(info)); // a new image is pasted while copying
+      s.resolve(result);
+      await run;
+      expect(s.notices.at(-1)).toBeNull(); // the progress message is cleared, nothing else shows
+      expect(s.notices.filter((n) => n && n.kind !== 'progress')).toEqual([]);
+      expect(s.p.exported).not.toHaveBeenCalled();
+    }
+  });
+
+  it('F-012.R7 a rejected export (a wait that timed out) shows export_failed, and Copy and Download work again', async () => {
+    const s = setup([rect('r')]);
+    s.p.copy.mockImplementationOnce(() => Promise.reject(new Error('effects or fonts not ready in time')));
+    const run = exportResult('copy', s.p);
+    s.timers[0]!();
+    await run;
+    expect(lastNotice(s.notices)?.id).toBe('error.export_failed');
+    expect(s.timers).toHaveLength(0); // the progress timer is gone
+    await exportResult('download', s.p); // busy was cleared
+    expect(s.p.download).toHaveBeenCalledTimes(1);
   });
 });

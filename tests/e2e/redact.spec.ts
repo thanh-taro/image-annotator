@@ -455,6 +455,7 @@ test.describe('F-007 redact', () => {
 
   test('F-007.AC11 F-007.R2 INV-02 a solid drawn from a fractional x at 33 % exports its first column entirely in its colour', async ({
     page,
+    browserName,
   }) => {
     // 3490 × 2000 fits the 1200 × 800 work area (less Fit's 24 px margin, space.6) at 1152 / 3490 ≈ 33 %; a pointer
     // 3.43 screen pixels right of the canvas edge is at image x ≈ 10.4 (rounded to 3 by an engine: x ≈ 9.1).
@@ -489,6 +490,10 @@ test.describe('F-007 redact', () => {
     const row = pngRegion(png, 0, 450, 40, 1);
     const first = Array.from({ length: 40 }, (_, x) => x).find((x) => allEqual(row.slice(x * 4, x * 4 + 4), BLACK));
     expect([9, 10]).toContain(first);
+    // Chromium keeps the pointer's fraction (x ≈ 10.4): INV-02's floor gives exactly column 10.
+    if (browserName === 'chromium') expect(first).toBe(10);
+    // Whatever the engine's rounding, pixel column 10 (the AC's) is entirely the redaction colour.
+    expect(allEqual(pngRegion(png, 10, 305, 1, 290), BLACK)).toBe(true);
     // That column is entirely the redaction colour over the box's rows; the one before it is untouched.
     expect(allEqual(pngRegion(png, first!, 305, 1, 290), BLACK)).toBe(true);
     expect(allEqual(pngRegion(png, first! - 1, 305, 1, 290), [200, 200, 200, 255])).toBe(true);

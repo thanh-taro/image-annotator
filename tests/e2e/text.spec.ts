@@ -673,6 +673,7 @@ test.describe('F-005 add text', () => {
   test('F-005.AC7 NFR-08 an exported two-line text matches the 100 % view in position, line breaks and size within 2 pixels', async ({
     page,
   }) => {
+    test.slow(); // five reference comparisons take about 20 s alone, more under the full parallel run
     await open(page);
     await startText(page, 200, 150);
     await page.keyboard.type('Wrong total');

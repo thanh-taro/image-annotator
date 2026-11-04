@@ -75,8 +75,31 @@ describe('RULE-15 download name', () => {
   it('RULE-15 only the last extension is removed; a name without one is kept whole; local time is zero-padded', () => {
     expect(downloadName('build.log.png', new Date())).toBe('build.log-annotated.png');
     expect(downloadName('screenshot', new Date())).toBe('screenshot-annotated.png');
-    expect(downloadName('.png', new Date())).toBe('.png-annotated.png');
     expect(downloadName(null, new Date(2026, 0, 2, 3, 4, 5))).toBe('annotated-20260102-030405.png');
+  });
+
+  const at = new Date(2026, 9, 27, 14, 5, 9);
+  it('RULE-15 control and bidirectional formatting characters are removed from the source name', () => {
+    expect(downloadName('in\u0000voice\u0007\u009f.png', at)).toBe('invoice-annotated.png');
+    expect(downloadName('x\u202Egnp.exe.png', at)).toBe('xgnp.exe-annotated.png');
+    expect(downloadName('a\u200Fb\u2066c\u2069\uFEFF.jpg', at)).toBe('abc-annotated.png');
+  });
+
+  it('RULE-15 leading dots are removed, so the file is never hidden', () => {
+    expect(downloadName('.env.png', at)).toBe('env-annotated.png');
+    expect(downloadName('...secret.jpg', at)).toBe('secret-annotated.png');
+    expect(downloadName('\u202E.hidden.png', at)).toBe('hidden-annotated.png');
+    expect(downloadName('.png', at)).toBe('png-annotated.png'); // a leading dot is not an extension
+  });
+
+  it('RULE-15 the source name is cut to 100 characters (whole characters, not code units)', () => {
+    expect(downloadName(`${'a'.repeat(150)}.png`, at)).toBe(`${'a'.repeat(100)}-annotated.png`);
+    expect(downloadName(`${'😀'.repeat(120)}.png`, at)).toBe(`${'😀'.repeat(100)}-annotated.png`);
+  });
+
+  it('RULE-15 a source name with nothing left uses the pasted-image name', () => {
+    for (const name of ['', '....', '\u202E\u0000', '\u0000.'])
+      expect(downloadName(name, at)).toBe('annotated-20261027-140509.png');
   });
 });
 

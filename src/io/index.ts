@@ -28,7 +28,7 @@ export {
   type InputVia,
 } from './input';
 
-export { copyResult, downloadResult, renderPng, REVOKE_DELAY_MS, type ExportResult } from './export';
+export { copyResult, downloadResult, EXPORT_WAIT_MS, renderPng, REVOKE_DELAY_MS, type ExportResult } from './export';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-IO ${name}`);

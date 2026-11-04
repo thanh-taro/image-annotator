@@ -33,8 +33,13 @@ function RedactionCount() {
     const measure = () => {
       const spacer = row.querySelector<HTMLElement>('.tk-toolbar__spacer');
       const full = probe.current?.offsetWidth ?? 0;
-      // The row's content without the flexible spacer, with the full text in place of what is shown now.
-      const needed = row.scrollWidth - (spacer?.offsetWidth ?? 0) - el.offsetWidth + full;
+      // The row's content without the flexible spacer, with the full text in place of what is shown now,
+      // and with what the other items were squeezed by added back (a squeezed tool group still needs it).
+      let squeezed = 0;
+      for (const c of row.children)
+        if (c !== el && c !== spacer && !c.contains(probe.current) && c instanceof HTMLElement)
+          squeezed += Math.max(0, c.scrollWidth - c.offsetWidth);
+      const needed = row.scrollWidth - (spacer?.offsetWidth ?? 0) - el.offsetWidth + full + squeezed;
       setShort(needed > row.clientWidth);
     };
     measure();
@@ -57,8 +62,10 @@ function RedactionCount() {
         </span>
       )}
       {!wide && (
-        <span ref={probe} class="tk-count tk-count--probe" aria-hidden="true">
-          {full}
+        <span class="tk-count-probe" aria-hidden="true">
+          <span ref={probe} class="tk-count">
+            {full}
+          </span>
         </span>
       )}
     </>

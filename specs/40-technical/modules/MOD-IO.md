@@ -14,7 +14,7 @@ the checks and decode of ADR-0005 in F-001.R7's order (size, magic bytes, decode
 scale-down offer), returning a decoded image or a refusal code without touching the current
 session. It records the source name only for picked or dropped files (RULE-15). After load it
 reads the pixels once for MOD-Effects. Out: the export pipeline of ADR-0007 (await exact patches
-and fonts → export canvas at 1:1 over the canvas → `toBlob` → chunk whitelist → `ClipboardItem`
+and fonts, at most 10 s (`EXPORT_WAIT_MS`, F-012.R7) → export canvas at 1:1 over the canvas → `toBlob` → chunk whitelist → `ClipboardItem`
 with a promised blob in the gesture, or `<a download>` with a revoked object URL), reporting
 success or failure codes. It owns the `beforeunload` handler that asks to leave while the session
 is unexported (F-014.R1).

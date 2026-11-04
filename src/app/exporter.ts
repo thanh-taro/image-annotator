@@ -14,6 +14,7 @@ const ports: ExportPorts = {
     // While a dialog is open the rest of the tool is inert (CMP-ConfirmDialog): no export.
     return l && d && !dialog.value ? { image: l.image, session: l.session, doc: d } : null;
   },
+  session: () => loaded.value?.session ?? null,
   endTextEdit: () => void canvasCommands.endTextEdit(),
   copy: (d, image) => copyResult(d, image),
   download: (d, image, localTime) => downloadResult(d, image, localTime),

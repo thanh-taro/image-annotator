@@ -4,5 +4,5 @@
     "lib": ["ES2023", "DOM"],
     "jsx": "preserve"
   },
-  "include": ["tests/e2e/**/*.ts"]
+  "include": ["tests/e2e/**/*.ts", "tests/support/zlib.d.ts"]
 }
