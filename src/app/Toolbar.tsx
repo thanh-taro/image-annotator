@@ -3,18 +3,22 @@
 // Narrow widths (D-014) use two rows: actions, then the tools scrolling sideways with a fade on each edge
 // only while tools are hidden beyond it, the active or focused tool scrolled into view; tapping the
 // active tool again opens or closes the style sheet (D-019). The redaction count, copy, download and, on
-// narrow widths, the overflow holding the download are F-012's (./ExportActions.tsx); undo/redo (F-009) and
-// the overflow's other items (F-013, F-014) are added in the slots marked below.
-// Implements: CMP-Toolbar (tool group, variants no image, compact and narrow; behaviour), F-003 UX notes.
+// narrow widths, the overflow holding the download are F-012's (./ExportActions.tsx). COPY-action.undo and
+// COPY-action.redo (F-009) are icons named by their labels with their shortcuts, after the tools on one
+// row and after COPY-action.open on the narrow actions row, each disabled while there is nothing to undo
+// or redo (and with no image). The overflow's other items (F-013, F-014) are added in the slot marked below.
+// Implements: CMP-Toolbar (tool group, undo/redo, variants no image, compact and narrow; behaviour),
+// F-003 UX notes, F-009.R1, F-009 UX notes.
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { t } from '../copy';
 import { TOOL_KEYS, type ToolName } from '../core';
 import { BUILT_TOOLS, setTool, toolLabel } from './drawing';
 import { ExportActions } from './ExportActions';
 import { Icon, type IconName } from './icons';
+import { redo, undo } from './history';
 import { openImage } from './loader';
-import { modShortcut } from './platform';
-import { layout, loaded, sheetOpen, tool } from './state';
+import { isMac, modShortcut } from './platform';
+import { canRedo, canUndo, layout, loaded, sheetOpen, tool } from './state';
 
 const TOOL_ICONS: Partial<Record<ToolName, IconName>> = {
   select: 'select',
@@ -42,6 +46,40 @@ function OpenButton({ icon }: { icon: boolean }) {
       <Icon name="image" size={icon ? 20 : 16} />
       {!icon && t('action.open')}
     </button>
+  );
+}
+
+/** RULE-19 History keys as aria-keyshortcuts: Mod+Z; Mod+Shift+Z, and Ctrl+Y off macOS. */
+const UNDO_KEYS = modShortcut('Z');
+const REDO_KEYS = isMac ? 'Meta+Shift+Z' : 'Control+Shift+Z Control+Y';
+
+/** F-009.R1: COPY-action.undo and COPY-action.redo, unavailable while there is nothing to undo or redo. */
+function HistoryButtons() {
+  return (
+    <>
+      <button
+        type="button"
+        class="tk-tool"
+        aria-label={t('action.undo')}
+        title={t('action.undo')}
+        aria-keyshortcuts={UNDO_KEYS}
+        disabled={!canUndo.value}
+        onClick={undo}
+      >
+        <Icon name="undo" size={20} />
+      </button>
+      <button
+        type="button"
+        class="tk-tool"
+        aria-label={t('action.redo')}
+        title={t('action.redo')}
+        aria-keyshortcuts={REDO_KEYS}
+        disabled={!canRedo.value}
+        onClick={redo}
+      >
+        <Icon name="redo" size={20} />
+      </button>
+    </>
   );
 }
 
@@ -163,7 +201,7 @@ export function Toolbar() {
       <div class="tk-toolbar__rows" role="toolbar" aria-label={t('a11y.toolbar')}>
         <div class="tk-toolbar__row">
           <OpenButton icon />
-          {/* Slot: undo/redo as icons (F-009). */}
+          <HistoryButtons />
           <div class="tk-toolbar__spacer" />
           {/* F-012: redaction count, copy, and the overflow holding the download. */}
           <ExportActions />
@@ -180,7 +218,8 @@ export function Toolbar() {
       <OpenButton icon={layout.value === 'compact'} />
       <span class="tk-toolbar__sep" aria-hidden="true" />
       <ToolGroup narrow={false} />
-      {/* Slot: undo/redo (F-009). */}
+      <span class="tk-toolbar__sep" aria-hidden="true" />
+      <HistoryButtons />
       <div class="tk-toolbar__spacer" />
       {/* F-012: redaction count, copy, download. Slot: the overflow with clear and shortcuts (F-013, F-014). */}
       <ExportActions />

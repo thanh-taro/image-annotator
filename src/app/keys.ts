@@ -3,9 +3,9 @@
 // and runs the action. F-002 dispatches the View group and the arrow-key pan; F-003 the Tools keys,
 // Enter and Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the
 // Export keys (Mod+C copy, Mod+S download); F-008 the Edit keys (delete, duplicate, select all, reorder,
-// arrow-key moves, Alt+arrow resizes); F-013 completes the map.
-// Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected, Tools keys, Enter, Esc, Edit),
-// F-002.R2/R4, F-003.R5, F-005.R2/R4, F-008.R1/R2/R3/R5, F-012.R1/R2.
+// arrow-key moves, Alt+arrow resizes); F-009 the History keys (undo, redo); F-013 completes the map.
+// Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected, Tools keys, Enter, Esc, Edit,
+// History), F-002.R2/R4, F-003.R5, F-005.R2/R4, F-008.R1/R2/R3/R5, F-009.R1, F-012.R1/R2.
 import { canvasCommands, viewCommands } from '../canvas';
 import type { ToolName } from '../core';
 import { isEditing } from '../io';
@@ -20,6 +20,7 @@ import {
   selectAll,
 } from './editing';
 import { copyNow, downloadNow } from './exporter';
+import { redo, undo } from './history';
 import { isMac } from './platform';
 import { dialog, doc, selection, textEditing, tool } from './state';
 
@@ -93,6 +94,12 @@ function onKeyDown(e: KeyboardEvent): void {
     if (action.name === 'selectAll') return selectAll();
     if (action.name === 'bringForward') return reorderSelection('forward');
     if (action.name === 'sendBackward') return reorderSelection('backward');
+  }
+  // F-009.R1 / RULE-19 History. No key acts while a text annotation is edited, also with focus moved from
+  // the text into CMP-StylePanel (its typing undo is the field's own until the edit ends).
+  if (action.kind === 'named' && action.group === 'history') {
+    if (textEditing.value) return;
+    return action.name === 'undo' ? undo() : redo();
   }
   if (action.kind === 'named' && action.group === 'export') return action.name === 'copy' ? copyNow() : downloadNow();
   if (action.group !== 'view') return;

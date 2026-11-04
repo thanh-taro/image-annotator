@@ -4,8 +4,8 @@
 // drawn here in the tool's face with the RULE-08 outline, so the tests also prove position, size, colour
 // and face (NFR-08); CMP-TextEditor (the transparent field) is checked for its place and value.
 // The export ACs (AC6, AC7, AC14 and the export half of AC15, F-012) compare the downloaded file, decoded
-// in Node (ADR-0019), with the same reference drawn at 1:1. Undo (AC12) is a model test in
-// tests/unit/app.text.test.ts and tests/unit/document.text.test.ts until F-009 wires Mod+Z.
+// in Node (ADR-0019), with the same reference drawn at 1:1. Undo (AC12) uses F-009's Mod+Z; its model tests
+// are in tests/unit/app.text.test.ts and tests/unit/document.text.test.ts.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { download, downloadButton, expectCleanPng, pngRegion, type DecodedPng } from './support/export';
@@ -293,6 +293,33 @@ test.describe('F-005 add text', () => {
     await expect(workArea(page)).toBeFocused();
     await expect(toolButton(page, 'Text (T)')).toBeChecked();
     await expect(page.locator('[role="status"]')).toContainText('Text added');
+  });
+
+  test('F-005.AC12 one undo removes a created text; an existing text edited to empty is back after one undo', async ({
+    page,
+  }) => {
+    await open(page);
+    await startText(page, 200, 150);
+    await page.keyboard.type('Bug');
+    await page.keyboard.press('Escape');
+    await expect(summary(page)).toHaveText(count(1));
+    await page.keyboard.press('ControlOrMeta+Z');
+    await expect(summary(page)).toHaveText(count(0));
+    await page.keyboard.press('ControlOrMeta+Shift+Z');
+    await expect(summary(page)).toHaveText(count(1));
+    // Edit it to empty: one deletion step.
+    await page.keyboard.press('v');
+    await page.keyboard.press('Enter');
+    await expect(editor(page)).toHaveValue('Bug');
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Escape');
+    await expect(summary(page)).toHaveText(count(0));
+    await workArea(page).focus();
+    await page.keyboard.press('ControlOrMeta+Z');
+    await expect(summary(page)).toHaveText(count(1));
+    await deselect(page);
+    expect(await textDiff(page, { ax: 200, ay: 150, lines: ['Bug'], fill: RED, outline: WHITE })).toBeLessThan(1.5);
   });
 
   test('F-005.AC4 a text placed with nothing typed is gone after a click elsewhere', async ({ page }) => {

@@ -31,6 +31,8 @@ import {
   Slash,
   TriangleAlert,
   Type,
+  Undo2,
+  Redo2,
   X,
 } from 'lucide-static';
 
@@ -72,6 +74,9 @@ const SOURCES = {
   // F-012: CMP-Toolbar's copy and the overflow (COPY-action.more).
   copy: Copy,
   more: Ellipsis,
+  // F-009: CMP-Toolbar's undo and redo (the designs' curved arrows).
+  undo: Undo2,
+  redo: Redo2,
 } as const;
 
 export type IconName = keyof typeof SOURCES;

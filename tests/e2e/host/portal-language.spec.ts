@@ -1,8 +1,7 @@
 // F-018 Use the portal's language (RULE-16, RULE-17, ADR-0015) on the multi-origin harness: the
 // language from the address before first display, live taro:language messages, the browser
 // fallback, the origin/source/value checks, 320 px and the Vietnamese faces in the initial load.
-// Deferred ACs (need later features): AC2 (its history half, F-009; the rest is the F-018.R2 test below),
-// AC7 (every SCR-Annotator state), AC10's offline half (F-017). AC5 (export) is in tests/e2e/export.spec.ts.
+// Deferred ACs (need later features): AC7 (every SCR-Annotator state), AC10's offline half (F-017). AC5 (export) is in tests/e2e/export.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
 import { CATALOG } from '../../../src/copy/messages.gen';
 import { download, expectCleanPng, pngRegion } from '../support/export';
@@ -108,8 +107,9 @@ test('F-018.R2 a language message switches the UI live, without reloading', asyn
   expect(await frame.evaluate(() => document.title)).toBe(CATALOG['vi-VN']['app.title']);
 });
 
-// F-018.AC2 without its history half (the undo controls arrive with F-009, which completes AC2).
-test('F-018.R2 a language message keeps the image, annotations, selection, arrow tool and zoom', async ({ page }) => {
+test('F-018.AC2 F-018.R2 a language message keeps the image, annotations, selection, arrow tool, zoom and history', async ({
+  page,
+}) => {
   await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark', 'vi-VN'));
   const frame = await toolFrame(page);
   await markWindow(frame);
@@ -150,6 +150,16 @@ test('F-018.R2 a language message keeps the image, annotations, selection, arrow
   expect(await fields.evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value))).toEqual(before);
   await expect(tool.getByRole('radio', { name: 'Arrow (A)' })).toHaveAttribute('aria-checked', 'true');
   await expect(tool.locator('.tk-zoom__level')).toHaveText(zoom ?? '');
+  // The undo history is unchanged (F-009): the arrow's step undoes and redoes, the controls now in English.
+  const undo = tool.getByRole('button', { name: 'Undo', exact: true });
+  const redo = tool.getByRole('button', { name: 'Redo', exact: true });
+  await expect(redo).toBeDisabled();
+  await undo.click();
+  await expect(tool.locator('#tk-canvas-summary')).toContainText(', 0 annotations');
+  await expect(undo).toBeDisabled();
+  await redo.click();
+  await expect(tool.locator('#tk-canvas-summary')).toContainText(', 1 annotation');
+  expect(await fields.evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value))).toEqual(before);
 });
 
 for (const [prefs, expected] of [
