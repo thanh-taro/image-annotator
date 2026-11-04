@@ -28,9 +28,8 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 | F-018.AC6 (e2e) | crop size shown (F-010) |
 | F-018.AC7 | every screen state (end of M-1) |
 | F-018.AC10 | offline half (F-017); text and download halves done |
-| F-012.AC8 (move then copy) | F-008 |
 | F-005.AC12 (e2e) | undo (F-009); model-tested |
-| F-007.AC9 sent behind, AC10 brought to front | F-008 |
+| F-006.AC2, F-008.AC6, AC17 (undo halves, AC6 key order) | undo (F-009); model-tested via history.undo() |
 | F-007.AC13 | F-010, F-011, F-012 |
 | F-016.AC4 (image, annotations and history unchanged) | F-003, F-009 |
 

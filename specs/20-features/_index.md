@@ -9,7 +9,7 @@
 | F-005 | Add text | M-1 | P0 | building |
 | F-006 | Add numbered steps | M-1 | P1 | building |
 | F-007 | Redact part of the image | M-1 | P0 | building |
-| F-008 | Select and edit annotations | M-1 | P0 | ready |
+| F-008 | Select and edit annotations | M-1 | P0 | building |
 | F-009 | Undo and redo | M-1 | P0 | ready |
 | F-010 | Crop the export frame | M-1 | P0 | ready |
 | F-011 | Add padding and background | M-1 | P2 | ready |
