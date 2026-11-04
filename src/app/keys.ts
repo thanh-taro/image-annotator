@@ -1,15 +1,16 @@
 // MOD-App — the keyboard adapter for the keys built so far: reads each key press, the focus scope and
 // the platform into MOD-Keys' pure `resolveKey`, keeps the key from the browser when RULE-19 says so,
 // and runs the action. F-002 dispatches the View group and the arrow-key pan; F-003 the Tools keys,
-// Enter and Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-013 completes
-// the map.
+// Enter and Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the
+// Export keys (Mod+C copy, Mod+S download); F-013 completes the map.
 // Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected, Tools keys, Enter, Esc),
-// F-002.R2/R4, F-003.R5, F-005.R2/R4.
+// F-002.R2/R4, F-003.R5, F-005.R2/R4, F-012.R1/R2.
 import { viewCommands } from '../canvas';
 import type { ToolName } from '../core';
 import { isEditing } from '../io';
 import { resolveKey, type Scope } from '../keys';
 import { editSelectedText, escape, placeAtCentre, setTool } from './drawing';
+import { copyNow, downloadNow } from './exporter';
 import { isMac } from './platform';
 import { dialog, doc, selection, textEditing, tool } from './state';
 
@@ -22,6 +23,12 @@ function focusScope(e: KeyboardEvent): Scope['focus'] {
   if (isEditing(e.target)) return 'text';
   if (focused instanceof HTMLElement && focused.classList.contains('tk-work-area')) return 'canvas';
   return 'control';
+}
+
+/** RULE-19 Mod+C: text is selected on the page (then the browser copies that text). */
+function pageTextSelected(): boolean {
+  const sel = document.getSelection();
+  return !!sel && !sel.isCollapsed && sel.toString() !== '';
 }
 
 /** The single selected annotation is a text (RULE-19 Enter with the select tool edits it). */
@@ -55,6 +62,7 @@ function onKeyDown(e: KeyboardEvent): void {
       tool: tool.value,
       selection: selection.value.length === 0 ? 'none' : selection.value.length === 1 ? 'one' : 'many',
       textSelected: textSelected(),
+      pageTextSelected: pageTextSelected(),
     },
   );
   if (resolution.preventDefault) e.preventDefault();
@@ -64,6 +72,7 @@ function onKeyDown(e: KeyboardEvent): void {
   if (action.kind === 'named' && action.group === 'canvas' && action.name === 'place') return placeAtCentre();
   if (action.kind === 'named' && action.group === 'canvas' && action.name === 'editText') return editSelectedText();
   if (action.kind === 'named' && action.group === 'edit' && action.name === 'escape') return escape();
+  if (action.kind === 'named' && action.group === 'export') return action.name === 'copy' ? copyNow() : downloadNow();
   if (action.group !== 'view') return;
   if (action.kind === 'pan') viewCommands.panView(action.dx, action.dy);
   else if (action.name === 'zoomIn') viewCommands.zoomIn();

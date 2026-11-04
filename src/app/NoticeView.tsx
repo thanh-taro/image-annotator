@@ -51,6 +51,20 @@ export function NoticeView({ notice }: { notice: Notice }) {
     <div class={`tk-notice tk-notice--${notice.kind}`} ref={box} data-copy-id={notice.id}>
       <Icon name={ICONS[notice.kind]} size={20} class="tk-notice__icon" />
       <p class="tk-notice__text">{notice.text()}</p>
+      {/* CMP-Notice "Anatomy": the optional action (F-012.R5: COPY-action.download after COPY-error.clipboard). */}
+      {notice.action && (
+        <button
+          type="button"
+          class="tk-button tk-button--outlined"
+          onClick={() => {
+            const run = notice.action?.run;
+            setNotice(null);
+            run?.();
+          }}
+        >
+          {t(notice.action.label)}
+        </button>
+      )}
       {notice.kind !== 'progress' && (
         <button type="button" class="tk-icon-button" aria-label={t('action.close')} onClick={close}>
           <Icon name="close" />

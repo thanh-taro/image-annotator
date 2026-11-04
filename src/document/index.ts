@@ -166,8 +166,14 @@ export interface History {
 export interface Session {
   readonly doc: Doc;
   readonly history: History;
-  markExported(): void;
+  /**
+   * RULE-18: records a successful export. `at` is the change epoch the exported document had (taken when
+   * the export started, F-012); a change made while the export ran keeps the session unexported.
+   */
+  markExported(at?: number): void;
   readonly unexported: boolean;
+  /** The change epoch (ADR-0008 §5): bumped by every do, undo and redo. */
+  readonly epoch: number;
   /** A new annotation id, unique within the session (ENT-Annotation `id`); never reused, even after undo. */
   newId(): string;
 }
@@ -269,12 +275,15 @@ export function startSession(image: ImageInfo): Session {
       return doc;
     },
     history,
-    markExported() {
-      exportedEpoch = epoch;
+    markExported(at = epoch) {
+      exportedEpoch = at;
       chain = undefined; // an export is another command (ADR-0008 §3)
     },
     get unexported() {
       return epoch !== exportedEpoch;
+    },
+    get epoch() {
+      return epoch;
     },
     newId() {
       ids++;

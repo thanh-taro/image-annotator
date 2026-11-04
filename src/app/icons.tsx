@@ -12,7 +12,9 @@ import {
   CircleCheck,
   CircleDashed,
   CodeXml,
+  Copy,
   Download,
+  Ellipsis,
   Grid2x2,
   Highlighter,
   Image,
@@ -67,6 +69,9 @@ const SOURCES = {
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
   chevronUp: ChevronUp,
+  // F-012: CMP-Toolbar's copy and the overflow (COPY-action.more).
+  copy: Copy,
+  more: Ellipsis,
 } as const;
 
 export type IconName = keyof typeof SOURCES;

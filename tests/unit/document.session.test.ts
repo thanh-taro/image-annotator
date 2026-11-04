@@ -100,4 +100,15 @@ describe('MOD-Document session', () => {
     while (s.history.undo()) undos++;
     expect(undos).toBe(4);
   });
+
+  it('RULE-18 F-012.R4 an export records the epoch it was started at: a change made while it ran stays unexported', () => {
+    const s = startSession(image);
+    s.history.apply(touch, []);
+    const started = s.epoch;
+    s.history.apply(touch, []); // edited while the export was being produced
+    s.markExported(started);
+    expect(s.unexported).toBe(true);
+    s.markExported(s.epoch);
+    expect(s.unexported).toBe(false);
+  });
 });

@@ -43,7 +43,11 @@ describe('MOD-Keys text editing (RULE-19)', () => {
       expect(resolveKey(k, editing), k.key).toEqual({ preventDefault: false });
   });
 
-  it.todo('RULE-19 while a text is edited Mod+S still downloads (F-012)');
+  it('RULE-19 F-012.R2 while a text is edited Mod+S still downloads (editing ends first); Mod+C stays the field’s', () => {
+    expect(named(key({ key: 's', code: 'KeyS', mod: true }), editing)).toBe('export:download');
+    expect(resolveKey(key({ key: 's', code: 'KeyS', mod: true }), editing).preventDefault).toBe(true);
+    expect(resolveKey(key({ key: 'c', code: 'KeyC', mod: true }), editing)).toEqual({ preventDefault: false });
+  });
 
   it('F-005.AC13 RULE-19 T picks the text tool; Enter with it places (starts a text at the centre)', () => {
     expect(named(key({ key: 't', code: 'KeyT' }))).toBe('tool:text');

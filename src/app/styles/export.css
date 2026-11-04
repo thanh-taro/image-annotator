@@ -1,0 +1,105 @@
+/* MOD-App — F-012: CMP-Toolbar's export actions (the redaction count, the primary copy, download, the
+   narrow overflow menu) and CMP-Notice's action. Tokens only (ADR-0013). */
+@layer components {
+  /* COPY-action.copy is the toolbar's one primary action: filled in the accent colour. */
+  .tk-button--filled {
+    border-color: var(--tk-color-accent);
+    background: var(--tk-color-accent);
+    color: var(--tk-color-on-accent);
+  }
+  .tk-button--filled:hover:not(:disabled) {
+    border-color: var(--tk-color-accent-hover);
+    background: var(--tk-color-accent-hover);
+  }
+  .tk-toolbar .tk-button:disabled {
+    background: transparent;
+    color: var(--tk-color-muted);
+    cursor: default;
+  }
+  .tk-toolbar .tk-button--filled:disabled {
+    border-color: var(--tk-color-line);
+  }
+  .tk-toolbar__rows .tk-button {
+    height: var(--tk-size-touch-target);
+  }
+
+  /* COPY-export.redaction_count (RULE-20): a pill next to the export actions. */
+  .tk-count {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--tk-space-1);
+    height: var(--tk-space-6);
+    padding: 0 var(--tk-space-2);
+    border-radius: var(--tk-radius-pill);
+    background: var(--tk-color-surface2);
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-semibold);
+    white-space: nowrap;
+  }
+  /* The full text, measured off-screen to decide the count fallback (CMP-Toolbar). */
+  .tk-count--probe {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* COPY-action.more: the overflow menu below its button, aligned to its end. */
+  .tk-more {
+    position: relative;
+    flex: none;
+  }
+  .tk-menu {
+    position: absolute;
+    top: calc(100% + var(--tk-space-1));
+    right: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    min-width: max-content;
+    padding: var(--tk-space-1);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-md);
+    background: var(--tk-color-surface);
+  }
+  .tk-menu__item {
+    display: flex;
+    align-items: center;
+    min-height: var(--tk-size-touch-target);
+    padding: 0 var(--tk-space-3);
+    border: 0;
+    border-radius: var(--tk-radius-sm);
+    background: transparent;
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-semibold);
+    text-align: start;
+    cursor: pointer;
+  }
+  .tk-menu__item:hover:not(:disabled),
+  .tk-menu__item:focus-visible {
+    background: var(--tk-color-surface2);
+  }
+  .tk-menu__item:focus-visible {
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: calc(-1 * var(--tk-border-width-focus));
+  }
+  .tk-menu__item:disabled {
+    color: var(--tk-color-muted);
+    cursor: default;
+  }
+
+  /* CMP-Notice: the action of an error notice is outlined in the danger colour. */
+  .tk-notice--error .tk-button--outlined {
+    border-color: var(--tk-color-danger);
+    background: transparent;
+  }
+
+  @media (forced-colors: active) {
+    .tk-menu,
+    .tk-count {
+      border: var(--tk-border-width-hairline) solid CanvasText;
+    }
+  }
+}

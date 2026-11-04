@@ -3,10 +3,12 @@
 // text on it is 32 px (RULE-04), with 40 px lines. What the canvas shows is compared with a reference
 // drawn here in the tool's face with the RULE-08 outline, so the tests also prove position, size, colour
 // and face (NFR-08); CMP-TextEditor (the transparent field) is checked for its place and value.
-// Export ACs (AC6, AC7, AC14 and the export half of AC15) wait for F-012; undo (AC12) is a model test
-// in tests/unit/app.text.test.ts and tests/unit/document.text.test.ts until F-009 wires Mod+Z.
+// The export ACs (AC6, AC7, AC14 and the export half of AC15, F-012) compare the downloaded file, decoded
+// in Node (ADR-0019), with the same reference drawn at 1:1. Undo (AC12) is a model test in
+// tests/unit/app.text.test.ts and tests/unit/document.text.test.ts until F-009 wires Mod+Z.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { download, downloadButton, expectCleanPng, pngRegion, type DecodedPng } from './support/export';
 import { summary } from './support/load';
 
 const PANEL = 272;
@@ -147,6 +149,63 @@ async function textDiff(
       return diff / want.length;
     },
     { anchor, o, background, size: SIZE, line: LINE },
+  );
+}
+
+/** Downloads the result (F-012) and decodes it in Node; the file holds one picture (INV-02). */
+async function downloaded(page: Page): Promise<DecodedPng> {
+  return expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+}
+
+/**
+ * `textDiff` for an exported file: the same reference, drawn at 1:1 in the page (canvas text needs the
+ * browser), against the exported pixels around the anchor. Returns the mean difference per channel.
+ */
+async function exportTextDiff(
+  page: Page,
+  png: DecodedPng,
+  o: {
+    ax: number;
+    ay: number;
+    lines: string[];
+    fill: string;
+    outline: string;
+    face?: string;
+    dx?: number;
+    dy?: number;
+  },
+  background = GREY,
+) {
+  const w = 420;
+  const h = o.lines.length * LINE + 24;
+  const got = pngRegion(png, o.ax - 10, o.ay - 12, w, h);
+  return page.evaluate(
+    ({ got, o, background, size, line, w, h }) => {
+      const ref = new OffscreenCanvas(w, h);
+      const r = ref.getContext('2d', { colorSpace: 'srgb' });
+      if (!r) throw new Error('no 2d context');
+      r.fillStyle = `rgb(${background.slice(0, 3).join(',')})`;
+      r.fillRect(0, 0, w, h);
+      r.setTransform(1, 0, 0, 1, 10, 12);
+      r.font = o.face ?? `600 ${size}px Manrope`;
+      r.textBaseline = 'alphabetic';
+      r.lineJoin = 'round';
+      r.miterLimit = 2;
+      r.lineWidth = 2 * Math.max(1, 0.08 * size);
+      r.strokeStyle = o.outline;
+      r.fillStyle = o.fill;
+      const base = (line - 1.366 * size) / 2 + 1.066 * size;
+      o.lines.forEach((text, i) => {
+        const y = (o.dy ?? 0) + i * line + base;
+        r.strokeText(text, o.dx ?? 0, y);
+        r.fillText(text, o.dx ?? 0, y);
+      });
+      const want = r.getImageData(0, 0, w, h).data;
+      let diff = 0;
+      for (let i = 0; i < want.length; i++) diff += Math.abs((want[i] ?? 0) - (got[i] ?? 0));
+      return diff / want.length;
+    },
+    { got, o, background, size: SIZE, line: LINE, w, h },
   );
 }
 
@@ -589,11 +648,79 @@ test.describe('F-005 add text', () => {
     expect(value.endsWith('ax')).toBe(true);
   });
 
-  // Export (F-012) is not built: these turn on with it.
-  test.fixme('F-005.AC6 white text on a white area exports with a black outline at least 1 pixel wide (needs F-012)', async () => {});
-  test.fixme('F-005.AC7 an exported text matches the 100 % view in position, line breaks and size within 2 pixels (needs F-012)', async () => {});
-  test.fixme('F-005.AC14 "Đường dẫn lỗi" downloads with every letter and diacritic in the tool’s face (needs F-012)', async () => {});
-  test.fixme('F-005.AC15 decomposed "Đường" exports with every letter in the tool’s face (export half, needs F-012)', async () => {});
+  // Export (F-012): the downloaded file, decoded in Node (ADR-0019), against the same reference drawn at 1:1.
+  test('F-005.AC6 RULE-08 white text on a white area exports with a black outline at least 1 pixel wide', async ({
+    page,
+  }) => {
+    await open(page, [255, 255, 255, 255]);
+    await toolButton(page, 'Text (T)').click();
+    await page.getByRole('complementary', { name: 'Style' }).getByRole('radio', { name: 'White', exact: true }).check();
+    await clickImage(page, 200, 150);
+    await expect(editor(page)).toBeFocused();
+    await page.keyboard.type('HELLO');
+    await page.keyboard.press('Escape');
+    const png = await downloaded(page);
+    const o = { ax: 200, ay: 150, lines: ['HELLO'], fill: WHITE, outline: BLACK };
+    expect(await exportTextDiff(page, png, o, [255, 255, 255, 255])).toBeLessThan(1.5);
+    // Across the H's left stem, on its middle row: white, then at least one fully dark outline pixel, then the
+    // white glyph — the outline is there and at least 1 pixel wide (RULE-08: half of 2 × 2.56 lies outside).
+    const y = 150 + Math.round((LINE - 1.366 * SIZE) / 2 + 1.066 * SIZE - 0.35 * SIZE);
+    const scan = pngRegion(png, 190, y, 20, 1);
+    const dark = Array.from({ length: 20 }, (_, i) => scan[i * 4] ?? 255).filter((v) => v < 40).length;
+    expect(dark).toBeGreaterThanOrEqual(1);
+  });
+
+  test('F-005.AC7 NFR-08 an exported two-line text matches the 100 % view in position, line breaks and size within 2 pixels', async ({
+    page,
+  }) => {
+    await open(page);
+    await startText(page, 200, 150);
+    await page.keyboard.type('Wrong total');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('is $118');
+    await page.keyboard.press('Escape');
+    await deselect(page);
+    const o = { ax: 200, ay: 150, lines: ['Wrong total', 'is $118'], fill: RED, outline: WHITE };
+    // The 100 % view matches the reference …
+    expect(await textDiff(page, o)).toBeLessThan(1.5);
+    // … and so does the export, while 3 pixels off or another size is clearly worse.
+    const png = await downloaded(page);
+    const right = await exportTextDiff(page, png, o);
+    expect(right).toBeLessThan(1.5);
+    expect(await exportTextDiff(page, png, { ...o, dx: 3 })).toBeGreaterThan(right * 2);
+    expect(await exportTextDiff(page, png, { ...o, dy: 3 })).toBeGreaterThan(right * 2);
+    expect(await exportTextDiff(page, png, { ...o, face: '600 24px Manrope' })).toBeGreaterThan(right * 2);
+  });
+
+  test('F-005.AC14 F-012 "Đường dẫn lỗi" downloaded with Mod+S while editing has every letter and diacritic in the tool’s face', async ({
+    page,
+  }) => {
+    await open(page);
+    await startText(page, 200, 150);
+    await page.keyboard.insertText('Đường dẫn lỗi');
+    // F-012 edge case / RULE-19: Mod+S while editing ends the edit first and includes the text.
+    const file = await download(page, () => page.keyboard.press('ControlOrMeta+S'));
+    await expect(editor(page)).toBeHidden();
+    await expect(summary(page)).toHaveText(count(1));
+    const png = expectCleanPng(file.bytes);
+    const o = { ax: 200, ay: 150, lines: ['Đường dẫn lỗi'], fill: RED, outline: WHITE };
+    const face = await exportTextDiff(page, png, o);
+    expect(face).toBeLessThan(1.5);
+    expect(await exportTextDiff(page, png, { ...o, face: `600 ${SIZE}px serif` })).toBeGreaterThan(face * 2);
+  });
+
+  test('F-005.AC15 decomposed "Đường" exports with every letter in the tool’s face (export half)', async ({ page }) => {
+    await open(page);
+    await startText(page, 200, 150);
+    await page.keyboard.insertText('Đường');
+    await expect(editor(page)).toHaveValue('Đường');
+    await page.keyboard.press('Escape');
+    const png = await downloaded(page);
+    const o = { ax: 200, ay: 150, lines: ['Đường'], fill: RED, outline: WHITE };
+    const face = await exportTextDiff(page, png, o);
+    expect(face).toBeLessThan(1.5);
+    expect(await exportTextDiff(page, png, { ...o, face: `600 ${SIZE}px serif` })).toBeGreaterThan(face * 2);
+  });
 
   test('NFR-06 axe finds no violations while a text is edited', async ({ page }) => {
     await open(page);

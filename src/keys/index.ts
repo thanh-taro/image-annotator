@@ -2,7 +2,8 @@
 // (specs/40-technical/modules/MOD-Keys.md). The pure core imports no DOM code; a thin adapter
 // (added with F-013) reads the event, focus and platform into `KeyInfo`.
 // F-002 builds the View keys and the arrow-key pan of RULE-19; F-003 the Tools keys, Enter (place) and
-// Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; the other groups
+// Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the Export
+// keys (Mod+C copy, Mod+S download); the other groups
 // resolve to nothing (and are not yet kept from the browser) until F-013.
 
 /** What the adapter reads from a keyboard event (platform-mapping.md "Letter keys by layout"). */
@@ -25,6 +26,8 @@ export interface Scope {
   readonly selection: 'none' | 'one' | 'many';
   /** The single selected annotation is a text (RULE-19: Enter with the select tool edits it). */
   readonly textSelected?: boolean;
+  /** Text is selected somewhere on the page (RULE-19: Mod+C is then the browser's own copy). */
+  readonly pageTextSelected?: boolean;
 }
 
 /** The closed set of action groups (MOD-Keys public surface); members are defined with F-013. */
@@ -123,13 +126,18 @@ const ARROWS: Readonly<Record<string, readonly [number, number]>> = {
  * edited, or while a dialog or menu is open (Esc there is the dialog's or menu's own).
  */
 export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
-  // F-005.R2 / RULE-19: while a text is edited only Esc (and Mod+S, F-012) keep their meaning; every
-  // other key edits the text as in any text field, and undo/redo act within it.
-  if (scope.focus === 'textAnnotation') {
-    // TODO(F-012): Mod+S downloads while a text is edited (RULE-19); tests/unit/keys.text.test.ts has it pending.
+  if (scope.focus === 'dialog') return NONE;
+  // F-012 / RULE-19 Export: Mod+S downloads wherever focus is in the tool, also while text is edited
+  // (a text annotation, or a text or number field: the one key besides Esc that keeps its meaning there).
+  const exportKey = key.mod && !key.alt && !key.shift ? letterOf(key) : undefined;
+  if (exportKey === 's') return act('export', 'download');
+  // F-005.R2 / RULE-19: while a text is edited only Esc and Mod+S keep their meaning; every other key
+  // edits the text as in any text field, and undo/redo act within it.
+  if (scope.focus === 'textAnnotation')
     return !key.mod && !key.alt && key.key === 'Escape' ? act('edit', 'escape') : NONE;
-  }
-  if (scope.focus === 'text' || scope.focus === 'dialog') return NONE;
+  if (scope.focus === 'text') return NONE;
+  // F-012.R1 / RULE-19: Mod+C copies the result when no text is selected on the page.
+  if (exportKey === 'c') return scope.pageTextSelected ? NONE : act('export', 'copy');
   const plain = !key.mod && !key.alt;
   if (key.mod && !key.alt) {
     // `=` and `-` follow the typed character; `+` is the browser's own zoom-in key too (Mod++).

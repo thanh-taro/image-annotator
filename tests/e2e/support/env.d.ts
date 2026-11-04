@@ -30,3 +30,7 @@ declare module 'node:http' {
   export function createServer(handler: (req: unknown, res: unknown) => void): Server;
 }
 declare const process: { env: Record<string, string | undefined> };
+declare module 'node:zlib' {
+  export function inflateSync(data: Uint8Array): Uint8Array;
+  export function deflateSync(data: Uint8Array): Uint8Array;
+}
