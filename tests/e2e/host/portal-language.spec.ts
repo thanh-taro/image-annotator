@@ -1,7 +1,7 @@
 // F-018 Use the portal's language (RULE-16, RULE-17, ADR-0015) on the multi-origin harness: the
 // language from the address before first display, live taro:language messages, the browser
 // fallback, the origin/source/value checks, 320 px and the Vietnamese faces in the initial load.
-// Deferred ACs (need later features): AC2 (image, annotations, selection, tool, zoom, history),
+// Deferred ACs (need later features): AC2 (its history half, F-009; the rest is the F-018.R2 test below),
 // AC7 (every SCR-Annotator state), AC10's offline half (F-017). AC5 (export) is in tests/e2e/export.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
 import { CATALOG } from '../../../src/copy/messages.gen';
@@ -106,6 +106,50 @@ test('F-018.R2 a language message switches the UI live, without reloading', asyn
   expect(await stillSameWindow(frame)).toBe(true);
   // ADR-0015 §7: the document title is re-set from COPY-app.title on every switch.
   expect(await frame.evaluate(() => document.title)).toBe(CATALOG['vi-VN']['app.title']);
+});
+
+// F-018.AC2 without its history half (the undo controls arrive with F-009, which completes AC2).
+test('F-018.R2 a language message keeps the image, annotations, selection, arrow tool and zoom', async ({ page }) => {
+  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark', 'vi-VN'));
+  const frame = await toolFrame(page);
+  await markWindow(frame);
+  await expectUi(page, 'vi-VN');
+  await frame.evaluate(async () => {
+    const c = new OffscreenCanvas(400, 300);
+    const ctx = c.getContext('2d');
+    if (!ctx) throw new Error('no 2d context');
+    ctx.fillStyle = '#c8c8c8';
+    ctx.fillRect(0, 0, 400, 300);
+    const dt = new DataTransfer();
+    dt.items.add(new File([await c.convertToBlob({ type: 'image/png' })], 'grey.png', { type: 'image/png' }));
+    document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  });
+  const tool = page.frameLocator('#tool');
+  await expect(tool.locator('#tk-canvas-summary')).toContainText(', 0 chú thích');
+  await tool.getByRole('radio', { name: `${CATALOG['vi-VN']['tool.arrow'] as string} (A)` }).click();
+  const area = await tool.locator('main.tk-work-area').boundingBox();
+  if (!area) throw new Error('no work area');
+  const cx = area.x + area.width / 2;
+  const cy = area.y + area.height / 2;
+  await page.mouse.move(cx - 60, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx, cy + 20, { steps: 4 });
+  await page.mouse.move(cx + 60, cy + 40, { steps: 4 });
+  await page.mouse.up();
+  await expect(tool.locator('#tk-canvas-summary')).toContainText(', 1 chú thích');
+  const fields = tool.locator('.tk-geometry__input');
+  await expect(fields).toHaveCount(4); // the arrow is selected: its start and end fields
+  const before = await fields.evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value));
+  const zoom = await tool.locator('.tk-zoom__level').textContent();
+
+  await sendLanguage(page, 'en-US');
+  await expectUi(page, 'en-US');
+  expect(await stillSameWindow(frame)).toBe(true);
+  await expect(tool.locator('#tk-canvas-summary')).toContainText(', 1 annotation');
+  await expect(tool.locator('[data-screen="SCR-Annotator"]')).toHaveAttribute('data-state', 'selecting');
+  expect(await fields.evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value))).toEqual(before);
+  await expect(tool.getByRole('radio', { name: 'Arrow (A)' })).toHaveAttribute('aria-checked', 'true');
+  await expect(tool.locator('.tk-zoom__level')).toHaveText(zoom ?? '');
 });
 
 for (const [prefs, expected] of [

@@ -5,8 +5,8 @@
 // export uses (ADR-0004, NFR-08). The blur is compared with the slow reference of ADR-0006
 // (src/effects/reference.ts) computed here in Node from the image's own pixels.
 // The exported file (F-012) is checked too: downloaded, decoded in Node (ADR-0019) and compared with the
-// same reference. Still waiting: AC9's "sent behind" and AC10's "brought to front" (the order controls,
-// F-008) and AC13 (crop and padding, F-010/F-011) — the named `test.fixme` placeholders at the end.
+// same reference. AC9's "sent behind" and AC10's "brought to front" use the order controls (F-008). Still
+// waiting: AC13 (crop and padding, F-010/F-011) — the named `test.fixme` placeholder at the end.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { referenceBlur, referencePixelate } from '../../src/effects/reference';
@@ -499,7 +499,58 @@ test.describe('F-007 redact', () => {
     expect(allEqual(pngRegion(png, first! - 1, 305, 1, 290), [200, 200, 200, 255])).toBe(true);
   });
 
-  test.fixme('F-007.AC9 sent behind the arrow, the arrow is drawn over the blur (needs the order controls, F-008)', async () => {});
-  test.fixme('F-007.AC10 with the blur brought to the front, every pixel in the solid box is still the solid colour (needs F-008)', async () => {});
+  test('F-007.AC9 sent behind the arrow with COPY-action.send_backward, the arrow is drawn over the blur', async ({
+    page,
+  }) => {
+    const { shot } = await open(page, 400, 300);
+    await toolButton(page, 'Arrow (A)').click();
+    await dragImage(page, shot, [40, 200], [360, 200]);
+    await page.mouse.up();
+    await toolButton(page, 'Redact (X)').click();
+    await deselect(page);
+    await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
+    await dragImage(page, shot, [150, 170], [250, 230]);
+    await page.mouse.up();
+    // Before: the blur hides the arrow inside its box.
+    await deselect(page);
+    expect(maxDiff(await region(page, shot, 200, 200, 1, 1), RED)).toBeGreaterThan(24);
+    // The blur (just drawn, so selected again with a click) is sent behind the arrow.
+    await toolButton(page, 'Select (V)').click();
+    const box = await workArea(page).boundingBox();
+    if (!box) throw new Error('no work area');
+    await page.mouse.click(box.x + shot.at.x + 160, box.y + shot.at.y + 180);
+    await panel(page).getByRole('button', { name: 'Send backward' }).click();
+    await deselect(page);
+    await expect.poll(async () => maxDiff(await region(page, shot, 200, 200, 1, 1), RED)).toBeLessThanOrEqual(24);
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    expect(maxDiff(pngRegion(png, 200, 200, 1, 1), RED)).toBeLessThanOrEqual(24);
+  });
+
+  test('F-007.AC10 INV-02 a later blur sent behind and brought to the front again never shows through the solid', async ({
+    page,
+  }) => {
+    const { shot } = await open(page, 400, 300);
+    await toolButton(page, 'Redact (X)').click();
+    await dragImage(page, shot, [30, 128], [230, 154]);
+    await page.mouse.up();
+    await deselect(page);
+    await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
+    await dragImage(page, shot, [130, 110], [330, 170]);
+    await page.mouse.up(); // the blur is selected
+    const actions = panel(page);
+    await actions.getByRole('button', { name: 'Send backward' }).click();
+    await deselect(page); // the blur's selection outline crosses the solid box
+    expect(allEqual(await region(page, shot, 30, 128, 200, 26), BLACK)).toBe(true);
+    // Select the blur again where the solid does not cover it, and bring it to the front of the two.
+    await toolButton(page, 'Select (V)').click();
+    const box = await workArea(page).boundingBox();
+    if (!box) throw new Error('no work area');
+    await page.mouse.click(box.x + shot.at.x + 300, box.y + shot.at.y + 160);
+    await actions.getByRole('button', { name: 'Bring forward' }).click();
+    await deselect(page);
+    expect(allEqual(await region(page, shot, 30, 128, 200, 26), BLACK)).toBe(true);
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    expect(allEqual(pngRegion(png, 30, 128, 200, 26), BLACK)).toBe(true);
+  });
   test.fixme('F-007.AC13 a blur spanning a cropped frame’s edge exports white in the padding and reads no pixel outside the frame (needs F-010, F-011)', async () => {});
 });

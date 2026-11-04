@@ -14,10 +14,15 @@
 // Redactions (F-007) are drawn with the redaction tool like rectangles; their blur and pixelate patches
 // come from MOD-Effects each frame (exact when ready, else the instant approximation; the shape being
 // drawn counts as moving, ADR-0017), and an exact patch arriving repaints.
-// The accessible list arrives with F-013.
+// The select tool (F-008, ./select.ts) selects by click, Shift+click and marquee, and moves the selection
+// or drags a single selection's handles (also Alt+drag with a drawing tool); each frame of a move paints
+// the split drag layers with lo and hi from `dragRange`, so blur and pixelate above a dragged solid are
+// drawn live (ADR-0022), then the selection overlay of the moved annotations. The accessible list arrives
+// with F-013.
 // Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, F-004.R1/R2/R4, F-006.R1/R4, ADR-0009 §4, RULE-12, CMP-Canvas "Behavior" (two fingers pan
 // and zoom) and "drawing" / "selected", architecture A5 (crisp from 200 %), ADR-0016, ADR-0022;
-// F-005.R1/R2/R3/R4, CMP-TextEditor, ADR-0009, ADR-0020; F-007.R1/R3, ADR-0006, ADR-0017.
+// F-005.R1/R2/R3/R4, CMP-TextEditor, ADR-0009, ADR-0020; F-007.R1/R3, ADR-0006, ADR-0017; F-008.R1/R2/R3/R6,
+// RULE-05, RULE-06.
 import { useEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
 import {
@@ -43,14 +48,16 @@ import { effects } from '../effects';
 import {
   measureWith,
   paint as paintScene,
+  paintOverlays,
   paletteColour,
   type BaseView,
   type OverlayLook,
   type Patches,
   type Transform,
 } from '../render';
-import { DragLayers } from './drag';
+import { DragLayers, dragRange } from './drag';
 import { DRAFT_ID, DrawTool } from './draw';
+import { SelectTool } from './select';
 import { bindTextField } from './editor';
 import { connectFontGate, fontGate } from './fonts';
 import { InputController, pointerInput, type ToolInput } from './input';
@@ -80,6 +87,10 @@ export interface CanvasProps {
   readonly onTextEnd?: (edit: TextEdit, text: TextAnnotation | null, reason: TextEndReason) => void;
   /** Focus may move to this element while a text is edited without ending the edit (the style panel). */
   readonly keepsTextEdit?: (target: Element) => boolean;
+  /** F-008.R1: the select tool changed the selection (a click, Shift+click or marquee; not an undo step). */
+  readonly onSelect?: (ids: readonly string[]) => void;
+  /** F-008.R2/R3: a finished move or resize; MOD-App records it as one undo step (RULE-11). */
+  readonly onEdit?: (changes: readonly Annotation[]) => void;
 }
 
 /** What the view commands reach while a canvas is shown (MOD-Canvas public surface). */
@@ -168,6 +179,8 @@ export function Canvas({
   onTextEdit,
   onTextEnd,
   keepsTextEdit,
+  onSelect,
+  onEdit,
 }: CanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
@@ -186,6 +199,8 @@ export function Canvas({
     onTextEdit,
     onTextEnd,
     keepsTextEdit,
+    onSelect,
+    onEdit,
     schedule: () => {},
     onViewChanged: () => {},
   });
@@ -202,6 +217,8 @@ export function Canvas({
     onTextEdit,
     onTextEnd,
     keepsTextEdit,
+    onSelect,
+    onEdit,
   });
   const controller = useRef<ViewController | null>(null);
   controller.current ??= new ViewController((v) => {
@@ -333,18 +350,53 @@ export function Canvas({
       fonts,
     );
     textRef.current = text;
-    // F-005 before the shape tools: a press while editing only ends the edit (F-005.R3).
+    // F-008: the select tool, and Alt+press on an annotation with a drawing tool (./select.ts). Handles hit
+    // within size.targetMin (style.md), whatever the zoom.
+    const targetMin = cssPx(el, '--tk-size-target-min');
+    const select = new SelectTool(
+      () => {
+        const { image: img, tool: active, doc: scene, selection: chosen } = live.current;
+        const now = view.view;
+        if (!now) return null;
+        const z = now.zoom / 100;
+        return {
+          tool: active,
+          annotations: scene.annotations,
+          selection: chosen,
+          shortSide: Math.min(img.width, img.height),
+          measure: measureLine,
+          tolerance: HIT_TOLERANCE_PX / z,
+          handleHalf: targetMin / 2 / z,
+          toImage: (p: Point) => {
+            const v = view.view;
+            return v ? toImage(v, p) : p;
+          },
+        };
+      },
+      {
+        select: (ids) => live.current.onSelect?.(ids),
+        commit: (changes) => live.current.onEdit?.(changes),
+        preview: () => schedule(),
+        // ADR-0022 / NFR-02: the next frame builds the drag layers, so the first move frame only composites.
+        prepare: () => schedule(),
+      },
+      fonts,
+    );
+    // F-005 first while a text is edited: a press then only ends the edit (F-005.R3). Then the select tool
+    // (the select tool's presses, Alt+press on an annotation, F-008.R6), then placing text, then drawing.
     const tools: ToolInput = {
-      down: (i) => text.down(i) || draw.down(i),
+      down: (i) => (text.active && text.down(i)) || select.down(i) || text.down(i) || draw.down(i),
       move: (i) => {
         text.move();
+        select.move(i);
         draw.move(i);
       },
       up: (i) => {
         text.up(i);
+        select.up(i);
         draw.up(i);
       },
-      cancel: () => text.cancel() || draw.cancel(),
+      cancel: () => text.cancel() || select.cancel() || draw.cancel(),
     };
 
     const paint = () => {
@@ -374,6 +426,13 @@ export function Canvas({
       if (!source) return;
       const transform = viewTransform(v, ratio);
       const preview = draw.preview;
+      // F-008: the annotations being moved or resized, as they are now (./select.ts).
+      const moving = select.preview;
+      const look = themed(th, ratio).look;
+      if (moving) {
+        paintMove(ctx, { source, transform, width, height, scene, moving, selected, look, img, th, ratio });
+        return;
+      }
       // F-007.R3 / ADR-0017: blur and pixelate patches for every effect redaction, the one being drawn
       // included (it counts as moving: approximated, with an exact job after 100 ms without movement).
       // NFR-02: while drawing anything else, only the cached lower layer shows effects; it keeps the
@@ -414,13 +473,71 @@ export function Canvas({
         img,
         transform,
         patches,
-        { selection: selected, look: themed(th, ratio).look, backdrop },
+        { selection: selected, look, backdrop, marquee: select.marquee },
         source,
       );
-      // NFR-02: a gesture is pressed but not yet a drag: build the layers now (nothing new is drawn).
+      // NFR-02: a gesture is pressed but not yet a drag: build the layers now (nothing new is drawn). A
+      // press on an annotation or handle prepares the range its move or resize will draw (ADR-0022).
+      const pending = select.pending;
       if (draw.dragging) drag.prepare(dragFrame);
+      else if (pending) drag.prepare({ ...dragFrame, ...moveRange(scene, new Set(pending)) });
       else drag.release();
       if (edited) placeEditor();
+    };
+
+    /**
+     * ADR-0022 for a move or resize (F-008): the lowest and highest dragged indexes, widened by `dragRange`
+     * so every blur and pixelate above a dragged solid is drawn each frame (RULE-10).
+     */
+    const moveRange = (scene: Doc, ids: ReadonlySet<string>) =>
+      dragRange(
+        scene.annotations,
+        scene.annotations.flatMap((a, i) => (ids.has(a.id) ? [i] : [])),
+      );
+
+    /**
+     * One frame of a move or resize (F-008.R2/R3, ADR-0022): the cached lower and upper layers, with the
+     * annotations between them drawn as they are now; then the selection overlay of the moved ones.
+     * F-007.R3 / ADR-0017: when a redaction is dragged, its patches (and those of effects reading a dragged
+     * solid) are approximated with no exact job while it moves; otherwise the still patches are kept.
+     */
+    const paintMove = (
+      ctx: CanvasRenderingContext2D,
+      f: {
+        source: CanvasImageSource;
+        transform: Transform;
+        width: number;
+        height: number;
+        scene: Doc;
+        moving: ReadonlyMap<string, Annotation>;
+        selected: readonly string[];
+        look: OverlayLook;
+        img: ImageBitmap;
+        th: string;
+        ratio: number;
+      },
+    ) => {
+      const ids = new Set(f.moving.keys());
+      const now = { ...f.scene, annotations: f.scene.annotations.map((a) => f.moving.get(a.id) ?? a) };
+      const redaction = [...f.moving.values()].some((a) => a.kind === 'redaction');
+      const patches = redaction ? effects().patchesFor(now, ids) : stillPatches;
+      const { lo, hi } = moveRange(f.scene, ids);
+      const backdrop = themed(f.th, f.ratio).view;
+      drag.paint(ctx, {
+        base: f.source,
+        baseVersion: layer.rebuilds,
+        scene: f.scene,
+        image: f.img,
+        transform: f.transform,
+        patches,
+        backdrop,
+        width: f.width,
+        height: f.height,
+        lo,
+        hi,
+        middle: { ...f.scene, annotations: now.annotations.slice(lo, hi + 1) },
+      });
+      paintOverlays(ctx, now, f.img, f.transform, { selection: f.selected, look: f.look });
     };
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(paint);
@@ -429,7 +546,10 @@ export function Canvas({
     const stopFonts = connectFontGate(fonts, el, schedule);
     // F-007.R3: an exact blur or pixelate patch replaced an approximation.
     const stopPatches = effects().onPatch(schedule);
-    live.current.onViewChanged = () => draw.viewChanged();
+    live.current.onViewChanged = () => {
+      draw.viewChanged();
+      select.viewChanged();
+    };
 
     const measure = () => {
       const r = el.getBoundingClientRect();
@@ -483,7 +603,9 @@ export function Canvas({
     const onPointerCancel = (e: PointerEvent) => input.cancel(read(e));
     // RULE-06: Shift pressed or released mid-drag constrains the preview at once, without a move.
     const onShift = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') draw.setShift(e.type === 'keydown');
+      if (e.key !== 'Shift') return;
+      draw.setShift(e.type === 'keydown');
+      select.setShift(e.type === 'keydown');
     };
 
     // F-002.R3 Safari trackpad pinch: WebKit on macOS sends `gesturestart` / `gesturechange` /
@@ -516,7 +638,7 @@ export function Canvas({
         inset = Math.max(0, px);
         measure();
       },
-      cancelDrag: () => draw.cancel(),
+      cancelDrag: () => draw.cancel() || select.cancel(),
       // RULE-19 Enter: the active tool's default annotation at the centre of the view (./draw.ts); with
       // the text tool, a new text there, editing (./text.ts).
       placeAtCentre: () => text.placeAt(view.centreImage()) || draw.placeAt(view.centreImage()),

@@ -137,7 +137,7 @@ export class DragLayers {
 
   /**
    * ADR-0022 / NFR-02: builds the layers a drag about to start will use (called at pointerdown for a
-   * draw — lo = n, hi = n − 1 — and, from F-008, for a move or resize with its lo and hi), drawing
+   * draw — lo = n, hi = n − 1 — and for a move or resize with its lo and hi from `dragRange`), drawing
    * nothing. The first drag frame then finds them fresh. `f.middle` is not read.
    */
   prepare(f: DragFrame): boolean {
@@ -180,8 +180,8 @@ export class DragLayers {
  * frame. Normally the lowest and highest dragged ones; when a solid redaction is dragged, every blur and
  * pixelate above the lowest dragged solid is drawn each frame too (RULE-10: the solid shows wherever it
  * moves), so the upper bound reaches the highest of them. Everything between the bounds is drawn each frame.
- * TODO(F-008): move and resize must take lo and hi from here at prepare() / pointerdown (review m5,
- * security m5); drawing a new annotation (always on top) uses lo = n, hi = n − 1 and does not need it.
+ * F-008: a move or resize takes its lo and hi from here, at prepare() (pointerdown) and every frame
+ * (<Canvas> `moveRange`); drawing a new annotation (always on top) uses lo = n, hi = n − 1.
  */
 export function dragRange(annotations: readonly Annotation[], dragged: readonly number[]): { lo: number; hi: number } {
   const lo = Math.min(...dragged);

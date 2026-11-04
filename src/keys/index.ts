@@ -3,7 +3,8 @@
 // (added with F-013) reads the event, focus and platform into `KeyInfo`.
 // F-002 builds the View keys and the arrow-key pan of RULE-19; F-003 the Tools keys, Enter (place) and
 // Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the Export
-// keys (Mod+C copy, Mod+S download); the other groups
+// keys (Mod+C copy, Mod+S download); F-008 the Edit keys (Delete/Backspace, Mod+D, Mod+A, ] and [,
+// arrow-key moves and Alt+arrow resizes of the selection); the other groups
 // resolve to nothing (and are not yet kept from the browser) until F-013.
 
 /** What the adapter reads from a keyboard event (platform-mapping.md "Letter keys by layout"). */
@@ -51,7 +52,22 @@ export interface PanAction {
   readonly dy: number;
 }
 
-export type Action = NamedAction | PanAction;
+/**
+ * RULE-19 Edit (F-008.R2/R3): arrow keys move the selection by (dx, dy) image pixels (`nudge`);
+ * Alt+arrows make a single selection (dx, dy) wider and taller, keeping its top-left corner (`resize`).
+ */
+export interface EditStepAction {
+  readonly kind: 'nudge' | 'resize';
+  readonly group: 'edit';
+  readonly dx: number;
+  readonly dy: number;
+}
+
+export type Action = NamedAction | PanAction | EditStepAction;
+
+/** RULE-19: arrow keys move the selection 1 image pixel, 10 with Shift (Alt+arrows resize by the same). */
+export const NUDGE_STEP = 1;
+export const NUDGE_STEP_SHIFT = 10;
 
 /** RULE-19: arrow keys pan the view 40 screen pixels, 200 with Shift. */
 export const PAN_STEP = 40;
@@ -158,15 +174,34 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
     }
   }
   if (plain && key.key === 'Escape') return act('edit', 'escape');
+  // F-008.R5 / RULE-19 Edit: Delete or Backspace delete the selection; Mod+D duplicates; Mod+A selects all;
+  // ] brings forward and [ sends backward (by the typed character). Kept even with nothing to act on.
+  if (plain && !key.shift && (key.key === 'Delete' || key.key === 'Backspace')) return act('edit', 'delete');
+  if (key.mod && !key.alt && !key.shift) {
+    const letter = letterOf(key);
+    if (letter === 'd') return act('edit', 'duplicate');
+    if (letter === 'a') return act('edit', 'selectAll');
+  }
+  if (!key.mod && key.key === ']') return act('edit', 'bringForward');
+  if (!key.mod && key.key === '[') return act('edit', 'sendBackward');
   if (plain && key.shift && key.code === 'Digit1') return act('view', 'fit');
   if (plain && key.shift && key.code === 'Digit0') return act('view', 'actualSize');
   if (plain && !key.shift && (key.code === 'Space' || key.key === ' ')) return act('view', 'panHold');
   const arrow = ARROWS[key.key];
   if (arrow && !key.mod) {
-    // Alt+arrows resize the selection (F-008); with nothing to resize they are still kept (RULE-19),
-    // so Alt+Left never takes the browser back.
-    if (key.alt) return KEEP;
-    if (scope.selection === 'none' && scope.tool !== 'crop') {
+    // With the crop tool the arrows act on the frame (F-010); until then they are kept and do nothing.
+    if (scope.tool === 'crop') return KEEP;
+    const step = key.shift ? NUDGE_STEP_SHIFT : NUDGE_STEP;
+    const edit = (kind: EditStepAction['kind']): Resolution => ({
+      action: { kind, group: 'edit', dx: arrow[0] * step, dy: arrow[1] * step },
+      preventDefault: true,
+    });
+    // F-008.R3 / RULE-19: Alt+arrows resize a single selection; with nothing or several selected they do
+    // nothing and are still kept, so Alt+Left never takes the browser back.
+    if (key.alt) return scope.selection === 'one' ? edit('resize') : KEEP;
+    // F-008.R2 / RULE-19: arrow keys move the selection 1 image pixel (Shift: 10).
+    if (scope.selection !== 'none') return edit('nudge');
+    {
       const step = key.shift ? PAN_STEP_SHIFT : PAN_STEP;
       return { action: { kind: 'pan', group: 'view', dx: arrow[0] * step, dy: arrow[1] * step }, preventDefault: true };
     }

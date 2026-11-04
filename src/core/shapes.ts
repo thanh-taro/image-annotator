@@ -443,8 +443,14 @@ export function hitTopmost(
 /** Corner and edge handles of boxes; `tail` and `head` handles of lines and arrows. */
 export type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'tail' | 'head';
 
+/**
+ * F-008.R3: a box's eight handles on its box; a line's two end points; a stroke's or highlight's eight
+ * on the box of its points. Text and steps have none (their size is S/M/L).
+ * Spec gap (F-008 report; build-plan note from the F-004 review): a straight (Shift) highlight's points
+ * box has zero height (or width), which cannot be scaled; it shows only the handles along its length
+ * (`e`, `w`, or `n`, `s`), so no two handles stack, and a dot shows none.
+ */
 export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] {
-  // F-008.R3: text and steps have no handles (their size is S/M/L).
   if (isStepAnnotation(a) || isTextAnnotation(a)) return [];
   if (isLineAnnotation(a))
     return [
@@ -456,7 +462,7 @@ export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] 
   const my = b.y + b.height / 2;
   const r = b.x + b.width;
   const d = b.y + b.height;
-  return [
+  const all: readonly (readonly [Handle, Point])[] = [
     ['nw', { x: b.x, y: b.y }],
     ['n', { x: mx, y: b.y }],
     ['ne', { x: r, y: b.y }],
@@ -466,6 +472,10 @@ export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] 
     ['sw', { x: b.x, y: d }],
     ['w', { x: b.x, y: my }],
   ];
+  if (!isPathAnnotation(a) || (b.width > 0 && b.height > 0)) return all;
+  if (b.width > 0) return all.filter(([h]) => h === 'e' || h === 'w');
+  if (b.height > 0) return all.filter(([h]) => h === 'n' || h === 's');
+  return [];
 }
 
 /** The handle within `half` image pixels of `p` (half the handle's hit area divided by the zoom). */
@@ -476,23 +486,40 @@ export function hitHandle(a: Annotation, p: Point, half: number): Handle | undef
 
 // ---------- move and resize (pure; F-008 drives them) ----------
 
+/** F-008.R2: `a` moved by (dx, dy) image pixels (a stroke or highlight: every point). */
 export function moved(a: Annotation, dx: number, dy: number): Annotation {
   const at = (p: Point): Point => ({ x: p.x + dx, y: p.y + dy });
   if (isBoxAnnotation(a)) return { ...a, box: { ...a.box, x: a.box.x + dx, y: a.box.y + dy } };
   if (isLineAnnotation(a)) return { ...a, tail: at(a.tail), head: at(a.head) };
+  if (isPathAnnotation(a)) return { ...a, points: a.points.map(at) };
   if (isStepAnnotation(a)) return { ...a, centre: at(a.centre) };
-  if (isTextAnnotation(a)) return { ...a, anchor: at(a.anchor) };
-  throw new Error(`moved: ${a.kind} arrives with its feature`);
+  return { ...a, anchor: at(a.anchor) };
 }
 
-/** `a` (as at the start of the drag) with handle `h` dragged by (dx, dy); `keepAspect` is RULE-06 Shift. */
+/**
+ * A path's points mapped from their box `b` onto the box from (x1, y1) to (x2, y2) (F-008.R3 scale). An
+ * axis on which `b` has no extent is kept as it is (a straight highlight cannot gain a height).
+ */
+function scalePoints(a: PathAnnotation, b: Box, x1: number, y1: number, x2: number, y2: number): PathAnnotation {
+  const sx = b.width > 0 ? (x2 - x1) / b.width : 1;
+  const sy = b.height > 0 ? (y2 - y1) / b.height : 1;
+  const ox = b.width > 0 ? x1 : b.x;
+  const oy = b.height > 0 ? y1 : b.y;
+  return { ...a, points: a.points.map((p) => ({ x: ox + (p.x - b.x) * sx, y: oy + (p.y - b.y) * sy })) };
+}
+
+/**
+ * F-008.R3: `a` (as at the start of the drag) with handle `h` dragged by (dx, dy): a box is resized, a
+ * line's end point moves, a stroke or highlight is scaled with its box. `keepAspect` is RULE-06 Shift
+ * (corner handles keep the box's aspect ratio). Text and steps have no handles and are returned as is.
+ */
 export function resized(a: Annotation, h: Handle, dx: number, dy: number, keepAspect = false): Annotation {
   if (isLineAnnotation(a)) {
     const move = (p: Point): Point => ({ x: p.x + dx, y: p.y + dy });
-    return h === 'tail' ? { ...a, tail: move(a.tail) } : { ...a, head: move(a.head) };
+    return h === 'tail' ? { ...a, tail: move(a.tail) } : h === 'head' ? { ...a, head: move(a.head) } : a;
   }
-  if (!isBoxAnnotation(a)) throw new Error(`resized: ${a.kind} arrives with its feature`);
-  const b = normalizeBox(a.box);
+  if (!isBoxAnnotation(a) && !isPathAnnotation(a)) return a;
+  const b = shapeBox(a);
   let x1 = b.x;
   let y1 = b.y;
   let x2 = b.x + b.width;
@@ -510,5 +537,121 @@ export function resized(a: Annotation, h: Handle, dx: number, dy: number, keepAs
     if (h.includes('n')) y1 = y2 - ht;
     else y2 = y1 + ht;
   }
+  if (isPathAnnotation(a)) return scalePoints(a, b, x1, y1, x2, y2);
   return { ...a, box: normalizeBox({ x: x1, y: y1, width: x2 - x1, height: y2 - y1 }) };
+}
+
+/** RULE-19: Alt+arrow resizes never make a box smaller than 1 × 1; the size fields keep the same limit. */
+export const MIN_EDIT_SIZE = 1;
+
+/**
+ * `a` with its box (a stroke's or highlight's points box) set to `width` × `height`, keeping its top-left
+ * corner, never below MIN_EDIT_SIZE (RULE-19, F-008.R8). Other kinds are returned as is.
+ */
+function sizedTo(a: Annotation, width: number, height: number): Annotation {
+  const b = shapeBox(a);
+  if (isPathAnnotation(a)) {
+    const w = b.width > 0 ? Math.max(MIN_EDIT_SIZE, width) : 0;
+    const h = b.height > 0 ? Math.max(MIN_EDIT_SIZE, height) : 0;
+    return scalePoints(a, b, b.x, b.y, b.x + w, b.y + h);
+  }
+  if (!isBoxAnnotation(a)) return a;
+  const box = { x: b.x, y: b.y, width: Math.max(MIN_EDIT_SIZE, width), height: Math.max(MIN_EDIT_SIZE, height) };
+  return { ...a, box };
+}
+
+/**
+ * RULE-19 Alt+arrows on a single selection: a box annotation (and a stroke's or highlight's bounding box)
+ * gets (dx, dy) wider and taller, keeping its top-left corner, never below 1 × 1; a line or arrow moves
+ * its head; text and steps do nothing (the same object is returned). Implements: F-008.R3, F-008.AC10.
+ */
+export function altResized(a: Annotation, dx: number, dy: number): Annotation {
+  if (isLineAnnotation(a)) return { ...a, head: { x: a.head.x + dx, y: a.head.y + dy } };
+  if (!isBoxAnnotation(a) && !isPathAnnotation(a)) return a;
+  const b = shapeBox(a);
+  return sizedTo(a, b.width + dx, b.height + dy);
+}
+
+/**
+ * F-008.R1: the ids of every annotation whose mark (`boundsOf`) the marquee `box` touches, in drawing
+ * order. The box may have been dragged in any direction.
+ * Spec gap (reported with F-008): MOD-Core's surface names `marqueeHits(annotations, box)`; the marks'
+ * bounds need the image's shorter side and the text measure (as `boundsOf`).
+ */
+export function marqueeHits(
+  annotations: readonly Annotation[],
+  box: Box,
+  shortSide: number,
+  measure: TextMeasure,
+): readonly string[] {
+  const m = normalizeBox(box);
+  return annotations
+    .filter((a) => {
+      const b = boundsOf(a, shortSide, measure);
+      return b.x <= m.x + m.width && b.x + b.width >= m.x && b.y <= m.y + m.height && b.y + b.height >= m.y;
+    })
+    .map((a) => a.id);
+}
+
+// ---------- position and size fields (F-008.R8, D-008) ----------
+
+/** A field of CMP-StylePanel's position and size (COPY-geometry.*): `start…` and `end…` are a line's ends. */
+export type GeometryField = 'x' | 'y' | 'width' | 'height' | 'startX' | 'startY' | 'endX' | 'endY';
+
+/**
+ * F-008.R8: the position and size fields of an annotation, in image pixels rounded to whole pixels:
+ * rectangles, ellipses and redactions X, Y, W, H of their box; lines and arrows start and end X and Y;
+ * strokes and highlights X, Y, W, H of their points' box; text X and Y of its anchor; steps X and Y of
+ * their centre.
+ */
+export function geometryOf(a: Annotation): readonly (readonly [GeometryField, number])[] {
+  const r = Math.round;
+  if (isLineAnnotation(a))
+    return [
+      ['startX', r(a.tail.x)],
+      ['startY', r(a.tail.y)],
+      ['endX', r(a.head.x)],
+      ['endY', r(a.head.y)],
+    ];
+  if (isStepAnnotation(a))
+    return [
+      ['x', r(a.centre.x)],
+      ['y', r(a.centre.y)],
+    ];
+  if (isTextAnnotation(a))
+    return [
+      ['x', r(a.anchor.x)],
+      ['y', r(a.anchor.y)],
+    ];
+  const b = shapeBox(a);
+  return [
+    ['x', r(b.x)],
+    ['y', r(b.y)],
+    ['width', r(b.width)],
+    ['height', r(b.height)],
+  ];
+}
+
+/**
+ * F-008.R8: `a` with one position or size field set to `value` (whole image pixels). X and Y move it;
+ * W and H resize a box, or scale a stroke's or highlight's points from the top-left corner, never below
+ * 1 × 1 (the same limit as Alt+arrows); a line's start and end fields move its tail and head. A field the
+ * kind does not show returns `a` itself.
+ */
+export function withGeometry(a: Annotation, field: GeometryField, value: number): Annotation {
+  if (isLineAnnotation(a)) {
+    if (field === 'startX') return { ...a, tail: { ...a.tail, x: value } };
+    if (field === 'startY') return { ...a, tail: { ...a.tail, y: value } };
+    if (field === 'endX') return { ...a, head: { ...a.head, x: value } };
+    if (field === 'endY') return { ...a, head: { ...a.head, y: value } };
+    return a;
+  }
+  const at = isStepAnnotation(a) ? a.centre : isTextAnnotation(a) ? a.anchor : shapeBox(a);
+  if (field === 'x') return moved(a, value - at.x, 0);
+  if (field === 'y') return moved(a, 0, value - at.y);
+  if (isStepAnnotation(a) || isTextAnnotation(a)) return a;
+  const b = shapeBox(a);
+  if (field === 'width') return sizedTo(a, value, b.height);
+  if (field === 'height') return sizedTo(a, b.width, value);
+  return a;
 }

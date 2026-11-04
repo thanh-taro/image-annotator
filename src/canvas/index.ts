@@ -2,8 +2,8 @@
 // (specs/40-technical/modules/MOD-Canvas.md, ADR-0004, ADR-0009, ADR-0016, ADR-0020, ADR-0022).
 // <Canvas> shows the loaded image (F-001, ./Canvas.tsx) in a view that zooms and pans (F-002,
 // ./view.ts); shapes, pen strokes, highlights and steps are drawn with ./draw.ts (F-003, F-004, F-006);
-// text is placed and edited with ./text.ts and ./editor.ts (F-005); the other drawing commands are built
-// with F-007, F-008 and F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
+// text is placed and edited with ./text.ts and ./editor.ts (F-005); selecting, moving and resizing with
+// ./select.ts (F-008); crop arrives with F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
 import type { Point } from '../core';
 import { activeCanvas } from './Canvas';
 
@@ -26,7 +26,8 @@ export {
   type PlaceKind,
 } from './draw';
 export { connectFontGate, FontGate, fontGate } from './fonts';
-export { DragLayers, type DragFrame } from './drag';
+export { DragLayers, dragRange, type DragFrame } from './drag';
+export { SelectTool, type SelectCallbacks, type SelectSetup } from './select';
 export { TextTool, type TextEdit, type TextEndReason, type TextField, type TextSetup } from './text';
 
 /**
@@ -52,8 +53,8 @@ export const canvasCommands = {
   placeAtCentre: (): boolean => activeCanvas()?.placeAtCentre() ?? false,
   /** RULE-19 Esc: cancels the current drag; true if there was one (nothing is created). */
   cancelDrag: (): boolean => activeCanvas()?.cancelDrag() ?? false,
-  nudge: (_dx: number, _dy: number): void => notImplemented('canvasCommands.nudge'),
-  altResize: (_dx: number, _dy: number): void => notImplemented('canvasCommands.altResize'),
+  // F-008: arrow-key nudges and Alt+arrow resizes are document edits, so they are MOD-App commands
+  // (app/editing.ts `nudgeSelection`, `altResizeSelection`), not canvas commands (spec gap, F-008 report).
   selectNext: (): void => notImplemented('canvasCommands.selectNext'),
   selectPrevious: (): void => notImplemented('canvasCommands.selectPrevious'),
   /** F-005.R4 / RULE-19 Enter with the select tool: edits the selected text; true if started. */
