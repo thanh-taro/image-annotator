@@ -41,5 +41,6 @@ COPY-action.undo and COPY-action.redo in CMP-Toolbar.
 ## Edge cases
 - Undo while editing text → undoes typing inside the text first (browser text undo); after
   editing ends, undo reverts the whole edit as one step.
+- The Undo or Redo button pressed while editing text → editing ends first, then the whole edit is undone or redone as one step.
 
 ## Open questions

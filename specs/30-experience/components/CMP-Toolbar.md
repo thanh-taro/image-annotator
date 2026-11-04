@@ -27,5 +27,5 @@ Exactly one tool is active. The select tool is active when the page opens; the a
 draws or clicks elsewhere.
 
 ## Accessibility
-Tool group is a single-choice radio group named COPY-a11y.tool_group, with arrow-key navigation; each control's name includes its
-shortcut (NFR-06).
+Tool group is a single-choice radio group named COPY-a11y.tool_group, with arrow-key navigation; each tool's name includes its
+shortcut; other controls state theirs as keyboard shortcuts (NFR-06). When a clicked Undo or Redo becomes disabled, focus moves to the other of the two (NFR-06).
