@@ -32,6 +32,9 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 | F-018.AC10 | download, offline (F-012, F-017); text part already in portal-language.spec.ts |
 | F-005.AC6, AC7, AC14, AC15 (export part) | export (F-012); fixme placeholders exist |
 | F-005.AC12 (e2e) | undo (F-009); model-tested |
+| F-007.AC3, AC7, AC9, AC10, AC11 (export parts) | export (F-012) |
+| F-007.AC9 sent behind, AC10 brought to front | F-008 |
+| F-007.AC13 | F-010, F-011, F-012 |
 | F-016.AC4 (image, annotations and history unchanged) | F-003, F-009 |
 | F-001.AC9, AC10, AC14 (e2e; unit-tested in tests/unit/app.load.test.ts) | unexported changes and export (F-003, F-012) |
 | F-002.AC7 (export equals the view) | F-003, F-012 |
@@ -39,6 +42,7 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 ## Manual checks collected so far
 - Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
 - Real Mod+V paste on WebKit (F-001)
+- NFR-04 memory with blur/pixelate at the RULE-02 limit (F-007; measure in QA)
 - WebKit IME and Safari Telex Vietnamese input, real drop of text into the editor (F-005)
 
 ## Notes for later features
@@ -48,3 +52,6 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - F-008: wire F-006.AC2/AC7 (fixme placeholders exist).
 - F-012: wire the Mod+S `TODO(F-012)` in keys (pending unit test exists).
 - Open design difference (F-005): placeholder opacity 0.5 is a raw value (no opacity token) and the artboard's 120 px editor minimum width is not applied; settle in QA or a token change.
+- F-008: wire `dragRange` for moving solids (TODO(F-008) in canvas/drag.ts; security review F-007 m5).
+- F-012 (security review F-007): export 1:1 on whole pixels, only exact patches (`exactPatches`), fail with an error (F-012.R7) rather than use the preview, single-image PNG.
+- Open owner question: show COPY-redact.not_secure_short in the narrow summary bar for blur/pixelate (security F-007 m4)?
