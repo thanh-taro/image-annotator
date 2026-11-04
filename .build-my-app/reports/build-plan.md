@@ -56,3 +56,4 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
   - Catalog entry `content/tools/image-annotator.yaml` in taro-kit: `openMode: embedded`, `permissions: [downloads, clipboard-write, popups, dialogs, file-pick]` (file-pick is declarative; the portal changelog lists only the first four).
   - Idea after M-1: the portal's new `share` permission (D-072) could offer "Save to Photos" on iPad.
 - F-013: keep the selection in view when selecting from the keyboard (RULE-19 last sentence; deferred from F-008 review).
+- Flaky watch: F-008.AC1 WebKit pixel check failed once in F-009's run (8/8 on repeat).

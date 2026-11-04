@@ -42,5 +42,6 @@ COPY-action.undo and COPY-action.redo in CMP-Toolbar.
 - Undo while editing text → undoes typing inside the text first (browser text undo); after
   editing ends, undo reverts the whole edit as one step.
 - The Undo or Redo button pressed while editing text → editing ends first, then the whole edit is undone or redone as one step.
+- A new text being edited before any step exists → COPY-action.undo stays unavailable (no step yet); the text's own undo (Mod+Z in the field) still undoes typing.
 
 ## Open questions
