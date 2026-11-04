@@ -24,20 +24,15 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 |---|---|
 | F-015.AC2 | annotations + undo history (F-003, F-009) |
 | F-015.AC6, AC7 | every M-1 feature (end of M-1) |
-| F-015.AC9, AC10 | copy and download (F-012) |
 | F-018.AC2 | image, selection, tools, zoom, history (F-008, F-009) |
-| F-018.AC5 | export (F-012) |
 | F-018.AC6 (e2e) | crop size shown (F-010) |
 | F-018.AC7 | every screen state (end of M-1) |
-| F-018.AC10 | download, offline (F-012, F-017); text part already in portal-language.spec.ts |
-| F-005.AC6, AC7, AC14, AC15 (export part) | export (F-012); fixme placeholders exist |
+| F-018.AC10 | offline half (F-017); text and download halves done |
+| F-012.AC8 (move then copy) | F-008 |
 | F-005.AC12 (e2e) | undo (F-009); model-tested |
-| F-007.AC3, AC7, AC9, AC10, AC11 (export parts) | export (F-012) |
 | F-007.AC9 sent behind, AC10 brought to front | F-008 |
 | F-007.AC13 | F-010, F-011, F-012 |
 | F-016.AC4 (image, annotations and history unchanged) | F-003, F-009 |
-| F-001.AC9, AC10, AC14 (e2e; unit-tested in tests/unit/app.load.test.ts) | unexported changes and export (F-003, F-012) |
-| F-002.AC7 (export equals the view) | F-003, F-012 |
 
 ## Manual checks collected so far
 - Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
@@ -55,3 +50,5 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - F-008: wire `dragRange` for moving solids (TODO(F-008) in canvas/drag.ts; security review F-007 m5).
 - F-012 (security review F-007): export 1:1 on whole pixels, only exact patches (`exactPatches`), fail with an error (F-012.R7) rather than use the preview, single-image PNG.
 - Open owner question: show COPY-redact.not_secure_short in the narrow summary bar for blur/pixelate (security F-007 m4)?
+- F-005.AC7 e2e is slow (~20 s alone, marked test.slow); look at its pixel reads in QA.
+- check:full after F-012 merge: preview e2e failed once under load (PhpStorm + VM, load ~45); both e2e steps passed on rerun.
