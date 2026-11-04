@@ -34,7 +34,7 @@ the PNG chunk whitelist (ADR-0007); and the text metrics constants (ADR-0009).
   `clampFrame(frame, image)`, `stepDownPadding(frame, padding)` (RULE-13, RULE-14).
 - `zoomIn/zoomOut/fitZoom(content, viewport)` (RULE-12).
 - `hitTest(annotation, point, tolerance, shortSide, measure)`, `boundsOf(annotation, shortSide, measure)` (stroke
-  widths depend on the image's shorter side, RULE-04; `measure` is a required `TextMeasure` that sizes text from the font metrics, ADR-0020), `marqueeHits(box)`, `constrain(from, to, kind)`,
+  widths depend on the image's shorter side, RULE-04; `measure` is a required `TextMeasure` that sizes text from the font metrics, ADR-0020), `marqueeHits(annotations, box, shortSide, measure)` (an annotation is touched when its drawn shape, not only its bounds, meets the box), `constrain(from, to, kind)`,
   `defaultAnnotationAt(point, kind, shortSide, …)`, `redactionBox(box)`.
 - `renumberSteps(annotations)` (RULE-07); `redactionCount(annotations, canvas)` (RULE-20).
 - `downloadName(sourceName, localTime)` (RULE-15); `stripPngChunks(bytes)` (ADR-0007); `toNFC(before, inserted)` (RULE-08, ADR-0020); `readImageHeader(bytes)` (RULE-02, ADR-0023).

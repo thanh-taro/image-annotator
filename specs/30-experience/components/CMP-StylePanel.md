@@ -34,7 +34,7 @@ COPY-canvas.padding_unavailable; COPY-canvas.background); crop size and reset.
 Changes apply immediately. Changes to selected annotations, padding, background or the frame
 are one undo step each (RULE-11); changes to a tool's current style are not. Position and size
 fields accept whole image pixels and apply on Enter or when focus leaves the field; values are
-kept within the same limits as dragging. Padding sizes that would exceed the size limit are
+kept within the same limits as dragging (width and height at least 1 image pixel; X and Y may be negative, so an annotation can sit partly outside the canvas, RULE-14). Padding sizes that would exceed the size limit are
 unavailable (RULE-14).
 When the selected annotations differ in a choice (colour, size or kind), no option of that choice is marked.
 

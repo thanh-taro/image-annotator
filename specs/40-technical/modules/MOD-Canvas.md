@@ -30,7 +30,7 @@ the view moves (and refits if fitted) above the narrow bottom sheet and restores
 ## Public surface
 - `<Canvas>` component bound to the document, selection, tool, current-style and view signals.
 - `viewCommands`: `zoomIn`, `zoomOut`, `fit`, `actualSize`, `setBottomInset(px)`.
-- `canvasCommands`: `placeAtCentre(tool)`, `nudge(dx, dy)`, `altResize(dx, dy)`, `selectNext/
+- `canvasCommands`: `placeAtCentre(tool)`, `selectNext/
   Previous`, `cancelDrag`, `beginTextEdit`, `endTextEdit`.
 
 ## Implements

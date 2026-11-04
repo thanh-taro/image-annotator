@@ -26,7 +26,7 @@ not a redo (PRN-04).
   selection from the keyboard (select all only).
 
 ## Requirements
-- **R1** With the select tool, clicking an annotation selects it; Shift+click adds or removes it; dragging on empty canvas selects every annotation the box touches; select all selects every annotation. Clicking empty canvas clears the selection.
+- **R1** With the select tool, clicking an annotation selects it; Shift+click adds or removes it; dragging on empty canvas selects every annotation the box touches (with Shift, they are added to the current selection, D-032); select all selects every annotation. Clicking empty canvas clears the selection.
 - **R2** Dragging a selected annotation moves the whole selection; arrow keys move it by 1 or 10 image pixels (RULE-19).
 - **R3** A single selected annotation shows handles to resize it (rectangle, ellipse, redaction), to move its end points (line, arrow), or to scale it (stroke, highlight); text and steps have no handles (their size is S/M/L). Shift keeps proportions while dragging a handle (RULE-06).
 - **R4** Changing a style while annotations are selected changes them all at once (RULE-04); only choices that apply to every selected annotation kind are shown.
@@ -60,6 +60,8 @@ COPY-action.duplicate, COPY-action.bring_forward, COPY-action.send_backward; pos
 fields under COPY-geometry.title.
 
 ## Edge cases
+- A stroke or highlight with no height (or width), such as a Shift highlight → only the handles along its length show, and it cannot be scaled across it.
+- A selected annotation too small for its handles and its body to be told apart → a press inside it moves it; its handles take only presses outside its body.
 - Moving a selection partly off the canvas → allowed; parts outside the frame aren't exported.
 - Selecting a step and changing its size → its number stays.
 - A selection with a solid redaction → no opacity or fill choice is ever shown (F-007.R2).

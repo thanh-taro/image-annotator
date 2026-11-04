@@ -28,7 +28,7 @@ load flow (checks → replace confirmation only when unexported → new session)
 ## Public surface
 - The app root and the components above, bound to the signals.
 - Commands: `load`, `clear`, `undo`, `redo`, `setTool`, `setStyle`, `setFields`, `resetFrame`,
-  `setPadding`, `setBackground`, `copy`, `download`, `showShortcuts`.
+  `setPadding`, `setBackground`, `copy`, `download`, `showShortcuts`, `nudge(dx, dy)`, `altResize(dx, dy)` (document edits from the keyboard, RULE-19).
 
 ## Implements
 SCR-Annotator, FLOW-01, FLOW-02; F-001.R7/R8/R9, F-007.R4/R6, F-008.R4/R5/R8, F-009.R1,
