@@ -2,7 +2,7 @@
 // (specs/40-technical/modules/MOD-Core.md). Pure, synchronous, dependency-free: usable on the main
 // thread and in the effects worker; no DOM, clock or language. Results carry codes and numbers.
 // Types, constants, size tables, the format sniff (F-001), the canvas/fit maths and the view maths
-// (F-002), the tools and shape geometry (F-003), step numbering (F-006) and text (F-005) are real; the rest throws until its feature is built.
+// (F-002), the tools and shape geometry (F-003), step numbering (F-006), text (F-005) and redaction geometry (F-007) are real; the rest throws until its feature is built.
 import type { Annotation, Box, Frame, ImageInfo, Padding, PaddingSize } from './types';
 
 export * from './types';
@@ -17,6 +17,7 @@ export * from './tools';
 export * from './shapes';
 export * from './steps';
 export * from './text';
+export * from './redaction';
 
 const notImplemented = (name: string): never => {
   throw new Error(`not implemented: MOD-Core ${name}`);
@@ -39,16 +40,6 @@ export function stepDownPadding(_frame: Frame, _padding: Padding): Padding {
 
 export function marqueeHits(_annotations: readonly Annotation[], _box: Box): readonly string[] {
   return notImplemented('marqueeHits');
-}
-
-/** INV-02: the redaction box extended outward to whole pixels. */
-export function redactionBox(_box: Box): Box {
-  return notImplemented('redactionBox');
-}
-
-/** RULE-20: redactions whose box overlaps the canvas. */
-export function redactionCount(_annotations: readonly Annotation[], _canvas: Box): number {
-  return notImplemented('redactionCount');
 }
 
 /** RULE-15 download name; the caller passes the local time (MOD-Core never reads the clock). */

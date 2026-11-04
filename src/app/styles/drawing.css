@@ -259,6 +259,68 @@
     line-height: var(--tk-font-line-height-tight);
   }
 
+  /* F-007 redaction kind: a vertical list of choices with an icon, the name and, for blur and pixelate,
+     the not-secure tag (RULE-10); style.md principle 5: accent2Fg on warnBg, with an icon and words. */
+  .tk-kinds {
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-space-1);
+  }
+  .tk-kind {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--tk-space-2);
+    min-height: var(--tk-size-tool-button);
+    padding: 0 var(--tk-space-2);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-sm);
+    font-weight: var(--tk-font-weight-semibold);
+  }
+  .tk-kind:has(.tk-choice:checked) {
+    border-color: var(--tk-color-accent);
+    background: var(--tk-color-selection);
+    box-shadow: inset 0 0 0 var(--tk-border-width-hairline) var(--tk-color-accent);
+  }
+  .tk-kind:has(.tk-choice:focus-visible) {
+    z-index: 1;
+    outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
+    outline-offset: var(--tk-border-width-focus);
+  }
+  .tk-kind__text {
+    line-height: var(--tk-font-line-height-tight);
+  }
+  .tk-tag {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--tk-space-1);
+    margin-inline-start: auto;
+    padding: 0 var(--tk-space-1);
+    border-radius: var(--tk-radius-sm);
+    background: var(--tk-color-warn-bg);
+    color: var(--tk-color-accent2-fg);
+    font-size: var(--tk-font-size-xs);
+  }
+  .tk-warn {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--tk-space-2);
+    margin: var(--tk-space-1) 0 0;
+    padding: var(--tk-space-2);
+    border-radius: var(--tk-radius-sm);
+    background: var(--tk-color-warn-bg);
+    color: var(--tk-color-accent2-fg);
+    font-size: var(--tk-font-size-xs);
+  }
+  .tk-warn .tk-icon {
+    flex: none;
+  }
+  .tk-panel__action {
+    width: 100%;
+    height: var(--tk-size-control);
+  }
+
   /* Narrow (D-019): the summary bar sits between the work area and the status bar; the open sheet
      grows from it over the lower part of the work area, at most half its height (--tk-sheet-max). */
   @container tk-annotator (width < 800px) {
@@ -357,14 +419,17 @@
       justify-content: space-between;
       row-gap: var(--tk-space-2);
     }
-    .tk-segment {
+    .tk-segment,
+    .tk-kind,
+    .tk-panel__action {
       min-height: var(--tk-size-touch-target);
     }
   }
 
   @media (forced-colors: active) {
     .tk-tool[aria-checked='true'],
-    .tk-segment:has(.tk-choice:checked) {
+    .tk-segment:has(.tk-choice:checked),
+    .tk-kind:has(.tk-choice:checked) {
       outline: var(--tk-border-width-focus) solid Highlight;
     }
     .tk-swatch {

@@ -11,10 +11,13 @@
 // edits text through CMP-TextEditor, the transparent field over the canvas glyphs (./editor.ts,
 // ADR-0009 §2), which is placed here with CSSOM on every paint so it follows zoom and pan; while it is
 // open the canvas paints the edited text with the field's value.
+// Redactions (F-007) are drawn with the redaction tool like rectangles; their blur and pixelate patches
+// come from MOD-Effects each frame (exact when ready, else the instant approximation; the shape being
+// drawn counts as moving, ADR-0017), and an exact patch arriving repaints.
 // The accessible list arrives with F-013.
 // Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, F-004.R1/R2/R4, F-006.R1/R4, ADR-0009 §4, RULE-12, CMP-Canvas "Behavior" (two fingers pan
 // and zoom) and "drawing" / "selected", architecture A5 (crisp from 200 %), ADR-0016, ADR-0022;
-// F-005.R1/R2/R3/R4, CMP-TextEditor, ADR-0009, ADR-0020.
+// F-005.R1/R2/R3/R4, CMP-TextEditor, ADR-0009, ADR-0020; F-007.R1/R3, ADR-0006, ADR-0017.
 import { useEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
 import {
@@ -35,6 +38,7 @@ import {
   type View,
 } from '../core';
 import type { Doc } from '../document';
+import { effects } from '../effects';
 import {
   measureWith,
   paint as paintScene,
@@ -45,7 +49,7 @@ import {
   type Transform,
 } from '../render';
 import { DragLayers } from './drag';
-import { DrawTool } from './draw';
+import { DRAFT_ID, DrawTool } from './draw';
 import { bindTextField } from './editor';
 import { connectFontGate, fontGate } from './fonts';
 import { InputController, pointerInput, type ToolInput } from './input';
@@ -138,8 +142,8 @@ function overlayLook(el: Element, dpr: number): OverlayLook {
   };
 }
 
-/** Finished blur/pixelate patches (MOD-Effects, F-007); none yet. */
-const NO_PATCHES: Patches = new Map();
+const NOTHING_MOVING: ReadonlySet<string> = new Set();
+const DRAWING: ReadonlySet<string> = new Set([DRAFT_ID]);
 
 /** The document with the edited text in it: replacing the existing one, or a new one on top (F-005.R2). */
 function withText(scene: Doc, text: TextAnnotation | null, isNew: boolean): Doc {
@@ -367,6 +371,14 @@ export function Canvas({
       if (!source) return;
       const transform = viewTransform(v, ratio);
       const preview = draw.preview;
+      // F-007.R3 / ADR-0017: blur and pixelate patches for every effect redaction, the one being drawn
+      // included (it counts as moving: approximated, with an exact job after 100 ms without movement).
+      const fx = effects();
+      const patches: Patches = fx.patchesFor(
+        preview ? { ...scene, annotations: [...scene.annotations, preview] } : scene,
+        preview ? DRAWING : NOTHING_MOVING,
+      );
+      const backdrop = themed(th, ratio).view;
       // ADR-0022: while drawing, the new shape is on top, so only the lower layer is used.
       const n = scene.annotations.length;
       const dragFrame = {
@@ -375,7 +387,9 @@ export function Canvas({
         scene,
         image: img,
         transform,
-        patches: NO_PATCHES,
+        patches,
+        patchVersion: fx.version,
+        backdrop,
         width,
         height,
         lo: n,
@@ -386,7 +400,15 @@ export function Canvas({
         drag.paint(ctx, dragFrame);
         return;
       }
-      paintScene(ctx, scene, img, transform, NO_PATCHES, { selection: selected, look: themed(th, ratio).look }, source);
+      paintScene(
+        ctx,
+        scene,
+        img,
+        transform,
+        patches,
+        { selection: selected, look: themed(th, ratio).look, backdrop },
+        source,
+      );
       // NFR-02: a gesture is pressed but not yet a drag: build the layers now (nothing new is drawn).
       if (draw.dragging) drag.prepare(dragFrame);
       else drag.release();
@@ -397,6 +419,8 @@ export function Canvas({
     };
     live.current.schedule = schedule;
     const stopFonts = connectFontGate(fonts, el, schedule);
+    // F-007.R3: an exact blur or pixelate patch replaced an approximation.
+    const stopPatches = effects().onPatch(schedule);
     live.current.onViewChanged = () => draw.viewChanged();
 
     const measure = () => {
@@ -515,6 +539,7 @@ export function Canvas({
     return () => {
       cancelAnimationFrame(raf);
       stopFonts();
+      stopPatches();
       observer.disconnect();
       media?.removeEventListener('change', onDpr);
       el.removeEventListener('wheel', onWheel);

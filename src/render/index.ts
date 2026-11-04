@@ -3,7 +3,8 @@
 // never reads language, theme or view state beyond the transform it is given (INV-05).
 // The palette constants are generated from the tokens (scripts/gen-tokens.mjs). `paintBase` is built
 // (F-001); `paint` draws rectangles, ellipses, lines and arrows and the selection overlay (F-003), pen
-// strokes and highlights (F-004), step badges (F-006), text (F-005); redactions join with F-007. Promoted
+// strokes and highlights (F-004), step badges (F-006), text (F-005) and redactions (F-007: solid boxes, and
+// blur/pixelate patches composited per ADR-0006). Promoted
 // from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022) and, for text, the SP-text spike (ADR-0009,
 // ADR-0020).
 import {
@@ -16,7 +17,11 @@ import {
   markWidth,
   strokePieces,
   isLineAnnotation,
+  isEffectRedaction,
+  isSolidRedaction,
   isStepAnnotation,
+  intersectBoxes,
+  redactionBox,
   isTextAnnotation,
   shapeBox,
   stepBadge,
@@ -31,6 +36,7 @@ import {
   type Frame,
   type Padding,
   type PathAnnotation,
+  type RedactionAnnotation,
   type StepAnnotation,
   type TextAnnotation,
   type TextMeasure,
@@ -53,8 +59,36 @@ export interface Transform {
   readonly dy: number;
 }
 
-/** Finished blur/pixelate patches by annotation id (MOD-Effects). */
-export type Patches = ReadonlyMap<string, { readonly box: Box; readonly bitmap: CanvasImageSource }>;
+/**
+ * A blur or pixelate patch from MOD-Effects (structurally its `Patch`): `bitmap` covers `box` (the output
+ * area O = B ∩ F, image pixels). An approximation is smaller: `source` is the part of it covering `box`.
+ * `smooth` is false for pixelate, whose blocks keep hard edges when scaled.
+ */
+export interface PatchImage {
+  readonly box: Box;
+  readonly bitmap: CanvasImageSource;
+  readonly smooth?: boolean;
+  readonly source?: { readonly width: number; readonly height: number };
+}
+
+/** Blur/pixelate patches by annotation id (MOD-Effects, ADR-0006). */
+export type Patches = ReadonlyMap<string, PatchImage>;
+
+/**
+ * Screen-only: what a transparent background looks like where a blur or pixelate patch replaces the
+ * pixels under it (the checkerboard of the image layer, ADR-0016). The export passes none and clears.
+ */
+export type Backdrop = Pick<BaseView, 'checkerA' | 'checkerB' | 'checkerSize'>;
+
+/** Options of a partial annotation pass (ADR-0022 split drag layers; screen-only backdrop). */
+export interface AnnotationPassOptions {
+  readonly backdrop?: Backdrop;
+  /**
+   * The solid redactions re-stamped over every patch (ADR-0006 step 3); by default the scene's own.
+   * A drag frame draws only the dragged annotations, so it passes the whole document's solids.
+   */
+  readonly solids?: readonly Annotation[];
+}
 
 /** The image as `paint` reads it: drawable, with its size (RULE-04 sizes use its shorter side). */
 export type SceneImage = CanvasImageSource & { readonly width: number; readonly height: number };
@@ -80,6 +114,8 @@ export interface Overlays {
   readonly selection?: readonly string[];
   readonly crop?: boolean;
   readonly look?: OverlayLook;
+  /** The checkerboard shown where a patch replaces pixels with a transparent background (screen only). */
+  readonly backdrop?: Backdrop;
 }
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -100,7 +136,8 @@ export function measureWith(ctx: Ctx): TextMeasure {
  * image layer, ADR-0016) it copies that layer instead of scene steps 1–2; the export never passes one
  * and gets the background and the image clipped to the frame from the image itself. Then the
  * annotations in painter's order, clipped to the canvas (RULE-14), then the screen-only overlays.
- * Implements: F-003.R1/R2/R3, F-004.R1/R2, F-005.R2/R5, F-006.R3/R4, RULE-07, RULE-08, RULE-09, NFR-08.
+ * Implements: F-003.R1/R2/R3, F-004.R1/R2, F-005.R2/R5, F-006.R3/R4, F-007.R2/R3/R5, INV-02, RULE-07, RULE-08,
+ * RULE-09, RULE-10, NFR-08.
  */
 export function paint(
   ctx: Ctx,
@@ -118,7 +155,16 @@ export function paint(
     ctx.drawImage(layer, 0, 0);
   } else paintScene(ctx, scene, image, transform, false);
   ctx.restore();
-  paintAnnotations(ctx, scene, image, transform, patches);
+  paintAnnotations(
+    ctx,
+    scene,
+    image,
+    transform,
+    patches,
+    0,
+    scene.annotations.length,
+    overlays?.backdrop ? { backdrop: overlays.backdrop } : {},
+  );
   if (overlays?.look && overlays.selection?.length)
     paintSelection(ctx, scene, transform, overlays.selection, overlays.look, Math.min(image.width, image.height));
 }
@@ -133,9 +179,10 @@ export function paintAnnotations(
   scene: Scene,
   image: SceneImage,
   transform: Transform,
-  _patches: Patches,
+  patches: Patches,
   from = 0,
   to = scene.annotations.length,
+  options: AnnotationPassOptions = {},
 ): void {
   if (to <= from) return;
   const { scale, dx, dy } = transform;
@@ -146,10 +193,88 @@ export function paintAnnotations(
   ctx.beginPath();
   ctx.rect(canvas.x, canvas.y, canvas.width, canvas.height);
   ctx.clip(); // RULE-14: annotations show only on the canvas (F-003 edge case: clipped while dragging)
+  let solids: readonly RedactionAnnotation[] | null = null;
   for (let i = from; i < to; i++) {
     const a = scene.annotations[i];
-    if (a) drawAnnotation(ctx, a, shortSide);
+    if (!a) continue;
+    if (isEffectRedaction(a)) {
+      solids ??= (options.solids ?? scene.annotations).filter(isSolidRedaction);
+      drawEffect(ctx, a, scene, patches.get(a.id), solids, transform, options.backdrop);
+    } else drawAnnotation(ctx, a, shortSide);
   }
+  ctx.restore();
+}
+
+/**
+ * F-007.R2, INV-02, RULE-10: a solid redaction is a fully opaque box in its colour over every pixel its
+ * box touches (extended outward to whole pixels), with no opacity of any kind; at 1:1 (the export) its
+ * edges fall on whole pixels, so it has no antialiased edge.
+ */
+function drawSolid(ctx: Ctx, a: RedactionAnnotation): void {
+  const b = redactionBox(a.box);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = paletteColour(a.style.color);
+  ctx.fillRect(b.x, b.y, b.width, b.height);
+}
+
+/**
+ * ADR-0006 "Patch and composite", for a blur or pixelate redaction over its box B (already clipped to
+ * the canvas): (1) B is replaced — not blended — by the background (transparent, or the palette colour,
+ * RULE-14), hiding earlier annotations there (F-007.AC9) and giving the background in the padding
+ * (F-007.AC13); (2) the effect pixels of O = B ∩ F are drawn over it; (3) every solid redaction's pixels
+ * inside B are re-stamped in its colour, so a solid shows whatever the order (F-007.AC10, INV-02).
+ * Without a patch yet (the pixels are still on their way to the worker), B shows the background: the
+ * image under a blur is never shown unobscured.
+ */
+function drawEffect(
+  ctx: Ctx,
+  a: RedactionAnnotation,
+  scene: Scene,
+  patch: PatchImage | undefined,
+  solids: readonly RedactionAnnotation[],
+  transform: Transform,
+  backdrop: Backdrop | undefined,
+): void {
+  const b = redactionBox(a.box);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(b.x, b.y, b.width, b.height);
+  ctx.clip();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  const background = scene.padding.background;
+  if (background !== 'transparent') {
+    ctx.fillStyle = paletteColour(background);
+    ctx.fillRect(b.x, b.y, b.width, b.height);
+  } else {
+    ctx.clearRect(b.x, b.y, b.width, b.height);
+    if (backdrop) paintBackdrop(ctx, scene, b, transform, backdrop);
+  }
+  if (patch) {
+    const o = patch.box;
+    ctx.imageSmoothingEnabled = patch.smooth ?? true;
+    ctx.imageSmoothingQuality = 'medium';
+    const sw = patch.source?.width ?? o.width;
+    const sh = patch.source?.height ?? o.height;
+    ctx.drawImage(patch.bitmap, 0, 0, sw, sh, o.x, o.y, o.width, o.height);
+    ctx.imageSmoothingEnabled = true;
+  }
+  for (const s of solids) {
+    const r = intersectBoxes(redactionBox(s.box), b);
+    if (!r) continue;
+    ctx.fillStyle = paletteColour(s.style.color);
+    ctx.fillRect(r.x, r.y, r.width, r.height);
+  }
+  ctx.restore();
+}
+
+/** Screen only: the image layer's checkerboard inside `box`, anchored to the canvas corner (ADR-0016). */
+function paintBackdrop(ctx: Ctx, scene: Scene, box: Box, transform: Transform, backdrop: Backdrop): void {
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const canvas = screenRect(canvasRect(scene.frame, scene.padding.size), transform);
+  paintChecker(ctx, canvas, backdrop, screenRect(box, transform));
   ctx.restore();
 }
 
@@ -211,8 +336,9 @@ function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
     case 'text':
       drawText(ctx, a, shortSide);
       return;
-    default:
-      // Redactions are drawn by F-007.
+    case 'redaction':
+      // Blur and pixelate go through drawEffect (they need the patches and the solids).
+      if (isSolidRedaction(a)) drawSolid(ctx, a);
       return;
   }
 }
@@ -443,12 +569,12 @@ function screenRect(box: Box, { scale, dx, dy }: Transform): Box {
  * The checkerboard over `r`, drawn only where it meets the context (zoomed in, the canvas can be far
  * larger than the screen), with the squares' phase anchored to the canvas corner so panning moves it.
  */
-function paintChecker(ctx: Ctx, r: Box, view: BaseView): void {
+function paintChecker(ctx: Ctx, r: Box, view: Backdrop, limit?: Box): void {
   const size = Math.max(1, Math.round(view.checkerSize));
-  const x0 = Math.max(r.x, 0);
-  const y0 = Math.max(r.y, 0);
-  const x1 = Math.min(r.x + r.width, ctx.canvas.width);
-  const y1 = Math.min(r.y + r.height, ctx.canvas.height);
+  const x0 = Math.max(r.x, 0, limit?.x ?? 0);
+  const y0 = Math.max(r.y, 0, limit?.y ?? 0);
+  const x1 = Math.min(r.x + r.width, ctx.canvas.width, limit ? limit.x + limit.width : Infinity);
+  const y1 = Math.min(r.y + r.height, ctx.canvas.height, limit ? limit.y + limit.height : Infinity);
   if (x1 <= x0 || y1 <= y0) return;
   ctx.fillStyle = view.checkerA;
   ctx.fillRect(x0, y0, x1 - x0, y1 - y0);

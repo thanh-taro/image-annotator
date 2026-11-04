@@ -18,6 +18,7 @@ export {
   type Refusal,
   type Size,
 } from './decode';
+export { feedEffects } from './effects';
 export {
   droppedFiles,
   isEditing,
