@@ -27,6 +27,7 @@ import {
   DEFAULT_STYLES,
   EDITOR_EXTRA_EM,
   HIT_TOLERANCE_PX,
+  isEffectRedaction,
   textFont,
   textLayout,
   toImage,
@@ -217,6 +218,8 @@ export function Canvas({
     if (!el || !ta || !view) return;
     const layer = new ImageLayer();
     let raf = 0;
+    // The patches of the last paint with nothing being drawn (the cached lower layer's, NFR-02).
+    let stillPatches: Patches = new Map();
     let box = { width: 0, height: 0 };
     let inset = 0;
     let media: MediaQueryList | undefined;
@@ -373,11 +376,17 @@ export function Canvas({
       const preview = draw.preview;
       // F-007.R3 / ADR-0017: blur and pixelate patches for every effect redaction, the one being drawn
       // included (it counts as moving: approximated, with an exact job after 100 ms without movement).
-      const fx = effects();
-      const patches: Patches = fx.patchesFor(
-        preview ? { ...scene, annotations: [...scene.annotations, preview] } : scene,
-        preview ? DRAWING : NOTHING_MOVING,
-      );
+      // NFR-02: while drawing anything else, only the cached lower layer shows effects; it keeps the
+      // patches of the last still paint (no approximation is rebuilt per frame for effects that read a
+      // solid being drawn; their exact jobs wait for the release, ADR-0017).
+      const patches: Patches =
+        preview && !isEffectRedaction(preview)
+          ? stillPatches
+          : effects().patchesFor(
+              preview ? { ...scene, annotations: [...scene.annotations, preview] } : scene,
+              preview ? DRAWING : NOTHING_MOVING,
+            );
+      if (!preview) stillPatches = patches;
       const backdrop = themed(th, ratio).view;
       // ADR-0022: while drawing, the new shape is on top, so only the lower layer is used.
       const n = scene.annotations.length;
@@ -388,7 +397,6 @@ export function Canvas({
         image: img,
         transform,
         patches,
-        patchVersion: fx.version,
         backdrop,
         width,
         height,

@@ -28,13 +28,22 @@ scope.addEventListener('message', (e) => {
     scratch.drop();
     return;
   }
-  const effect = msg.kind === 'blur' ? blur : pixelate;
-  const out = image ? effect(image, msg.frame, msg.box, msg.size, msg.solids, scratch) : null;
-  if (!out) {
+  // MOD-Effects `exactPatches` rejects on failure: any error (e.g. a window too large to allocate under
+  // memory pressure) is answered `failed`, so the client never waits on a job that will not come back.
+  try {
+    const effect = msg.kind === 'blur' ? blur : pixelate;
+    const out = image ? effect(image, msg.frame, msg.box, msg.size, msg.solids, scratch) : null;
+    if (!out) {
+      scope.postMessage({ v: PROTOCOL_VERSION, type: 'failed', id: msg.id });
+      return;
+    }
+    const { x, y, width, height } = out;
+    const pixels = out.data.buffer as ArrayBuffer;
+    scope.postMessage({ v: PROTOCOL_VERSION, type: 'patch', id: msg.id, box: { x, y, width, height }, pixels }, [
+      pixels,
+    ]);
+  } catch {
+    scratch.drop();
     scope.postMessage({ v: PROTOCOL_VERSION, type: 'failed', id: msg.id });
-    return;
   }
-  const { x, y, width, height } = out;
-  const pixels = out.data.buffer as ArrayBuffer;
-  scope.postMessage({ v: PROTOCOL_VERSION, type: 'patch', id: msg.id, box: { x, y, width, height }, pixels }, [pixels]);
 });

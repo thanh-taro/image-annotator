@@ -278,6 +278,19 @@ function vSwar(
 const shared = new Scratch();
 
 /**
+ * RULE-13 / RULE-10 guard: the frame as whole pixels inside the image (rounded inward, clamped to the
+ * image), so no read ever falls outside the frame or the image's rows. Null when nothing is left.
+ */
+export function frameInImage(img: Pixels, frame: Box): Box | null {
+  const x0 = Math.max(0, Math.ceil(frame.x));
+  const y0 = Math.max(0, Math.ceil(frame.y));
+  const x1 = Math.min(img.width, Math.floor(frame.x + frame.width));
+  const y1 = Math.min(img.height, Math.floor(frame.y + frame.height));
+  if (!(x1 > x0 && y1 > y0)) return null;
+  return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+}
+
+/**
  * ADR-0006 blur with radius `r`: three rounds of a horizontal then a vertical box pass of width 2b + 1
  * over premultiplied S, edges clamped to the frame, computed on the window O ± 3b ∩ F (exact, since
  * each axis reads at most 3b away). Null when the box lies outside the frame.
@@ -290,7 +303,8 @@ export function blur(
   solids: readonly Solid[],
   scratch: Scratch = shared,
 ): EffectPixels | null {
-  const area = effectArea(box, 'blur', r, frame);
+  const F = frameInImage(img, frame);
+  const area = F && effectArea(box, 'blur', r, F);
   if (!area) return null;
   const { output: O, window: W } = area;
   const b = blurReach(r);
@@ -327,7 +341,8 @@ export function pixelate(
   solids: readonly Solid[],
   scratch: Scratch = shared,
 ): EffectPixels | null {
-  const area = effectArea(box, 'pixelate', p, frame);
+  const F = frameInImage(img, frame);
+  const area = F && effectArea(box, 'pixelate', p, F);
   if (!area) return null;
   const O = area.output;
   const B = redactionBox(box);

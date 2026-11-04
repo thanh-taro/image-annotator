@@ -29,7 +29,8 @@ interface Key {
   readonly hi: number;
   readonly width: number;
   readonly height: number;
-  readonly patchVersion: number;
+  /** The patches the cached layers drew, in order (only those outside the dragged range, NFR-02). */
+  readonly patches: readonly unknown[];
 }
 
 export interface DragFrame {
@@ -41,8 +42,6 @@ export interface DragFrame {
   readonly image: SceneImage;
   readonly transform: Transform;
   readonly patches: Patches;
-  /** Changes when an exact patch arrives (MOD-Effects `version`), so cached layers drop approximations. */
-  readonly patchVersion?: number;
   /** Screen-only checkerboard under patches with a transparent background. */
   readonly backdrop?: Backdrop;
   readonly width: number;
@@ -75,7 +74,8 @@ export class DragLayers {
       a.hi !== k.hi ||
       a.width !== k.width ||
       a.height !== k.height ||
-      a.patchVersion !== k.patchVersion
+      a.patches.length !== k.patches.length ||
+      a.patches.some((p, i) => p !== k.patches[i])
     );
   }
 
@@ -125,7 +125,9 @@ export class DragLayers {
       hi: f.hi,
       width: f.width,
       height: f.height,
-      patchVersion: f.patchVersion ?? 0,
+      // An exact patch replacing an approximation rebuilds a cached layer only when that layer draws it
+      // (the dragged annotations' own patches are drawn in the middle pass each frame anyway).
+      patches: f.scene.annotations.flatMap((a, i) => (i >= f.lo && i <= f.hi ? [] : [f.patches.get(a.id)])),
     };
     if (!this.stale(key)) return true;
     if (!this.build(f)) return false;
@@ -178,6 +180,8 @@ export class DragLayers {
  * frame. Normally the lowest and highest dragged ones; when a solid redaction is dragged, every blur and
  * pixelate above the lowest dragged solid is drawn each frame too (RULE-10: the solid shows wherever it
  * moves), so the upper bound reaches the highest of them. Everything between the bounds is drawn each frame.
+ * TODO(F-008): move and resize must take lo and hi from here at prepare() / pointerdown (review m5,
+ * security m5); drawing a new annotation (always on top) uses lo = n, hi = n − 1 and does not need it.
  */
 export function dragRange(annotations: readonly Annotation[], dragged: readonly number[]): { lo: number; hi: number } {
   const lo = Math.min(...dragged);

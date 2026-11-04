@@ -8,7 +8,7 @@
 // (F-012) or crop (F-010) and are the named `test.fixme` placeholders at the end.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { referenceBlur } from '../../src/effects/reference';
+import { referenceBlur, referencePixelate } from '../../src/effects/reference';
 import { summary } from './support/load';
 
 const PANEL = 272;
@@ -189,38 +189,57 @@ test.describe('F-007 redact', () => {
     }
   });
 
-  test('F-007.AC4 F-007.R3 pixelate M on a 1000 × 800 image shows 16 × 16 blocks, updating while dragging', async ({
+  test('F-007.AC4 F-007.R3 RULE-10 pixelate M on a 1000 × 800 image shows 16 × 16 blocks from the box corner, updating while dragging', async ({
     page,
   }) => {
-    const { shot } = await open(page, 1000, 800);
+    const { shot, pixels } = await open(page, 1000, 800);
     await toolButton(page, 'Redact (X)').click();
     await kindGroup(page)
       .getByRole('radio', { name: /^Pixelate/ })
       .check();
-    const blocks = async (x: number, y: number, w: number, h: number) => {
-      const px = await region(page, shot, x, y, w, h);
-      let uniform = true;
-      for (let by = 0; by < h; by += 16)
-        for (let bx = 0; bx < w; bx += 16) {
-          const first = ((by * w + bx) * 4) | 0;
-          for (let yy = by; yy < by + 16; yy++)
-            for (let xx = bx; xx < bx + 16; xx++)
-              for (let c = 0; c < 4; c++) if (px[(yy * w + xx) * 4 + c] !== px[first + c]) uniform = false;
-        }
-      return { uniform, px };
-    };
-    // While dragging (pointer still down): blocks over the box as it is now.
-    await dragImage(page, shot, [96, 64], [96 + 160, 64 + 96]);
-    // (Polled: a loaded machine may paint a frame late; the pointer stays down throughout.)
-    await expect.poll(async () => (await blocks(96, 64, 160, 96)).uniform, { timeout: 15_000 }).toBe(true);
+    // Checked in the page (one boolean back): every 16 × 16 block from (x, y), the last ones cut by the box
+    // edge, is one colour, and the blocks are not all alike (it is pixelated, not flat).
+    const blocks = (x: number, y: number, w: number, h: number) =>
+      page.locator('canvas.tk-canvas').evaluate(
+        (el, r) => {
+          const ctx = (el as HTMLCanvasElement).getContext('2d', { colorSpace: 'srgb' });
+          if (!ctx) return false;
+          const px = ctx.getImageData(r.x, r.y, r.w, r.h).data;
+          const firsts = new Set<number>();
+          for (let by = 0; by < r.h; by += 16)
+            for (let bx = 0; bx < r.w; bx += 16) {
+              const f = (by * r.w + bx) * 4;
+              firsts.add((px[f]! << 16) | (px[f + 1]! << 8) | px[f + 2]!);
+              for (let yy = by; yy < Math.min(by + 16, r.h); yy++)
+                for (let xx = bx; xx < Math.min(bx + 16, r.w); xx++)
+                  for (let c = 0; c < 4; c++) if (px[(yy * r.w + xx) * 4 + c] !== px[f + c]) return false;
+            }
+          return firsts.size > 1;
+        },
+        { x: shot.at.x + x, y: shot.at.y + y, w, h },
+      );
     const box = await workArea(page).boundingBox();
-    await page.mouse.move(box!.x + shot.at.x + 96 + 320, box!.y + shot.at.y + 64 + 192, { steps: 4 });
-    await expect.poll(async () => (await blocks(96, 64, 320, 192)).uniform, { timeout: 15_000 }).toBe(true);
-    // Held still for more than 100 ms, then released: the exact patch, still 16 × 16 blocks.
-    await page.waitForTimeout(150);
+    const to = (x: number, y: number) => page.mouse.move(box!.x + shot.at.x + x, box!.y + shot.at.y + y, { steps: 4 });
+    // While dragging (pointer still down): blocks over the box as it is now — first a box that is not a
+    // multiple of 16 (150 × 70: the last column and row of blocks are cut short), then a larger one.
+    await dragImage(page, shot, [96, 64], [96 + 150, 64 + 70]);
+    await expect.poll(() => blocks(96, 64, 150, 70)).toBe(true);
+    await to(96 + 320, 64 + 192);
+    await expect.poll(() => blocks(96, 64, 320, 192)).toBe(true);
+    // Released: the exact patch, equal to the reference pixelate (ADR-0006), still 16 × 16 blocks.
     await page.mouse.up();
     await deselect(page);
-    await expect.poll(async () => (await blocks(96, 64, 320, 192)).uniform, { timeout: 15_000 }).toBe(true);
+    const ref = referencePixelate(
+      { data: pixels, width: 1000, height: 800 },
+      { x: 0, y: 0, width: 1000, height: 800 },
+      { x: 96, y: 64, width: 320, height: 192 },
+      16,
+      [],
+    );
+    await expect
+      .poll(async () => maxDiff(await region(page, shot, 96, 64, 320, 192), ref!.data))
+      .toBeLessThanOrEqual(1);
+    expect(await blocks(96, 64, 320, 192)).toBe(true);
   });
 
   test('F-007.AC7 F-007.R3 a blur over text equals the reference blur of the image within ±1 per channel (as painted)', async ({
@@ -276,7 +295,7 @@ test.describe('F-007 redact', () => {
   });
 
   test('F-007.AC10 INV-02 a later blur over half a solid redaction never shows through it', async ({ page }) => {
-    const { shot } = await open(page, 400, 300);
+    const { shot, pixels } = await open(page, 400, 300);
     await toolButton(page, 'Redact (X)').click();
     await dragImage(page, shot, [30, 128], [230, 154]);
     await page.mouse.up();
@@ -287,8 +306,17 @@ test.describe('F-007 redact', () => {
     await deselect(page);
     // Approximation and exact patch alike: the solid shows, whatever the order (RULE-10).
     expect(allEqual(await region(page, shot, 30, 128, 200, 26), BLACK)).toBe(true);
-    await page.waitForTimeout(300);
-    await frame(page);
+    // The exact patch arrives: the blur above the solid equals the reference with the solid applied …
+    const ref = referenceBlur(
+      { data: pixels, width: 400, height: 300 },
+      { x: 0, y: 0, width: 400, height: 300 },
+      { x: 130, y: 110, width: 200, height: 60 },
+      BLUR_M_300,
+      [{ box: { x: 30, y: 128, width: 200, height: 26 }, rgb: [0, 0, 0] }],
+    );
+    const top = ref!.data.slice(0, 200 * 18 * 4); // rows 110–127, above the solid
+    await expect.poll(async () => maxDiff(await region(page, shot, 130, 110, 200, 18), top)).toBeLessThanOrEqual(1);
+    // … and the solid still shows through none of it.
     expect(allEqual(await region(page, shot, 30, 128, 200, 26), BLACK)).toBe(true);
   });
 

@@ -271,17 +271,22 @@ export function panelModel(
     const [first] = picked;
     const subject =
       kinds.size === 1 && first ? toolLabel(toolOf(first.kind)) : t('a11y.selected_count', { count: picked.length });
-    return { variant: 'selection', subject, ...choices(picked) };
+    const c = choices(picked);
+    return { variant: 'selection', subject: c.kind ? kindLabel(c.kind) : subject, ...c };
   }
   if (isDrawingTool(active)) {
-    return {
-      variant: 'tool',
-      subject: toolLabel(active),
-      ...choices([{ kind: TOOL_KIND[active], style: styles[active] }]),
-    };
+    const c = choices([{ kind: TOOL_KIND[active], style: styles[active] }]);
+    return { variant: 'tool', subject: c.kind ? kindLabel(c.kind) : toolLabel(active), ...c };
   }
   return { variant: 'canvas', subject: t('canvas.title') };
 }
+
+// COPY-style.sheet_summary: for a redaction the subject is its kind (COPY-redact.solid/blur/pixelate).
+const KIND_COPY = { solid: 'redact.solid', blur: 'redact.blur', pixelate: 'redact.pixelate' } as const satisfies Record<
+  RedactionKind,
+  MessageId
+>;
+export const kindLabel = (kind: RedactionKind): string => t(KIND_COPY[kind]);
 
 const SIZE_COPY = { S: 'style.size_s', M: 'style.size_m', L: 'style.size_l' } as const satisfies Record<
   Size,
@@ -289,7 +294,7 @@ const SIZE_COPY = { S: 'style.size_s', M: 'style.size_m', L: 'style.size_l' } as
 >;
 export const sizeLabel = (size: Size): string => t(SIZE_COPY[size]);
 
-/** COPY-style.sheet_summary's detail: the size, or for the canvas "Padding None" (F-011 fills in the rest). */
+/** COPY-style.sheet_summary's detail: the size (a blur or pixelate redaction's strength; none for solid), or for the canvas "Padding None" (F-011 fills in the rest). */
 export function summaryDetail(model: PanelModel): string {
   if (model.variant === 'canvas') return `${t('canvas.padding')} ${t('canvas.padding_none')}`;
   const size = model.size ?? model.strength;

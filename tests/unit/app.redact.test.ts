@@ -73,12 +73,15 @@ describe('F-007 the redaction tool (MOD-App)', () => {
       expect(model()).toMatchObject({ kind, notSecure: true, strength: 'M' });
       expect(model()).not.toHaveProperty('color');
       expect(summaryDetail(model())).toBe('Medium');
+      // COPY-style.sheet_summary: a redaction's subject is its kind.
+      expect(model().subject).toBe(kind === 'blur' ? 'Blur' : 'Pixelate');
     }
     // COPY-redact.use_solid: with nothing selected it switches the tool's current kind to solid.
     setStyle({ redactionKind: 'solid' });
     expect(currentStyles.value.redact.redactionKind).toBe('solid');
     expect(model()).toMatchObject({ kind: 'solid', notSecure: false });
     expect(model()).not.toHaveProperty('strength');
+    expect(summaryDetail(model())).toBe(''); // solid has no detail
   });
 
   it('F-007.AC8 F-007.R6 a selected pixelate redaction switched to solid becomes an opaque box in the current solid colour, one step', () => {

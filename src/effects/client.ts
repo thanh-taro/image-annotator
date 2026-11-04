@@ -3,7 +3,9 @@
 // one job in flight), caches finished patches as bitmaps keyed on (box, kind, strength in pixels, the
 // solids touching the read window, frame), bounds the cache, offers an instant approximation while the
 // exact patch is pending or while the redaction (or a solid it depends on) moves, and resolves a
-// promise once every exact patch of a document is ready (the export awaits it, ADR-0007).
+// promise once every exact patch of a document is ready (the export awaits it, ADR-0007), or rejects
+// when a job fails (MOD-Effects `exactPatches`, F-012.R7). A failed key is not asked for again until
+// the redaction's key changes (a worker error or a `failed` reply never stalls later jobs).
 // Scheduling (ADR-0017): no exact job is sent while a redaction, or a solid it depends on, is moving;
 // one job is queued after 100 ms without movement (or once it no longer moves); the latest wins.
 // Worker lifetime (ADR-0022): the worker is terminated and a fresh one started for every new image.
@@ -44,12 +46,20 @@ export interface Patch {
   readonly exact: boolean;
   readonly smooth: boolean;
   readonly source?: { readonly width: number; readonly height: number };
+  /**
+   * Where the `source` part is drawn, in image pixels, clipped to `box` (default: `box`). A pixelate
+   * approximation sets it to whole p × p blocks from B's top-left corner (RULE-10), which may reach
+   * past O; the clip keeps the drawing inside O.
+   */
+  readonly at?: Box;
 }
 
 /** The worker as the client uses it (a real `Worker`, or a fake in the tests). */
 export interface WorkerLike {
   postMessage(message: ToWorker, transfer?: Transferable[]): void;
   addEventListener(type: 'message', fn: (e: MessageEvent<FromWorker>) => void): void;
+  /** An uncaught worker error, or a reply that cannot be read: the job in flight failed. */
+  addEventListener(type: 'error' | 'messageerror', fn: () => void): void;
   terminate(): void;
 }
 
@@ -63,6 +73,11 @@ export interface ApproxRequest {
   readonly factor: number;
   readonly smooth: boolean;
   readonly solids: readonly WireSolid[];
+  /**
+   * Pixelate (RULE-10): the blocks the output area falls in, aligned to B's top-left corner: `cols` ×
+   * `rows` cells of `factor` pixels from (x, y). Each cell is drawn as one small-canvas pixel.
+   */
+  readonly grid?: { readonly x: number; readonly y: number; readonly cols: number; readonly rows: number };
 }
 
 export interface EffectsDeps {
@@ -70,7 +85,7 @@ export interface EffectsDeps {
   /** RGBA pixels (unpremultiplied, sRGB) → something drawable. */
   toBitmap(pixels: ArrayBuffer, width: number, height: number): Promise<CanvasImageSource>;
   /** ADR-0006 instant approximation, or null where it cannot be drawn. */
-  approximate(request: ApproxRequest): { bitmap: CanvasImageSource; width: number; height: number } | null;
+  approximate(request: ApproxRequest): { bitmap: CanvasImageSource; width: number; height: number; at?: Box } | null;
   setTimer(fn: () => void, ms: number): unknown;
   clearTimer(handle: unknown): void;
 }
@@ -117,6 +132,10 @@ export class EffectsClient {
   /** Latest wanted job per redaction id (latest wins), in request order. */
   private readonly pending = new Map<string, Spec>();
   private inflight: { readonly id: number; readonly key: string } | null = null;
+  /** Keys whose reply arrived and is being made a bitmap (treated as in flight: no duplicate job). */
+  private readonly converting = new Set<string>();
+  /** Keys whose job failed: not asked for again (until the key changes); `exactPatches` rejects. */
+  private readonly failed = new Set<string>();
   private nextId = 1;
   /** ADR-0017: per moving redaction, the key it last had and the idle timer for it. */
   private readonly moving = new Map<string, { key: string; timer: unknown; fired: boolean }>();
@@ -150,6 +169,14 @@ export class EffectsClient {
     >;
     const worker = this.deps.createWorker();
     worker.addEventListener('message', (e) => this.onMessage(worker, e.data));
+    const lost = () => {
+      if (worker !== this.worker || !this.inflight) return;
+      const { key } = this.inflight;
+      this.inflight = null;
+      this.fail(key);
+    };
+    worker.addEventListener('error', lost);
+    worker.addEventListener('messageerror', lost);
     worker.postMessage({ v: PROTOCOL_VERSION, type: 'image', pixels, width, height }, [pixels]);
     this.worker = worker;
     for (const w of [...this.waiters]) w();
@@ -163,7 +190,12 @@ export class EffectsClient {
     }
     this.worker = null;
     this.source = null;
+    this.palette = null;
+    this.shortSide = 0;
+    this.imageArea = 0;
     this.inflight = null;
+    this.converting.clear();
+    this.failed.clear();
     this.pending.clear();
     for (const m of this.moving.values()) this.deps.clearTimer(m.timer);
     this.moving.clear();
@@ -216,6 +248,10 @@ export class EffectsClient {
   patchesFor(doc: EffectsDoc, moving: ReadonlySet<string> = new Set()): ReadonlyMap<string, Patch> {
     const out = new Map<string, Patch>();
     const movingSolids = doc.annotations.filter((a) => moving.has(a.id) && isSolidRedaction(a));
+    // Ids no longer in the document (a cancelled or committed draft): their timers and jobs go.
+    const present = new Set(doc.annotations.map((a) => a.id));
+    for (const id of [...this.moving.keys()]) if (!present.has(id)) this.settle(id);
+    for (const id of [...this.pending.keys()]) if (!present.has(id)) this.pending.delete(id);
     for (const a of doc.annotations) {
       const spec = this.spec(a, doc);
       if (!spec) continue;
@@ -249,9 +285,11 @@ export class EffectsClient {
     if (m) this.deps.clearTimer(m.timer);
     this.pending.delete(id); // a job for an earlier position is no longer wanted
     const entry = { key: spec.key, fired: false, timer: undefined as unknown };
+    // The timer only marks the entry still and asks for a repaint; that paint's `patchesFor` sends the
+    // job if the redaction still exists with this key.
     entry.timer = this.deps.setTimer(() => {
       entry.fired = true;
-      this.request(id, spec);
+      for (const l of this.listeners) l();
     }, IDLE_MS);
     this.moving.set(id, entry);
   }
@@ -269,20 +307,34 @@ export class EffectsClient {
     if (!this.source) return null;
     const b = spec.kind === 'blur' ? Math.max(1, blurReach(spec.size)) : spec.size;
     const smooth = spec.kind === 'blur';
+    const o = spec.output;
+    // RULE-10: pixelate blocks are p × p from B's top-left corner, whatever the box size.
+    const grid =
+      spec.kind === 'pixelate'
+        ? (() => {
+            const c0 = Math.floor((o.x - spec.box.x) / b);
+            const r0 = Math.floor((o.y - spec.box.y) / b);
+            const cols = Math.ceil((o.x + o.width - spec.box.x) / b) - c0;
+            const rows = Math.ceil((o.y + o.height - spec.box.y) / b) - r0;
+            return { x: spec.box.x + c0 * b, y: spec.box.y + r0 * b, cols, rows };
+          })()
+        : undefined;
     const made = this.deps.approximate({
       source: this.source,
-      output: spec.output,
+      output: o,
       factor: b,
       smooth,
       solids: spec.solids,
+      ...(grid ? { grid } : {}),
     });
     if (!made) return null;
     const patch: Patch = {
-      box: spec.output,
+      box: o,
       bitmap: made.bitmap,
       exact: false,
       smooth,
       source: { width: made.width, height: made.height },
+      ...(made.at ? { at: made.at } : {}),
     };
     this.approx.set(spec.key, patch);
     while (this.approx.size > APPROX_LIMIT) {
@@ -295,6 +347,7 @@ export class EffectsClient {
 
   private request(id: string, spec: Spec): void {
     if (this.exact.has(spec.key) || this.inflight?.key === spec.key) return;
+    if (this.converting.has(spec.key) || this.failed.has(spec.key)) return;
     if (this.pending.get(id)?.key === spec.key) return;
     this.pending.delete(id);
     this.pending.set(id, spec);
@@ -306,7 +359,7 @@ export class EffectsClient {
     if (this.inflight || !this.worker) return;
     for (const [id, spec] of this.pending) {
       this.pending.delete(id);
-      if (this.exact.has(spec.key)) continue;
+      if (this.exact.has(spec.key) || this.converting.has(spec.key) || this.failed.has(spec.key)) continue;
       const jobId = this.nextId++;
       this.inflight = { id: jobId, key: spec.key };
       this.jobsSent++;
@@ -329,11 +382,17 @@ export class EffectsClient {
     const job = this.inflight;
     if (!job || job.id !== msg.id) return;
     this.inflight = null;
-    if (msg.type === 'patch') {
+    if (msg.type === 'failed') this.fail(job.key);
+    else {
       const { box } = msg;
-      void this.deps.toBitmap(msg.pixels, box.width, box.height).then((bitmap) => {
+      this.converting.add(job.key);
+      const converted = (bitmap: CanvasImageSource) => {
         if (worker !== this.worker) return close(bitmap);
+        this.converting.delete(job.key);
         const patch: Patch = { box, bitmap, exact: true, smooth: !job.key.startsWith('pixelate') };
+        const old = this.exact.get(job.key);
+        if (old) close(old.bitmap);
+        this.exact.delete(job.key);
         this.exact.set(job.key, patch);
         const area = () => [...this.exact.values()].reduce((sum, p) => sum + p.box.width * p.box.height, 0);
         while (this.exact.size > 1 && (this.exact.size > CACHE_LIMIT || area() > CACHE_IMAGE_AREAS * this.imageArea)) {
@@ -349,17 +408,30 @@ export class EffectsClient {
         this.version++;
         for (const l of this.listeners) l();
         for (const w of [...this.waiters]) w();
+      };
+      this.deps.toBitmap(msg.pixels, box.width, box.height).then(converted, () => {
+        if (worker !== this.worker) return;
+        this.converting.delete(job.key);
+        this.fail(job.key);
       });
     }
     this.pump();
   }
 
+  /** A job failed: its key is not asked for again, waiters on it reject, the next job is sent. */
+  private fail(key: string): void {
+    this.failed.add(key);
+    for (const w of [...this.waiters]) w();
+    this.pump();
+  }
+
   /**
    * MOD-Effects `exactPatches`: resolves with the exact patch of every blur and pixelate redaction of
-   * `doc` once all are ready (the export waits for them, ADR-0006, ADR-0007).
+   * `doc` once all are ready (the export waits for them, ADR-0006, ADR-0007); rejects when one of
+   * their jobs failed (F-012.R7 reports it; the export never falls back to approximations).
    */
   exactPatches(doc: EffectsDoc): Promise<ReadonlyMap<string, Patch>> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const check = () => {
         // Until the image's pixels arrive, no effect can be computed: wait for them.
         if (!this.palette && doc.annotations.some(isEffectRedaction)) return false;
@@ -370,7 +442,11 @@ export class EffectsClient {
           if (!spec) continue;
           const p = this.exact.get(spec.key);
           if (p) out.set(a.id, p);
-          else {
+          else if (this.failed.has(spec.key)) {
+            this.waiters.delete(waiter);
+            reject(new Error('effects: a blur or pixelate job failed'));
+            return true;
+          } else {
             missing = true;
             this.request(a.id, spec);
           }

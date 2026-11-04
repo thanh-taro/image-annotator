@@ -4,7 +4,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import type { Box } from '../../src/core';
-import { blur, pixelate, Scratch, type Pixels, type Solid } from '../../src/effects/algorithms';
+import { blur, frameInImage, pixelate, Scratch, type Pixels, type Solid } from '../../src/effects/algorithms';
 import { referenceBlur, referencePixelate } from '../../src/effects/reference';
 
 const RUNS = 300;
@@ -147,5 +147,20 @@ describe('MOD-Effects optimised == reference (ADR-0006, ADR-0017)', () => {
       const box = { x: 70.3, y: 60.7, width: 40.2, height: 25.9 };
       expect(blur(img, F, box, r, [])).toEqual(referenceBlur(img, F, box, r, []));
     }
+  });
+
+  it('RULE-10 RULE-13 a frame reaching outside the image is clamped to it: no read past a row or the last row', () => {
+    const img = makeImg(30, 20, true, 11);
+    const inside = { x: 0, y: 0, width: 30, height: 20 };
+    expect(frameInImage(img, { x: -5, y: 2.5, width: 50, height: 40 })).toEqual({ x: 0, y: 3, width: 30, height: 17 });
+    expect(frameInImage(img, { x: 40, y: 0, width: 10, height: 10 })).toBeNull();
+    const box = { x: 20, y: 4, width: 15, height: 30 };
+    for (const r of [2, 6]) {
+      const wide = { x: 0, y: 0, width: 45, height: 35 }; // wider and taller than the image
+      expect(blur(img, wide, box, r, [])).toEqual(blur(img, inside, box, r, []));
+      expect(pixelate(img, wide, box, r, [])).toEqual(pixelate(img, inside, box, r, []));
+      expect(blur(img, wide, box, r, [])!.data.every((v) => Number.isFinite(v))).toBe(true);
+    }
+    expect(blur(img, { x: 40, y: 0, width: 10, height: 10 }, box, 4, [])).toBeNull();
   });
 });

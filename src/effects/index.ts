@@ -1,7 +1,7 @@
 // MOD-Effects — reference blur and pixelate in a worker, patch cache, live approximation
 // (specs/40-technical/modules/MOD-Effects.md, ADR-0006, ADR-0017, ADR-0022). Imports MOD-Core only.
 // The client and its scheduling are ./client.ts; the worker is ./worker.ts (protocol in ./protocol.ts)
-// running ./algorithms.ts; the slow reference for tests is ./reference.ts (never imported by the app).
+// running ./algorithms.ts; the slow reference for tests is ./reference.ts (test-only; lint forbids app imports, ADR-0017).
 // This file binds one client for the page to the real worker, bitmaps and approximation canvas.
 // Implements: F-007.R3/R5, RULE-10, INV-02, NFR-02, NFR-04.
 import type { Colour } from '../core';
@@ -27,31 +27,46 @@ const newCanvas = (w: number, h: number): OffscreenCanvas | HTMLCanvasElement =>
   return c;
 };
 
-/**
- * ADR-0006 instant approximation: the output area drawn scaled down by about b (blur, with smoothing)
- * or by p (pixelate) into a small canvas, with the solids it reads stamped in their colours; MOD-Render
- * scales it back up over the area. Only frame pixels are read (the area lies inside the frame).
- */
-export function approximate({ source, output, factor, smooth, solids }: ApproxRequest) {
-  // Whole pixels, so the small canvas is fully covered (no translucent last row or column showing the
-  // backdrop); the area is stretched by less than one block to fit them.
-  const width = Math.max(1, Math.ceil(output.width / factor));
-  const height = Math.max(1, Math.ceil(output.height / factor));
-  const kx = width / output.width;
-  const ky = height / output.height;
-  const canvas = newCanvas(width, height);
+type Ctx2D = OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
+const context = (c: OffscreenCanvas | HTMLCanvasElement): Ctx2D | null =>
   // ADR-0005 §4: every canvas the tool creates is sRGB.
-  const ctx = canvas.getContext('2d', { colorSpace: 'srgb' }) as
-    OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null;
-  if (!ctx) return null;
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = smooth ? 'medium' : 'low';
-  ctx.drawImage(source, output.x, output.y, output.width, output.height, 0, 0, width, height);
+  c.getContext('2d', { colorSpace: 'srgb' }) as Ctx2D | null;
+
+/**
+ * ADR-0006 instant approximation. RULE-10 holds on screen too: the output area O is first copied at
+ * 1:1 (whole pixels, so no filtering reads past O, i.e. outside the frame) with every solid it reads
+ * stamped at its whole-pixel box, and only that copy is scaled down, so no pixel under a solid is ever
+ * averaged in. Blur: O scaled down by about b (smoothing) into whole pixels, stretched back over O.
+ * Pixelate: one small pixel per p × p block of the grid aligned to B's top-left corner, drawn back at
+ * p × p (MOD-Render clips it to O); edge blocks average only their part inside O.
+ */
+export function approximate({ source, output: o, factor, solids, grid }: ApproxRequest) {
+  const copy = newCanvas(o.width, o.height);
+  const cx = context(copy);
+  if (!cx) return null;
+  cx.imageSmoothingEnabled = false;
+  cx.drawImage(source, o.x, o.y, o.width, o.height, 0, 0, o.width, o.height);
   for (const s of solids) {
-    ctx.fillStyle = `rgb(${s.rgb.join(',')})`;
-    ctx.fillRect((s.box.x - output.x) * kx, (s.box.y - output.y) * ky, s.box.width * kx, s.box.height * ky);
+    cx.fillStyle = `rgb(${s.rgb.join(',')})`;
+    cx.fillRect(s.box.x - o.x, s.box.y - o.y, s.box.width, s.box.height);
   }
-  return { bitmap: canvas, width, height };
+  const width = grid ? grid.cols : Math.max(1, Math.ceil(o.width / factor));
+  const height = grid ? grid.rows : Math.max(1, Math.ceil(o.height / factor));
+  const canvas = newCanvas(width, height);
+  const ctx = context(canvas);
+  if (!ctx) return null;
+  // 'medium' averages the pixels it scales down on Chromium and WebKit alike ('low' samples a point,
+  // WebKit's 'high' too), so each small pixel approximates its block's mean (ADR-0006).
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'medium';
+  // Underlay: the whole small canvas covered (no translucent edge cell showing the backdrop) …
+  ctx.drawImage(copy, 0, 0, width, height);
+  // … then, for pixelate, O placed at its true position in the block grid.
+  if (grid) ctx.drawImage(copy, (o.x - grid.x) / factor, (o.y - grid.y) / factor, o.width / factor, o.height / factor);
+  copy.width = 0; // NFR-04: the 1:1 copy is freed at once
+  copy.height = 0;
+  const at = grid ? { x: grid.x, y: grid.y, width: grid.cols * factor, height: grid.rows * factor } : undefined;
+  return { bitmap: canvas, width, height, ...(at ? { at } : {}) };
 }
 
 let client: EffectsClient | null = null;
@@ -94,7 +109,7 @@ export function patchesFor(doc: EffectsDoc, moving?: ReadonlySet<string>): Reado
   return effects().patchesFor(doc, moving);
 }
 
-/** MOD-Effects `exactPatches`: resolves once every exact patch of `doc` is ready (export, ADR-0007). */
+/** MOD-Effects `exactPatches`: resolves once every exact patch of `doc` is ready, rejects if a job failed. */
 export function exactPatches(doc: EffectsDoc): Promise<ReadonlyMap<string, Patch>> {
   return effects().exactPatches(doc);
 }

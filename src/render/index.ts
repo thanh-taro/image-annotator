@@ -69,6 +69,8 @@ export interface PatchImage {
   readonly bitmap: CanvasImageSource;
   readonly smooth?: boolean;
   readonly source?: { readonly width: number; readonly height: number };
+  /** Where `source` is drawn (image pixels), clipped to `box`; default `box` (MOD-Effects Patch). */
+  readonly at?: Box;
 }
 
 /** Blur/pixelate patches by annotation id (MOD-Effects, ADR-0006). */
@@ -257,7 +259,16 @@ function drawEffect(
     ctx.imageSmoothingQuality = 'medium';
     const sw = patch.source?.width ?? o.width;
     const sh = patch.source?.height ?? o.height;
-    ctx.drawImage(patch.bitmap, 0, 0, sw, sh, o.x, o.y, o.width, o.height);
+    const at = patch.at ?? o;
+    ctx.save();
+    if (patch.at) {
+      // RULE-10 pixelate preview: whole p × p blocks from B's corner, drawn only inside O.
+      ctx.beginPath();
+      ctx.rect(o.x, o.y, o.width, o.height);
+      ctx.clip();
+    }
+    ctx.drawImage(patch.bitmap, 0, 0, sw, sh, at.x, at.y, at.width, at.height);
+    ctx.restore();
     ctx.imageSmoothingEnabled = true;
   }
   for (const s of solids) {

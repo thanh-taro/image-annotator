@@ -97,6 +97,11 @@ function boundary(mod, allowed, { dom = true } = {}) {
       message: `${mod} may import only ${allowed.length ? allowed.map((a) => `src/${a}`).join(', ') : 'its own folder'} (architecture.md "Dependency rule").`,
     },
     { regex: '^\\.\\./\\.\\./', message: `${mod}: import sibling modules as ../<module>, never deeper.` },
+    // ADR-0017: the slow reference blur and pixelate is a test-only module.
+    {
+      regex: '^(\\.|\\.\\./effects)/reference(\\.ts)?$',
+      message: 'ADR-0017: src/effects/reference.ts is for tests only.',
+    },
   ];
   if (!dom) patterns.push({ group: ['preact', 'preact/*', '@preact/*'], message: `${mod} imports no DOM code.` });
   return { 'no-restricted-imports': ['error', { patterns }] };

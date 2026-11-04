@@ -189,6 +189,45 @@ describe('MOD-Canvas split drag layers (ADR-0022)', () => {
     expect(out.calls).toContain('lineTo(80,0)'); // the dragged arrow, drawn each frame
   });
 
+  it('ADR-0022 NFR-02 F-007.R3 a new patch rebuilds a cached layer only when that layer draws it', () => {
+    const { create } = surfaces();
+    const layers = new DragLayers(create);
+    const doc = scene([rect(), arrow, line]);
+    const out = recorder();
+    const p = (n: number) => ({ box: { x: 0, y: 0, width: n, height: n }, bitmap: {} as CanvasImageSource });
+    const withPatches = (entries: [string, ReturnType<typeof p>][]) => ({
+      ...frame(doc, 1, 1, [arrow]),
+      patches: new Map(entries),
+    });
+    const below = p(1);
+    layers.paint(
+      out.ctx,
+      withPatches([
+        [arrow.id, p(1)],
+        ['r', below],
+      ]),
+    );
+    expect(layers.builds).toBe(1);
+    // The dragged annotation's own exact patch arrives: drawn in the middle pass, no rebuild.
+    layers.paint(
+      out.ctx,
+      withPatches([
+        [arrow.id, p(2)],
+        ['r', below],
+      ]),
+    );
+    expect(layers.builds).toBe(1);
+    // A patch of an annotation in the cached lower layer arrives: that layer is rebuilt.
+    layers.paint(
+      out.ctx,
+      withPatches([
+        [arrow.id, p(2)],
+        ['r', p(3)],
+      ]),
+    );
+    expect(layers.builds).toBe(2);
+  });
+
   it('ADR-0022 a drag frame draws the shape exactly as the settled frame does, so nothing jumps on release', () => {
     const { create } = surfaces();
     const layers = new DragLayers(create);
