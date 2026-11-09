@@ -3,7 +3,7 @@
 // audits every row of RULE-19 once, in its focus scope, and the keys F-013 adds (Tab, ?, Mod+O, Mod+V).
 import { describe, expect, it } from 'vitest';
 import { CATALOG } from '../../src/copy/messages.gen';
-import { resolveKey, shortcutList, type KeyInfo, type Resolution, type Scope } from '../../src/keys';
+import { keyText, resolveKey, shortcutList, type KeyInfo, type Resolution, type Scope } from '../../src/keys';
 
 const key = (k: Partial<KeyInfo> & { key: string }): KeyInfo => ({
   code: '',
@@ -168,11 +168,24 @@ describe('MOD-Keys: the RULE-19 map, row by row (F-013)', () => {
 });
 
 describe('MOD-Keys shortcutList (CMP-ShortcutHelp)', () => {
-  const ids = (mac: boolean) => shortcutList(mac).flatMap((g) => g.rows.map((r) => r.copyId));
+  const tr = (lang: 'en-US' | 'vi-VN') => (id: string) => {
+    const v = (CATALOG[lang] as Record<string, unknown>)[id];
+    if (typeof v !== 'string') throw new Error(`no plain COPY string ${id}`);
+    return v;
+  };
+  const rows = (mac: boolean, lang: 'en-US' | 'vi-VN' = 'en-US') =>
+    shortcutList(mac).flatMap((g) =>
+      g.rows.map((r) => ({
+        id: r.copyId,
+        printed: keyText(r.printed, tr(lang)),
+        spoken: keyText(r.spoken, tr(lang), true),
+      })),
+    );
+  const byId = (mac: boolean, lang: 'en-US' | 'vi-VN' = 'en-US') =>
+    new Map(rows(mac, lang).map((r) => [r.id, r] as const));
 
   it('F-013.AC8 lists every RULE-19 group in order, and every key of RULE-19 with its action', () => {
-    const groups = shortcutList(false).map((g) => g.copyId);
-    expect(groups).toEqual([
+    expect(shortcutList(false).map((g) => g.copyId)).toEqual([
       'shortcuts.tools',
       'shortcuts.canvas',
       'shortcuts.edit',
@@ -183,10 +196,7 @@ describe('MOD-Keys shortcutList (CMP-ShortcutHelp)', () => {
       'shortcuts.export',
       'shortcuts.help',
     ]);
-    const keys = shortcutList(false)
-      .flatMap((g) => g.rows.map((r) => `${r.copyId}=${r.keys}`))
-      .join('\n');
-    for (const want of [
+    expect(rows(false).map((r) => `${r.id}=${r.printed}`)).toEqual([
       'tool.select=V',
       'tool.rectangle=R',
       'tool.ellipse=O',
@@ -206,8 +216,8 @@ describe('MOD-Keys shortcutList (CMP-ShortcutHelp)', () => {
       'shortcut.select_all=Ctrl+A',
       'action.bring_forward=]',
       'action.send_backward=[',
-      'shortcut.move=← ↑ → ↓',
-      'shortcut.resize=Alt+arrows',
+      'shortcut.move=← ↑ → ↓ / Shift+← ↑ → ↓',
+      'shortcut.resize=Alt+← ↑ → ↓ / Alt+Shift+← ↑ → ↓',
       'shortcut.cancel=Esc',
       'action.undo=Ctrl+Z',
       'action.redo=Ctrl+Shift+Z / Ctrl+Y',
@@ -215,7 +225,7 @@ describe('MOD-Keys shortcutList (CMP-ShortcutHelp)', () => {
       'action.zoom_out=Ctrl+-',
       'action.zoom_fit=Shift+1',
       'action.zoom_actual=Shift+0',
-      'shortcut.pan=Space+drag / ← ↑ → ↓',
+      'shortcut.pan=Space+drag / ← ↑ → ↓ / Shift+← ↑ → ↓',
       'shortcut.zoom_pointer=Ctrl+wheel',
       'shortcut.move_while_drawing=Alt+drag',
       'shortcut.paste=Ctrl+V',
@@ -223,34 +233,59 @@ describe('MOD-Keys shortcutList (CMP-ShortcutHelp)', () => {
       'action.copy=Ctrl+C',
       'action.download=Ctrl+S',
       'action.shortcuts=?',
-    ])
-      expect(keys).toContain(want);
+    ]);
   });
 
   it('CMP-ShortcutHelp shows ⌘, ⌥ and ⇧ on macOS, with no Ctrl+Y alias', () => {
-    const rows = new Map(shortcutList(true).flatMap((g) => g.rows.map((r) => [r.copyId, r] as const)));
-    expect(rows.get('action.undo')?.keys).toBe('⌘Z');
-    expect(rows.get('action.redo')?.keys).toBe('⌘⇧Z');
-    expect(rows.get('shortcut.resize')?.keys).toBe('⌥ arrows');
-    expect(rows.get('action.zoom_fit')?.keys).toBe('⇧1');
-    expect(rows.get('shortcut.next')?.keys).toBe('Tab / ⇧Tab');
-    expect(rows.get('action.undo')?.spoken).toBe('Command Z');
+    const m = byId(true);
+    expect(m.get('action.undo')?.printed).toBe('⌘Z');
+    expect(m.get('action.redo')?.printed).toBe('⌘⇧Z');
+    expect(m.get('shortcut.resize')?.printed).toBe('⌥← ↑ → ↓ / ⌥⇧← ↑ → ↓');
+    expect(m.get('shortcut.move_while_drawing')?.printed).toBe('⌥ drag');
+    expect(m.get('action.zoom_fit')?.printed).toBe('⇧1');
+    expect(m.get('shortcut.next')?.printed).toBe('Tab / ⇧Tab');
+    expect(m.get('action.undo')?.spoken).toBe('Command Z');
   });
 
-  it('CMP-ShortcutHelp every row has spoken key names as text, not only symbols', () => {
+  it('CMP-ShortcutHelp spoken key names: printed labels as words plus COPY-key.* (en-US)', () => {
+    const m = byId(false);
+    expect(m.get('action.shortcuts')?.spoken).toBe('question mark');
+    expect(m.get('action.zoom_in')?.spoken).toBe('Ctrl equals, or Ctrl plus');
+    expect(m.get('shortcut.move')?.spoken).toBe(
+      'Left, Up, Right or Down arrow, or Shift Left, Up, Right or Down arrow',
+    );
+    expect(m.get('shortcut.pan')?.spoken).toBe(
+      'Space plus drag, or Left, Up, Right or Down arrow, or Shift Left, Up, Right or Down arrow',
+    );
     for (const mac of [false, true])
-      for (const g of shortcutList(mac))
-        for (const r of g.rows) {
-          expect(r.spoken, r.copyId).toMatch(/[A-Za-z]/);
-          expect(r.spoken, r.copyId).not.toMatch(/[⌘⌥⇧←↑→↓]/);
-        }
+      for (const r of rows(mac)) {
+        // Only printed key labels (letters, digits, brackets) and words; never the symbols alone.
+        expect(r.spoken, r.id).not.toMatch(/[⌘⌥⇧←↑→↓]/);
+      }
   });
 
-  it('CMP-ShortcutHelp every group and entry is a COPY ID of the catalog (shown in the active language, F-013.R3)', () => {
-    const catalog = CATALOG['en-US'] as Record<string, unknown>;
-    for (const mac of [false, true]) {
-      for (const g of shortcutList(mac)) expect(catalog[g.copyId], g.copyId).toBeDefined();
-      for (const id of ids(mac)) expect(catalog[id], id).toBeDefined();
+  it('F-013.R3 in vi-VN the pointer words and spoken names are Vietnamese; only key labels stay as printed', () => {
+    const m = byId(false, 'vi-VN');
+    expect(m.get('shortcut.pan')?.printed).toBe('Space+kéo / ← ↑ → ↓ / Shift+← ↑ → ↓');
+    expect(m.get('shortcut.zoom_pointer')?.printed).toBe('Ctrl+con lăn');
+    expect(m.get('action.shortcuts')?.spoken).toBe('dấu chấm hỏi');
+    expect(m.get('action.delete')?.spoken).toBe('Delete, hoặc Backspace');
+    for (const r of rows(false, 'vi-VN')) {
+      expect(r.printed, r.id).not.toMatch(/\b(drag|wheel|arrows?)\b/);
+      expect(r.spoken, r.id).not.toMatch(/\b(or|plus|minus|equals|question|drag|wheel|arrows?)\b/);
     }
+  });
+
+  it('CMP-ShortcutHelp every group, entry and key word is a COPY ID of the catalog (MOD-Keys holds no copy)', () => {
+    const catalog = CATALOG['en-US'] as Record<string, unknown>;
+    for (const mac of [false, true])
+      for (const g of shortcutList(mac)) {
+        expect(catalog[g.copyId], g.copyId).toBeDefined();
+        for (const r of g.rows) {
+          expect(typeof catalog[r.copyId], r.copyId).toBe('string');
+          for (const p of [...r.printed, ...r.spoken])
+            if (typeof p !== 'string') expect(typeof catalog[p.copyId], p.copyId).toBe('string');
+        }
+      }
   });
 });

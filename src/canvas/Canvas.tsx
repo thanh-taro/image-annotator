@@ -131,6 +131,8 @@ export interface ActiveCanvas {
   endTextEdit(): boolean;
   /** RULE-19 Tab (1) / Shift+Tab (−1) through the annotations (./list.tsx); false when nothing was done. */
   selectStep(dir: 1 | -1): boolean;
+  /** RULE-19: pans the view so these annotations (newly placed or selected) are visible. */
+  reveal(annotations: readonly Annotation[]): void;
 }
 
 let active: ActiveCanvas | null = null;
@@ -251,6 +253,8 @@ export function Canvas({
     onFrame,
   });
   const controller = useRef<ViewController | null>(null);
+  /** RULE-19: activating an option (a screen reader's click) selects it alone and keeps it in view. */
+  const pickOption = useRef<(id: string) => void>(() => {});
   controller.current ??= new ViewController((v) => {
     live.current.onView?.(v);
     live.current.onViewChanged();
@@ -771,6 +775,24 @@ export function Canvas({
       if (text.editAtScreen(local(e))) e.preventDefault();
     };
 
+    // RULE-19: the view scrolls to keep a newly placed or selected annotation visible (their joint box).
+    const reveal = (annotations: readonly Annotation[]) => {
+      const short = Math.min(live.current.image.width, live.current.image.height);
+      const boxes = annotations.map((a) => boundsOf(a, short, measureLine));
+      if (!boxes.length) return;
+      const x = Math.min(...boxes.map((b) => b.x));
+      const y = Math.min(...boxes.map((b) => b.y));
+      const right = Math.max(...boxes.map((b) => b.x + b.width));
+      const bottom = Math.max(...boxes.map((b) => b.y + b.height));
+      view.reveal({ x, y, width: right - x, height: bottom - y });
+    };
+    pickOption.current = (id) => {
+      const a = live.current.doc.annotations.find((n) => n.id === id);
+      if (!a) return;
+      live.current.onSelect?.([id], 'keyboard');
+      reveal([a]);
+    };
+
     active = {
       controller: view,
       holdSpace: (held) => input.holdSpace(held),
@@ -793,7 +815,7 @@ export function Canvas({
       selectStep: (dir) => {
         const area = region();
         if (!area) return false;
-        const { doc: scene, selection: picked, image: img } = live.current;
+        const { doc: scene, selection: picked } = live.current;
         const focused = document.activeElement;
         const focusedId =
           focused instanceof HTMLElement && area.contains(focused) ? (focused.dataset['annotation'] ?? null) : null;
@@ -803,16 +825,21 @@ export function Canvas({
           focusedId,
           dir,
         );
-        // RULE-19: after the last (or before the first) annotation, focus leaves the canvas.
-        if (i === null) return leaveRegion(area, dir > 0);
+        // RULE-19: after the last (or before the first) annotation, focus leaves the canvas. The browser
+        // moves it (radio groups, notices and the host page keep their own Tab order), except forward from
+        // the region itself while an option holds the Tab stop: the browser would move into that option.
+        if (i === null) {
+          const stop = area.querySelector('.tk-annotation[tabindex="0"]');
+          return dir > 0 && focused === area && !!stop && leaveRegion(area, true);
+        }
         const a = scene.annotations[i];
         if (!a) return false;
         live.current.onSelect?.([a.id], 'keyboard');
-        // RULE-19: the view scrolls to keep the selected annotation visible.
-        view.reveal(boundsOf(a, Math.min(img.width, img.height), measureLine));
+        reveal([a]);
         area.querySelector<HTMLElement>(`[data-annotation="${CSS.escape(a.id)}"]`)?.focus({ preventScroll: true });
         return true;
       },
+      reveal: (annotations) => reveal(annotations),
     };
 
     measure();
@@ -899,7 +926,7 @@ export function Canvas({
         selection={selection}
         name={annotationName}
         editing={editingText}
-        onPick={(id) => live.current.onSelect?.([id], 'keyboard')}
+        onPick={(id) => pickOption.current(id)}
       />
     </>
   );

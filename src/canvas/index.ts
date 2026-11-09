@@ -5,7 +5,7 @@
 // text is placed and edited with ./text.ts and ./editor.ts (F-005); selecting, moving and resizing with
 // ./select.ts (F-008); the crop tool with ./crop.ts (F-010); the accessible annotation list and Tab through it
 // with ./list.tsx (F-013). The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
-import type { Point } from '../core';
+import type { Annotation, Point } from '../core';
 import { activeCanvas } from './Canvas';
 
 /** The canvas component (CMP-Canvas): the loaded image in a zoomable, pannable view (F-001, F-002). */
@@ -62,6 +62,8 @@ export const canvasCommands = {
    * nothing was done, so the browser moves focus on (no control beyond the canvas, ./list.tsx).
    */
   selectNext: (): boolean => activeCanvas()?.selectStep(1) ?? false,
+  /** RULE-19: keeps newly placed annotations (Mod+D's copies) in view. */
+  reveal: (annotations: readonly Annotation[]): void => activeCanvas()?.reveal(annotations),
   selectPrevious: (): boolean => activeCanvas()?.selectStep(-1) ?? false,
   /** F-005.R4 / RULE-19 Enter with the select tool: edits the selected text; true if started. */
   beginTextEdit: (id: string): boolean => activeCanvas()?.beginTextEdit(id) ?? false,

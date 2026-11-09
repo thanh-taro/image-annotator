@@ -117,11 +117,11 @@ test.describe('F-013 work from the keyboard', () => {
     await page.keyboard.press('r');
     await expect(toolButton(page, 'Select (V)')).toHaveAttribute('aria-checked', 'true');
     await page.keyboard.press('Tab');
-    await expect(help(page).getByRole('region', { name: 'Keyboard shortcuts' })).toBeFocused();
+    await expect(help(page).locator('.tk-shortcuts__body')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(help(page).getByRole('button', { name: 'Close' })).toBeFocused();
     await page.keyboard.press('Shift+Tab');
-    await expect(help(page).getByRole('region', { name: 'Keyboard shortcuts' })).toBeFocused();
+    await expect(help(page).locator('.tk-shortcuts__body')).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(help(page)).toHaveCount(0);
     await expect(workArea(page)).toBeFocused();
@@ -169,8 +169,8 @@ test.describe('F-013 work from the keyboard', () => {
       ['Select all', `${M}A`],
       ['Bring forward', ']'],
       ['Send backward', '['],
-      ['Move selection', '← ↑ → ↓'],
-      ['Resize selection', `${A}arrows`],
+      ['Move selection', `← ↑ → ↓ / ${S}← ↑ → ↓`],
+      ['Resize selection', `${A.trim()}← ↑ → ↓ / ${A.trim()}${S}← ↑ → ↓`],
       ['Cancel, finish editing, deselect', 'Esc'],
       ['Undo', `${M}Z`],
       ['Redo', mac ? '⌘⇧Z' : 'Ctrl+Shift+Z / Ctrl+Y'],
@@ -178,7 +178,7 @@ test.describe('F-013 work from the keyboard', () => {
       ['Zoom out', `${M}-`],
       ['Fit to view', `${S}1`],
       ['Actual size', `${S}0`],
-      ['Pan the view', 'Space+drag / ← ↑ → ↓'],
+      ['Pan the view', `Space+drag / ← ↑ → ↓ / ${S}← ↑ → ↓`],
       ['Zoom at pointer', `${Mw}wheel`],
       ['Move while drawing', `${A}drag`],
       ['Paste an image', `${M}V`],
@@ -197,9 +197,12 @@ test.describe('F-013 work from the keyboard', () => {
     expect(shown).toEqual(expected);
     // Spoken names as text for screen readers (CMP-ShortcutHelp "Accessibility"); the symbols are hidden.
     await expect(help(page).locator('kbd[aria-hidden="true"]')).toHaveCount(expected.length);
+    // Read as "name, keys": a hidden separator between the entry and its spoken keys (a11y review m4).
     await expect(help(page).locator('li', { hasText: 'Keyboard shortcuts' }).locator('.tk-sr')).toHaveText(
-      'question mark',
+      ', question mark',
     );
+    // The scrolling list is focusable but has no name of its own (it would repeat the dialog's).
+    await expect(help(page).getByRole('region')).toHaveCount(0);
   });
 
   test('F-013.R3 CMP-ShortcutHelp is shown in the active language (vi-VN)', async ({ page }) => {
@@ -207,7 +210,65 @@ test.describe('F-013 work from the keyboard', () => {
     await focusCanvas(page);
     await page.keyboard.press('Shift+Slash');
     await expect(page.getByRole('dialog', { name: 'Phím tắt' })).toBeVisible();
-    await expect(page.getByRole('dialog', { name: 'Phím tắt' })).toContainText('Chú thích tiếp theo / trước');
+    const dialog = page.getByRole('dialog', { name: 'Phím tắt' });
+    await expect(dialog).toContainText('Chú thích tiếp theo / trước');
+    // Pointer words and spoken key names in Vietnamese (COPY-key.*); only key labels stay as printed.
+    await expect(dialog.locator('li', { hasText: 'Kéo khung nhìn' }).locator('kbd')).toHaveText(
+      /^Space\+kéo \/ ← ↑ → ↓ \/ (⇧|Shift\+)← ↑ → ↓$/,
+    );
+    await expect(dialog.locator('li', { hasText: 'Phím tắt' }).locator('.tk-sr')).toHaveText(', dấu chấm hỏi');
+    const text = (await dialog.locator('kbd, .tk-sr').allTextContents()).join(' | ');
+    expect(text).not.toMatch(/\b(drag|wheel|arrows?|or|plus|minus|equals|question)\b/);
+  });
+
+  test('F-013 review M2: paste while CMP-ShortcutHelp is open changes nothing behind it', async ({ page }) => {
+    await open(page);
+    await focusCanvas(page);
+    await place(page, 'r');
+    await page.keyboard.press('Shift+Slash');
+    await expect(help(page)).toBeVisible();
+    await pasteGrey(page);
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    await expect(help(page)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(summary(page)).toHaveText(count(1));
+  });
+
+  test('F-013 review m5: paste while the More menu is open is ignored and closes the menu, focus on its button', async ({
+    page,
+  }) => {
+    await open(page);
+    await more(page).click();
+    await expect(menu(page)).toBeVisible();
+    await page.evaluate(async () => {
+      const c = new OffscreenCanvas(300, 200);
+      c.getContext('2d')?.fillRect(0, 0, 300, 200);
+      const blob = await c.convertToBlob({ type: 'image/png' });
+      const dt = new DataTransfer();
+      dt.items.add(new File([blob], 'other.png', { type: 'image/png' }));
+      document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    });
+    await expect(menu(page)).toHaveCount(0);
+    await expect(more(page)).toBeFocused();
+    await expect(summary(page)).toHaveText(count(0)); // still the 1,000 × 800 image
+  });
+
+  test('F-013 review M1: Shift+Tab from the canvas with nothing selected lands on the checked radio, not another', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'WebKit’s default Tab order skips radio buttons');
+    await open(page);
+    await focusCanvas(page);
+    await page.keyboard.press('r'); // the rectangle tool: the panel ends with the fill choice
+    await page.keyboard.press('Shift+Tab');
+    const focused = () =>
+      page.evaluate(() => {
+        const el = document.activeElement;
+        return el instanceof HTMLInputElement ? `${el.type}:${el.checked}` : (el?.tagName ?? '');
+      });
+    await expect.poll(focused).toBe('radio:true');
+    await expect(panel(page).locator(':focus')).toHaveCount(1);
   });
 
   test('F-013.AC4 keyboard only: place a rectangle, resize and move it, then Mod+C copies the image with it', async ({
@@ -260,6 +321,7 @@ test.describe('F-013 work from the keyboard', () => {
 
   test('F-013.AC6 Tab selects the next annotation in drawing order; Shift+Tab goes back; after the last focus moves on', async ({
     page,
+    browserName,
   }) => {
     await open(page);
     await focusCanvas(page);
@@ -294,7 +356,9 @@ test.describe('F-013 work from the keyboard', () => {
         const el = document.activeElement;
         return el?.closest('footer') ? 'footer' : el?.closest('main') ? 'main' : el?.tagName;
       });
-    await expect.poll(focusedIn).toBe('footer');
+    // The browser moves focus on (WebKit's default Tab order skips the status bar's buttons and links).
+    await expect.poll(focusedIn).not.toBe('main');
+    if (browserName === 'chromium') expect(await focusedIn()).toBe('footer');
     await expect(options(page).nth(2)).toHaveAttribute('aria-selected', 'true');
     // Back with Shift+Tab: the selected annotation's option is the Tab stop (roving focus).
     await page.keyboard.press('Shift+Tab');
@@ -363,8 +427,24 @@ test.describe('F-013 work from the keyboard', () => {
     await expect(help(page)).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(confirm).toHaveCount(0);
+    // CMP-ConfirmDialog: focus returns to what had it (review M3).
+    await expect(workArea(page)).toBeFocused();
     await expect(summary(page)).toHaveText(count(1));
     await expect(toolButton(page, 'Rectangle (R)')).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('CMP-ConfirmDialog Cancel returns focus to the control that had it (review M3)', async ({ page }) => {
+    await open(page);
+    await focusCanvas(page);
+    await place(page, 'r');
+    const undo = toolbar(page).getByRole('button', { name: 'Undo', exact: true });
+    await undo.focus();
+    await pasteGrey(page);
+    const confirm = page.getByRole('alertdialog');
+    await expect(confirm).toBeVisible();
+    await confirm.getByRole('button', { name: 'Cancel' }).click();
+    await expect(confirm).toHaveCount(0);
+    await expect(undo).toBeFocused();
   });
 
   test('CMP-Canvas the annotation list: named and described, one option per annotation, selected ones marked; selections announced', async ({
@@ -474,6 +554,25 @@ test.describe('F-013 work from the keyboard', () => {
     await page.keyboard.press('Enter');
     await expect(help(page)).toBeVisible();
     await expect(help(page).getByRole('button', { name: 'Close' })).toBeFocused();
+  });
+
+  test('CMP-Toolbar COPY-action.more: ArrowDown and ArrowUp open it at the first and last item; Home and End', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 760 });
+    await open(page, '', { width: 390, height: 760 });
+    await more(page).focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(menu(page).getByRole('menuitem', { name: 'Download' })).toBeFocused();
+    await expect(more(page)).toHaveAttribute('aria-controls', (await menu(page).getAttribute('id')) ?? 'missing');
+    await page.keyboard.press('End');
+    await expect(menu(page).getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(menu(page).getByRole('menuitem', { name: 'Download' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(more(page)).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(menu(page).getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
   });
 
   test('CMP-Toolbar COPY-action.more works before an image is loaded (shortcuts available, download not)', async ({

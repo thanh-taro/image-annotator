@@ -92,19 +92,37 @@ export interface Resolution {
 }
 
 /**
- * One row of CMP-ShortcutHelp: the COPY ID of what it does, its keys as printed on the keyboard (not
- * translated; aliases joined with " / "), and the same keys spoken as words for screen readers.
+ * A piece of a key cell: a key label as printed (never translated, e.g. "Ctrl+", "⌘", "← ↑ → ↓"), or a
+ * COPY ID that MOD-App translates (COPY-key.drag, COPY-key.wheel, COPY-key.or, COPY-key.spoken_*).
+ */
+export type KeyText = string | { readonly copyId: string };
+
+/**
+ * One row of CMP-ShortcutHelp: the COPY ID of what it does, its keys as printed (pieces joined with
+ * nothing; aliases separated by " / "), and the same keys spoken for screen readers (pieces joined with
+ * spaces): the printed labels spelled as words, with COPY-key.* for everything else (MOD-Keys holds no copy).
  */
 export interface ShortcutRow {
   readonly copyId: string;
-  readonly keys: string;
-  readonly spoken: string;
+  readonly printed: readonly KeyText[];
+  readonly spoken: readonly KeyText[];
 }
 
 /** A group of CMP-ShortcutHelp (COPY-shortcuts.*), in RULE-19 order. */
 export interface ShortcutGroup {
   readonly copyId: string;
   readonly rows: readonly ShortcutRow[];
+}
+
+/** A key cell's text with its COPY IDs translated by `tr`: printed (joined) or spoken (spaced). */
+export function keyText(pieces: readonly KeyText[], tr: (copyId: string) => string, spoken = false): string {
+  const parts = pieces.map((p) => (typeof p === 'string' ? p : tr(p.copyId)));
+  return spoken
+    ? parts
+        .filter((p) => p !== '')
+        .join(' ')
+        .replace(/ ,/g, ',')
+    : parts.join('');
 }
 
 const NONE: Resolution = { preventDefault: false };
@@ -258,75 +276,91 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
 
 /**
  * CMP-ShortcutHelp: every RULE-19 key with its action, grouped as RULE-19 groups them, with Ctrl or ⌘
- * for the platform (`mac`). Key labels are shown as printed and never translated; aliases (Backspace for
- * Delete, Mod++ for Mod+=, Ctrl+Y for redo off macOS, the arrow keys for pan) are listed with the main key.
+ * for the platform (`mac`). Key labels are printed as on the keyboard and never translated; arrow keys
+ * as ← ↑ → ↓; pointer actions with COPY-key.drag and COPY-key.wheel. Aliases (Backspace for Delete,
+ * Mod++ for Mod+=, Ctrl+Y for redo off macOS) are listed with the main key; the move, resize and pan
+ * rows also show Shift for the larger step, and the crop keys share the move and resize rows.
  * Implements: F-013.R3, CMP-ShortcutHelp "Behavior" and "Accessibility" (spoken key names).
  */
 export function shortcutList(mac: boolean): readonly ShortcutGroup[] {
-  // Printed: ⌘Z / Ctrl+Z; spoken: "Command Z" / "Control Z".
-  const M = mac ? '⌘' : 'Ctrl+';
-  const Ms = mac ? 'Command ' : 'Control ';
-  const S = mac ? '⇧' : 'Shift+';
-  // Before a word (arrows, drag, wheel) the Mac symbols take a space: "⌥ drag", "⌘ wheel".
-  const Aw = mac ? '⌥ ' : 'Alt+';
-  const As = mac ? 'Option ' : 'Alt ';
-  const Mw = mac ? '⌘ ' : 'Ctrl+';
+  const key = (id: string) => ({ copyId: `key.${id}` });
+  const OR = key('or');
   const ARROWS = '← ↑ → ↓';
-  const ARROWS_SPOKEN = 'Left, Up, Right or Down arrow';
-  const row = (copyId: string, keys: string, spoken = keys): ShortcutRow => ({ copyId, keys, spoken });
-  const tools = Object.entries(TOOL_LETTERS).map(([letter, tool]) => row(`tool.${tool}`, letter.toUpperCase()));
+  const SAY_ARROWS = key('spoken_arrows');
+  // Modifiers as printed (macOS symbols take no "+") and as spoken (the label on the key).
+  const M = mac ? '⌘' : 'Ctrl+';
+  const S = mac ? '⇧' : 'Shift+';
+  const A = mac ? '⌥' : 'Alt+';
+  const sayM = mac ? 'Command' : 'Ctrl';
+  const sayA = mac ? 'Option' : 'Alt';
+  // Before a pointer word the macOS symbols take a space: "⌥ drag", "⌘ wheel".
+  const Mw = mac ? '⌘ ' : 'Ctrl+';
+  const Aw = mac ? '⌥ ' : 'Alt+';
+  const row = (copyId: string, printed: readonly KeyText[], spoken: readonly KeyText[] = printed): ShortcutRow => ({
+    copyId,
+    printed,
+    spoken,
+  });
+  /** Mod plus a letter: "Ctrl+D" / "⌘D", spoken "Ctrl D" / "Command D". */
+  const mod = (copyId: string, letter: string) => row(copyId, [`${M}${letter}`], [sayM, letter]);
+  const tools = Object.entries(TOOL_LETTERS).map(([letter, tool]) => row(`tool.${tool}`, [letter.toUpperCase()]));
   return [
     { copyId: 'shortcuts.tools', rows: tools },
     {
       copyId: 'shortcuts.canvas',
       rows: [
-        row('shortcut.place', 'Enter'),
-        row('shortcut.edit_text', 'Enter'),
-        row('shortcut.next', `Tab / ${S}Tab`, 'Tab, or Shift Tab'),
+        row('shortcut.place', ['Enter']),
+        row('shortcut.edit_text', ['Enter']),
+        row('shortcut.next', [`Tab / ${S}Tab`], ['Tab,', OR, 'Shift Tab']),
       ],
     },
     {
       copyId: 'shortcuts.edit',
       rows: [
-        row('action.delete', 'Delete / Backspace', 'Delete, or Backspace'),
-        row('action.duplicate', `${M}D`, `${Ms}D`),
-        row('shortcut.select_all', `${M}A`, `${Ms}A`),
-        row('action.bring_forward', ']', 'right bracket'),
-        row('action.send_backward', '[', 'left bracket'),
-        row('shortcut.move', ARROWS, ARROWS_SPOKEN),
-        row('shortcut.resize', `${Aw}arrows`, `${As}plus arrow keys`),
-        row('shortcut.cancel', 'Esc', 'Escape'),
+        row('action.delete', ['Delete / Backspace'], ['Delete,', OR, 'Backspace']),
+        mod('action.duplicate', 'D'),
+        mod('shortcut.select_all', 'A'),
+        row('action.bring_forward', [']']),
+        row('action.send_backward', ['[']),
+        row('shortcut.move', [`${ARROWS} / ${S}${ARROWS}`], [SAY_ARROWS, ',', OR, 'Shift', SAY_ARROWS]),
+        row(
+          'shortcut.resize',
+          [`${A}${ARROWS} / ${A}${S}${ARROWS}`],
+          [sayA, SAY_ARROWS, ',', OR, sayA, 'Shift', SAY_ARROWS],
+        ),
+        row('shortcut.cancel', ['Esc'], ['Escape']),
       ],
     },
     {
       copyId: 'shortcuts.history',
       rows: [
-        row('action.undo', `${M}Z`, `${Ms}Z`),
+        mod('action.undo', 'Z'),
         mac
-          ? row('action.redo', '⌘⇧Z', 'Command Shift Z')
-          : row('action.redo', 'Ctrl+Shift+Z / Ctrl+Y', 'Control Shift Z, or Control Y'),
+          ? row('action.redo', ['⌘⇧Z'], ['Command Shift Z'])
+          : row('action.redo', ['Ctrl+Shift+Z / Ctrl+Y'], ['Ctrl Shift Z,', OR, 'Ctrl Y']),
       ],
     },
     {
       copyId: 'shortcuts.view',
       rows: [
-        row('action.zoom_in', `${M}= / ${M}+`, `${Ms}equals, or ${Ms}plus`),
-        row('action.zoom_out', `${M}-`, `${Ms}minus`),
-        row('action.zoom_fit', `${S}1`, 'Shift 1'),
-        row('action.zoom_actual', `${S}0`, 'Shift 0'),
-        row('shortcut.pan', `Space+drag / ${ARROWS}`, `Space plus drag, or ${ARROWS_SPOKEN}`),
-        row('shortcut.zoom_pointer', `${Mw}wheel`, `${Ms}plus wheel`),
+        row('action.zoom_in', [`${M}= / ${M}+`], [sayM, key('spoken_equals'), ',', OR, sayM, key('spoken_plus')]),
+        row('action.zoom_out', [`${M}-`], [sayM, key('spoken_minus')]),
+        row('action.zoom_fit', [`${S}1`], ['Shift 1']),
+        row('action.zoom_actual', [`${S}0`], ['Shift 0']),
+        row(
+          'shortcut.pan',
+          ['Space+', key('drag'), ` / ${ARROWS} / ${S}${ARROWS}`],
+          ['Space', key('spoken_plus'), key('drag'), ',', OR, SAY_ARROWS, ',', OR, 'Shift', SAY_ARROWS],
+        ),
+        row('shortcut.zoom_pointer', [Mw, key('wheel')], [sayM, key('spoken_plus'), key('wheel')]),
       ],
     },
-    { copyId: 'shortcuts.pointer', rows: [row('shortcut.move_while_drawing', `${Aw}drag`, `${As}plus drag`)] },
     {
-      copyId: 'shortcuts.load',
-      rows: [row('shortcut.paste', `${M}V`, `${Ms}V`), row('action.open', `${M}O`, `${Ms}O`)],
+      copyId: 'shortcuts.pointer',
+      rows: [row('shortcut.move_while_drawing', [Aw, key('drag')], [sayA, key('spoken_plus'), key('drag')])],
     },
-    {
-      copyId: 'shortcuts.export',
-      rows: [row('action.copy', `${M}C`, `${Ms}C`), row('action.download', `${M}S`, `${Ms}S`)],
-    },
-    { copyId: 'shortcuts.help', rows: [row('action.shortcuts', '?', 'question mark')] },
+    { copyId: 'shortcuts.load', rows: [mod('shortcut.paste', 'V'), mod('action.open', 'O')] },
+    { copyId: 'shortcuts.export', rows: [mod('action.copy', 'C'), mod('action.download', 'S')] },
+    { copyId: 'shortcuts.help', rows: [row('action.shortcuts', ['?'], [key('spoken_question')])] },
   ];
 }

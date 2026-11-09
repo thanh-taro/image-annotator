@@ -7,7 +7,28 @@ import { t } from '../copy';
 import { decodeInput, discard, onImageInput, openPicker, probeAvif, scaleDown } from '../io';
 import type { ImageInput } from '../io';
 import { loadFile, noImageNotice, refusalNotice, type LoadPorts } from './load';
-import { announcePolite, clearPolite, dialog, dragging, setNotice, startNewSession, unexported } from './state';
+import {
+  announcePolite,
+  clearPolite,
+  dialog,
+  dragging,
+  modalOpen,
+  moreOpen,
+  setNotice,
+  startNewSession,
+  unexported,
+} from './state';
+
+/**
+ * Input arrives while a dialog or menu is open: it is ignored (F-001 edge case; RULE-19 "while a dialog or
+ * menu is open, only Esc acts"). An open COPY-action.more menu closes, so the next paste or drop works.
+ */
+function blocked(): boolean {
+  if (busy || modalOpen()) return true;
+  if (!moreOpen.value) return false;
+  moreOpen.value = false;
+  return true;
+}
 
 let busy = false;
 
@@ -56,7 +77,7 @@ async function run({ files, extraFiles }: ImageInput): Promise<void> {
  * nothing while a load or a dialog is in progress.
  */
 export function openImage(): void {
-  if (!dialog.value && !busy) openPicker();
+  if (!modalOpen() && !busy) openPicker();
 }
 
 /** Starts listening for images; called once after the shell has mounted. Returns a stop function. */
@@ -65,16 +86,16 @@ export function startLoader(): () => void {
   const stop = onImageInput({
     file(input) {
       // F-001 edge case: input that arrives while an image is loading or a dialog is open is ignored.
-      if (busy || dialog.value) return;
+      if (blocked()) return;
       void run(input);
     },
     noImage(via) {
-      if (busy || dialog.value) return;
+      if (blocked()) return;
       // F-001 edge case: a drop that holds no files (only folders) is refused as unsupported.
       setNotice(via === 'paste' ? noImageNotice : refusalNotice('unsupported_format'));
     },
     dragging(active) {
-      const show = active && !dialog.value;
+      const show = active && !modalOpen();
       if (dragging.value === show) return;
       dragging.value = show;
       // CMP-DropOverlay: announced politely each time it appears; cleared when it disappears.

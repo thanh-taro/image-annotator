@@ -95,6 +95,8 @@ function tabbables(): HTMLElement[] {
   ).filter(
     (el) =>
       el.tabIndex >= 0 &&
+      // A radio group is one Tab stop: its checked radio (F-013 review M1).
+      !(el instanceof HTMLInputElement && el.type === 'radio' && !el.checked) &&
       !(el as HTMLButtonElement).disabled &&
       !el.closest('[inert]') &&
       el.getClientRects().length > 0,
@@ -102,9 +104,10 @@ function tabbables(): HTMLElement[] {
 }
 
 /**
- * RULE-19: focus leaves the canvas region forward (after the last annotation) or backward (before the
- * first), to the next or previous control outside it. False when there is none (the browser then moves
- * focus on, e.g. out of the frame to the host page).
+ * RULE-19: focus leaves the canvas region forward or backward, to the next or previous control outside
+ * it. Used only where the browser's own Tab would stay inside (forward from the region while one of its
+ * options holds the Tab stop). False when there is none (the browser then moves focus on, e.g. out of
+ * the frame to the host page).
  */
 export function leaveRegion(region: HTMLElement, forward: boolean): boolean {
   const outside = tabbables().filter((el) => !region.contains(el));
