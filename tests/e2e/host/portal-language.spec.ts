@@ -215,9 +215,12 @@ test('F-018.R7 the Vietnamese faces are part of the initial load, in every langu
   await page.waitForLoadState('networkidle');
   await expect
     .poll(async () => {
-      const log = (await (await page.request.get(`${TOOL_ALLOWED}/__log/dump`)).json()) as { path: string }[];
-      // Distinct files: WebKit's offline worker (F-017) fetches each again into its cache.
-      return new Set(log.map((r) => r.path).filter((p) => /vietnamese.*\.woff2$/.test(p))).size;
+      const log = (await (await page.request.get(`${TOOL_ALLOWED}/__log/dump`)).json()) as {
+        path: string;
+        dest: string;
+      }[];
+      // The page's own font loads (dest `font`), not the offline worker's fetches into its cache (F-017).
+      return log.filter((r) => r.dest === 'font' && /vietnamese.*\.woff2$/.test(r.path)).length;
     })
     .toBe(2);
 });

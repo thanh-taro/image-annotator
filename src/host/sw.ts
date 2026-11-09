@@ -3,14 +3,16 @@
 // own initiative: no install-time precache, no periodic or background work. Its only fetches are the
 // browser's own requests it forwards (the page, network first; an asset cache miss) and seeding the
 // files the page already loaded, read from the HTTP cache with `cache: 'force-cache'` (NFR-01: the
-// tool's own files only). One fixed cache shared by every worker version, pruned per navigation after
-// seeding. No `skipWaiting` / `clients.claim`: a new worker waits until every tab of the old one has
-// closed, and the page is never reloaded under the user (F-017.R3).
+// tool's own files only). One fixed cache shared by every worker version, pruned after a seed while no
+// other copy of the tool is open. No `skipWaiting` / `clients.claim`: a new worker waits until every
+// open copy of the old version has closed, and the page is never reloaded under the user (F-017.R3,
+// ADR-0024). Updates and switching off a bad worker: docs/offline.md.
 // Classic script: this file must not import anything shared with the page (one bundle entry).
-// Implements: F-017.R1, F-017.R2, F-017.R3, INV-04, NFR-01.
+// Implements: F-017.R1, F-017.R2, F-017.R3, INV-04, NFR-01, NFR-09.
 import {
   CACHE_NAME,
   cacheKey,
+  frameAncestors,
   pageAssets,
   pageStorable,
   prunable,
@@ -35,6 +37,7 @@ interface ExtendableMessageEvent extends ExtendableEvent {
 }
 interface WorkerScope {
   readonly location: { readonly origin: string };
+  readonly clients: { matchAll(o: { type: 'window'; includeUncontrolled: boolean }): Promise<readonly unknown[]> };
   addEventListener(type: 'activate', fn: (e: ExtendableEvent) => void): void;
   addEventListener(type: 'fetch', fn: (e: FetchEvent) => void): void;
   addEventListener(type: 'message', fn: (e: ExtendableMessageEvent) => void): void;
@@ -60,13 +63,33 @@ scope.addEventListener('fetch', (event) => {
   const key = cacheKey(new URL(req.url), ORIGIN);
   if (!key) return;
   if (route === 'page') {
-    // Implements: F-017.R2 / R3 — network first: the version check happens only while the page is
-    // being opened with a connection; offline, the stored page (matched ignoring the query) opens.
+    // Implements: F-017.R2 / R3 (ADR-0024) — network first: the version check happens only while the
+    // page is being opened with a connection, and that open uses what it gets. With no connection, or
+    // an error page instead of the tool, the stored page (matched ignoring the query) opens.
     // The page is stored by the seed, after its files, never here.
     event.respondWith(
-      fetch(req).catch(
-        async () => (await (await caches.open(CACHE_NAME)).match(key, { ignoreSearch: true })) ?? Response.error(),
-      ),
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const stored = () => cache.match(key, { ignoreSearch: true });
+        let res: Response;
+        try {
+          res = await fetch(req);
+        } catch {
+          return (await stored()) ?? Response.error();
+        }
+        if (!res.ok) return (await stored()) ?? res;
+        // Implements: NFR-09 — a host removed from the allow-list must not keep embedding the stored
+        // copy offline: when the served page's frame-ancestors differ from the stored page's, the
+        // stored page is dropped (the next complete seed stores the current one).
+        const old = await stored();
+        if (
+          old &&
+          frameAncestors(old.headers.get('content-security-policy')) !==
+            frameAncestors(res.headers.get('content-security-policy'))
+        )
+          event.waitUntil(cache.delete(key));
+        return res;
+      })(),
     );
     return;
   }
@@ -112,6 +135,9 @@ async function seed(assets: readonly SeedTarget[], page: SeedTarget): Promise<bo
   const html = await res.clone().text();
   if (!pageStorable(html, keys, ORIGIN)) return false;
   await cache.put(page.key, storedPage(html, res));
+  // Another open copy may run an older version whose files it has not all used yet: prune later.
+  const open = await scope.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  if (open.length > 1) return true;
   // Keep what this session loaded and every file the stored page names; drop an older version's.
   const keep = [...assets.map((a) => a.key), ...(pageAssets(html, ORIGIN) ?? [])];
   for (const key of prunable(keys, keep, ORIGIN)) await cache.delete(key);

@@ -11,6 +11,7 @@ import {
   CACHE_NAME,
   PAGE_LANGUAGES,
   cacheKey,
+  frameAncestors,
   isSupportedLanguage,
   keepsPageQuery,
   pageAssets,
@@ -136,6 +137,14 @@ describe('MOD-Host offline policy', () => {
 
   it('F-017.R3 one cache shared by every worker version; only other schema versions are stale', () => {
     expect(staleCaches(['image-annotator-v0', CACHE_NAME, 'other-tool-v1'])).toEqual(['image-annotator-v0']);
+  });
+  it('NFR-09 the worker compares frame-ancestors sources, whatever their order or case', () => {
+    const csp = (fa: string) => `default-src 'none'; connect-src 'none'; frame-ancestors ${fa}; base-uri 'none'`;
+    expect(frameAncestors(csp('https://b.app https://A.app'))).toBe(frameAncestors(csp('https://a.app https://b.app')));
+    expect(frameAncestors(csp('https://a.app'))).not.toBe(frameAncestors(csp('https://b.app')));
+    expect(frameAncestors(csp("'none'"))).toBe("'none'");
+    expect(frameAncestors("default-src 'none'")).toBe('');
+    expect(frameAncestors(null)).toBe('');
   });
 
   it('INV-04 the stored page keeps its headers (the CSP) and drops the address it was fetched from', async () => {

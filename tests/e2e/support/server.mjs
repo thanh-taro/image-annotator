@@ -77,6 +77,12 @@ export async function staticServer({ root: firstRoot, port, versions = {} }) {
       method: req.method,
       path: pathname,
       contentLength: Number(req.headers['content-length'] ?? 0),
+      // Who asked: `empty` is a fetch() (only the offline worker's, the page has connect-src 'none');
+      // anything else (document, iframe, script, style, font, worker, serviceworker) is the browser
+      // loading the page or the worker, whether or not the worker forwarded it.
+      dest: String(req.headers['sec-fetch-dest'] ?? ''),
+      // `navigate` only when the browser itself navigates; a worker forwarding a navigation sends `same-origin`.
+      mode: String(req.headers['sec-fetch-mode'] ?? ''),
       ...(down ? { refused: true } : {}),
     });
     if (down) {
@@ -137,6 +143,10 @@ const HOST_PAGE = `<!doctype html>
     focusIntact = false;
     frame.focus({ preventScroll: true });
   });
+  // Every load (or failed load) of the frame, so a test can wait for one instead of sleeping.
+  window.__frameLoads = 0;
+  frame.addEventListener('load', () => window.__frameLoads++);
+  frame.addEventListener('error', () => window.__frameLoads++);
   frame.id = 'tool';
   frame.setAttribute('title', 'embedded tool');
   frame.setAttribute(

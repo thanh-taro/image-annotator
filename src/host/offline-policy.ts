@@ -11,6 +11,8 @@ export const CACHE_PREFIX = 'image-annotator-';
 /**
  * The one Cache Storage entry set (ADR-0011). Its version is the cache *schema*: bumped only when the
  * stored format changes, never per build, so every worker version reads and writes the same entries.
+ * Bumping it deletes the old entries on activation (`staleCaches`), leaving no offline copy until the
+ * next complete seed: migrate the old entries in `activate` when you bump it.
  */
 export const CACHE_NAME = `${CACHE_PREFIX}v1`;
 /** Upper bound of a seed list (the tool has about ten files; anything larger is not ours). */
@@ -232,4 +234,21 @@ export function prunable(cachedKeys: readonly string[], keep: readonly string[],
  */
 export function storedPage(body: string, res: Pick<Response, 'status' | 'statusText' | 'headers'>): Response {
   return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+}
+
+/**
+ * The `frame-ancestors` sources of a CSP header, normalised (sorted, lower-case), or '' when absent.
+ * Implements: NFR-09 — the worker compares the served page's with the stored page's, so a host
+ * removed from the allow-list cannot keep embedding the stored copy (sw.ts).
+ */
+export function frameAncestors(csp: string | null): string {
+  for (const part of (csp ?? '').split(';')) {
+    const [name, ...sources] = part.trim().split(/\s+/);
+    if (name?.toLowerCase() === 'frame-ancestors')
+      return sources
+        .map((v) => v.toLowerCase())
+        .sort()
+        .join(' ');
+  }
+  return '';
 }

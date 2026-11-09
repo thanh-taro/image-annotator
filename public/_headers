@@ -15,4 +15,4 @@
   ! Content-Security-Policy
   ! Cache-Control
   Content-Security-Policy: default-src 'none'; connect-src 'self'
-  Cache-Control: public, max-age=86400
+  Cache-Control: no-cache

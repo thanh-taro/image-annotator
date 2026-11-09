@@ -1,8 +1,9 @@
-// F-017 Work offline (ADR-0011, ADR-0021; NFR-01, INV-04) on the multi-origin harness: the real
-// /sw.js under its deploy headers, standalone and embedded in the stub portal, on Chromium and WebKit.
-// "Offline" takes the tool server down (its connections are dropped) rather than using Playwright's
-// `setOffline`, which breaks service workers on WebKit (ADR-0021). The stub host stays up: the portal
-// page itself is not the tool's to cache.
+// F-017 Work offline (ADR-0011, ADR-0021, ADR-0024; NFR-01, NFR-09, INV-04) on the multi-origin
+// harness: the real /sw.js under its deploy headers, standalone and embedded in the stub portal, on
+// Chromium and WebKit. "Offline" takes the tool server down (its connections are dropped) rather than
+// using Playwright's `setOffline`, which breaks service workers on WebKit (ADR-0021). The stub host
+// stays up: the portal page itself is not the tool's to cache. The server log records `sec-fetch-dest`,
+// so the offline worker's own fetches (`empty`) are told apart from the browser loading the page.
 import { expect, test, type APIRequestContext, type Frame, type FrameLocator, type Page } from '@playwright/test';
 import { download, expectCleanPng } from '../support/export';
 import { fixture, paste } from '../support/load';
@@ -17,19 +18,21 @@ interface Logged {
   readonly method: string;
   readonly path: string;
   readonly contentLength: number;
+  readonly dest: string;
+  readonly mode: string;
   readonly refused?: boolean;
 }
 
 const ctl = (request: APIRequestContext, q: string) => request.get(`${TOOL_ALLOWED}/__ctl/${q}`);
 const serverDown = (request: APIRequestContext, on: boolean) => ctl(request, `down?on=${on ? 1 : 0}`);
-const serveVersion = (request: APIRequestContext, v: 1 | 2) => ctl(request, `version?v=${v}`);
+const serveVersion = (request: APIRequestContext, v: '1' | '2' | 'revoked') => ctl(request, `version?v=${v}`);
 const resetLog = (request: APIRequestContext) => request.get(`${TOOL_ALLOWED}/__log/reset`);
 const requestLog = async (request: APIRequestContext) =>
   (await (await request.get(`${TOOL_ALLOWED}/__log/dump`)).json()) as Logged[];
 
 test.afterEach(async ({ request }) => {
   await serverDown(request, false);
-  await serveVersion(request, 1);
+  await serveVersion(request, '1');
 });
 
 /** Opens the tool online or offline, standalone or in the stub portal; returns its frame. */
@@ -42,6 +45,36 @@ async function openTool(page: Page, way: Way, query = 'theme=dark&lang=en-US'): 
   const q = new URLSearchParams(query);
   await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, q.get('theme') as 'dark', q.get('lang') ?? undefined));
   return toolFrame(page);
+}
+
+/**
+ * Opens the stub portal with the tool server down, in a site whose partition has no offline copy, and
+ * returns the messages the tool sent. Deterministic: the frame's navigation reaches the server as the
+ * browser's own (`sec-fetch-mode: navigate`; a worker forwarding it would send `same-origin`), so no
+ * worker answered it, the server refuses it, and nothing else could load the tool (ADR-0021).
+ */
+async function embedWithoutCopy(page: Page, request: APIRequestContext): Promise<unknown[]> {
+  await resetLog(request);
+  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark', 'en-US'), { waitUntil: 'commit' });
+  await expect
+    .poll(async () =>
+      (await requestLog(request)).some(
+        (r) => r.path === '/' && r.dest === 'iframe' && r.mode === 'navigate' && r.refused,
+      ),
+    )
+    .toBe(true);
+  return received(page);
+}
+
+/**
+ * Opens the stub portal and waits until its frame has loaded or failed (the host counts the frame's
+ * load events; Chromium fires one for a refused or failed frame too), then returns the messages the
+ * tool sent: none when it did not run (it posts the ready signal before its frame's load event).
+ */
+async function embedSettled(page: Page): Promise<unknown[]> {
+  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark', 'en-US'), { waitUntil: 'commit' });
+  await page.waitForFunction(() => (window as unknown as { __frameLoads?: number }).__frameLoads! >= 1);
+  return received(page);
 }
 
 const ui = (page: Page, way: Way): Page | FrameLocator => (way === 'standalone' ? page : page.frameLocator('#tool'));
@@ -70,6 +103,26 @@ async function offlineReady(frame: Frame): Promise<string[]> {
     .toBe(true);
   return files;
 }
+
+/** The page's own font loads (both subsets of both faces, F-018.R7) have finished. */
+const fontsLoaded = (frame: Frame) =>
+  frame.waitForFunction(() => document.fonts.status === 'loaded' && document.fonts.size >= 4);
+
+const version = (f: Frame) =>
+  f.evaluate(() => document.querySelector('meta[name="tk-e2e-version"]')?.getAttribute('content') ?? '1');
+
+/** Asks a service worker of `f`'s registration for its harness version (only the v2 worker answers). */
+const workerVersion = (f: Frame, which: 'controller' | 'waiting' | 'active') =>
+  f.evaluate(async (which) => {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sw = which === 'controller' ? navigator.serviceWorker.controller : (reg?.[which] ?? null);
+    if (!sw) return null;
+    return new Promise<unknown>((resolve) => {
+      const ch = new MessageChannel();
+      ch.port1.onmessage = (e) => resolve(e.data);
+      sw.postMessage('e2e-version', [ch.port2]);
+    });
+  }, which);
 
 const summary = (page: Page, way: Way) => ui(page, way).locator('#tk-canvas-summary');
 const toolButton = (page: Page, way: Way, name: string) =>
@@ -150,18 +203,48 @@ test.describe('F-017 offline', () => {
     browserName,
   }) => {
     // Playwright launches Chromium with ThirdPartyStoragePartitioning disabled (playwright#32230), so only
-    // WebKit partitions here; Chrome itself partitions, which QA checks by hand.
+    // WebKit partitions here; Chrome itself partitions, which QA checks by hand (docs/offline.md).
     test.skip(browserName === 'chromium', 'Playwright disables storage partitioning in Chromium');
     const online = await openTool(page, 'standalone');
     await offlineReady(online);
     await serverDown(request, true);
-    await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, 'dark', 'en-US'), { waitUntil: 'domcontentloaded' });
     // Storage is partitioned per embedding site: the frame has no copy of its own, so it cannot load.
-    // The failed frame never loads, so the negative check is a bounded wait for the ready signal the
-    // tool posts once it runs (the stub host records every message, RULE-16).
-    await page.waitForTimeout(2000);
-    expect(await received(page)).toEqual([]);
+    expect(await embedWithoutCopy(page, request)).toEqual([]);
+    expect(page.frames().find((f) => f.url().startsWith(TOOL_ALLOWED))).toBeUndefined();
     // WebKit keeps the failed frame pending and would stall closing the context: leave it first.
+    await serverDown(request, false);
+    await page.goto('about:blank');
+  });
+
+  test('F-017 edge case: a copy made embedded does not open the standalone tool offline (ADR-0021)', async ({
+    page,
+    request,
+    browserName,
+  }) => {
+    test.skip(browserName === 'chromium', 'Playwright disables storage partitioning in Chromium');
+    const embedded = await openTool(page, 'embedded');
+    await offlineReady(embedded);
+    await serverDown(request, true);
+    // The top-level page has its own, empty partition: the navigation fails like any offline site.
+    await expect(page.goto(`${TOOL_ALLOWED}/?theme=dark&lang=en-US`)).rejects.toThrow();
+  });
+
+  test('NFR-09 F-017 security m1 a host removed from the allow-list no longer embeds the offline copy', async ({
+    page,
+    request,
+    browserName,
+  }) => {
+    // WebKit fires no load event for a refused or failed frame, so there is no deterministic point to
+    // check that nothing ran; the worker's code path is the same on both engines.
+    test.skip(browserName === 'webkit', 'WebKit fires no load event for a refused frame');
+    const embedded = await openTool(page, 'embedded');
+    await offlineReady(embedded);
+    // The host is revoked: online, the served page's frame-ancestors refuse it, and the worker drops
+    // the stored page whose frame-ancestors still allowed it.
+    await serveVersion(request, 'revoked');
+    expect(await embedSettled(page)).toEqual([]);
+    await serverDown(request, true);
+    expect(await embedSettled(page)).toEqual([]);
     await serverDown(request, false);
     await page.goto('about:blank');
   });
@@ -174,7 +257,9 @@ test.describe('F-017 offline', () => {
       await resetLog(request);
       const frame = await openTool(page, way);
       await offlineReady(frame);
-      // Everything requested so far is one of the tool's own files, fetched without a body.
+      await fontsLoaded(frame);
+      // While opening: only the tool's own files, fetched without a body. The browser loads each file
+      // once for the page; the worker's own fetches (dest `empty`) fill the offline cache.
       const opening = await requestLog(request);
       expect(opening.length).toBeGreaterThan(0);
       for (const r of opening) {
@@ -182,8 +267,11 @@ test.describe('F-017 offline', () => {
         expect(r.contentLength, r.path).toBe(0);
         expect(r.path).toMatch(/^\/(assets\/[\w.-]+|sw\.js|favicon\.ico)?$/);
       }
+      const byPage = opening.filter((r) => r.dest !== 'empty').map((r) => `${r.dest} ${r.path}`);
+      expect(byPage.length, byPage.join('\n')).toBe(new Set(byPage).size);
+      expect(opening.filter((r) => r.dest === 'font').length).toBe(4);
 
-      // A session using each feature for the first time: no request at all.
+      // A session using each feature for the first time: no request at all, from the page or the worker.
       await resetLog(request);
       await pasteGrey(frame);
       await expect(summary(page, way)).toHaveText('400 × 300 px canvas, 0 annotations');
@@ -214,38 +302,69 @@ test.describe('F-017 offline', () => {
     });
   }
 
-  test('F-017.AC3 F-017.R3 a new version never reloads an open tool; opened online once, then again, the new version is used', async ({
-    page,
+  test('F-017.AC3 F-017.R3 a new version never reloads an open tool; the first online open uses it, and then the offline copy', async ({
+    playwright,
+    browserName,
     request,
-  }) => {
-    const v1 = await openTool(page, 'standalone');
-    const oldFiles = await offlineReady(v1);
-    await markWindow(v1);
-    const version = (f: Frame) =>
-      f.evaluate(() => document.querySelector('meta[name="tk-e2e-version"]')?.getAttribute('content') ?? '1');
+  }, testInfo) => {
+    // A persistent profile, as a real browser has: Playwright's in-memory WebKit contexts lose the Cache
+    // Storage when a new service worker activates, which a real browser profile keeps.
+    const context = await playwright[browserName].launchPersistentContext(testInfo.outputPath('profile'));
+    const page = context.pages()[0] ?? (await context.newPage());
+    try {
+      // A returning user: opened once (cached), then open again, now under the worker's control.
+      const oldFiles = await offlineReady(await openTool(page, 'standalone'));
+      const v1 = await openTool(page, 'standalone');
+      expect(await v1.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+      await markWindow(v1);
 
-    // Published while the tool is open: nothing reloads, the session stays on its version.
-    await serveVersion(request, 2);
-    await pasteGrey(v1);
-    await expect(page.locator('#tk-canvas-summary')).toHaveText('400 × 300 px canvas, 0 annotations');
-    await page.evaluate(() => new Promise((r) => setTimeout(r, 1500)));
-    expect(await stillSameWindow(v1)).toBe(true);
-    expect(await version(v1)).toBe('1');
-    await expect(page.locator('#tk-canvas-summary')).toHaveText('400 × 300 px canvas, 0 annotations');
+      // Published while the tool is open: the browser finds the new worker, which installs and waits.
+      await serveVersion(request, '2');
+      await v1.evaluate(async () => {
+        const reg = await navigator.serviceWorker.getRegistration();
+        await reg?.update();
+      });
+      await expect
+        .poll(() => v1.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.waiting?.state ?? null))
+        .toBe('installed');
+      expect(await workerVersion(v1, 'waiting')).toBe(2);
+      // Nothing reloads and nothing takes over: same window, same page version, the old worker in control.
+      const takeover = () =>
+        v1.evaluate(async () => {
+          const reg = await navigator.serviceWorker.getRegistration();
+          const c = navigator.serviceWorker.controller;
+          return { old: !!c && c === reg?.active && c !== reg?.waiting, waiting: reg?.waiting?.state ?? null };
+        });
+      expect(await takeover()).toEqual({ old: true, waiting: 'installed' });
+      expect(await stillSameWindow(v1)).toBe(true);
+      expect(await version(v1)).toBe('1');
+      // The session goes on (a blur needs the effects worker), and the new worker keeps waiting.
+      await pasteGrey(v1);
+      await expect(summary(page, 'standalone')).toHaveText('400 × 300 px canvas, 0 annotations');
+      expect(await takeover()).toEqual({ old: true, waiting: 'installed' });
+      expect(await stillSameWindow(v1)).toBe(true);
 
-    // Opened online once (the version check happens only now), then again: the new version is used.
-    await openTool(page, 'standalone');
-    const v2 = await openTool(page, 'standalone');
-    expect(await version(v2)).toBe('2');
-    const newFiles = await offlineReady(v2);
-    expect(newFiles).not.toEqual(oldFiles);
-    // The old version's files are pruned; offline, the stored page is the new version too.
-    const keys = await cached(v2);
-    for (const f of oldFiles.filter((f) => !newFiles.includes(f))) expect(keys).not.toContain(f);
-    await serverDown(request, true);
-    const offline = await openTool(page, 'standalone');
-    expect(await version(offline)).toBe('2');
-    await expect(page.locator('link[rel="stylesheet"]')).toHaveAttribute('href', /v2\.css$/);
+      // Closed and opened again online: the first open uses the new version and the new worker.
+      // (Another tab stays open meanwhile, so the browser itself stays open.)
+      const reopened = await context.newPage();
+      await page.close();
+      const v2 = await openTool(reopened, 'standalone');
+      expect(await version(v2)).toBe('2');
+      await expect(reopened.locator('link[rel="stylesheet"]')).toHaveAttribute('href', /v2\.css$/);
+      expect(await workerVersion(v2, 'active')).toBe(2);
+      expect(await workerVersion(v2, 'controller')).toBe(2);
+      // Once its files are cached, the offline copy is the new version; the old version's files are gone.
+      const newFiles = await offlineReady(v2);
+      expect(newFiles).not.toEqual(oldFiles);
+      const keys = await cached(v2);
+      for (const f of oldFiles.filter((f) => !newFiles.includes(f))) expect(keys).not.toContain(f);
+      await serverDown(request, true);
+      const offline = await openTool(reopened, 'standalone');
+      expect(await version(offline)).toBe('2');
+      await expect(reopened.locator('link[rel="stylesheet"]')).toHaveAttribute('href', /v2\.css$/);
+    } finally {
+      await context.close();
+    }
   });
 
   test('INV-04 NFR-01 the offline cache holds only the tool’s own files, never the image or the address', async ({
