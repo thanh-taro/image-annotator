@@ -4,7 +4,7 @@
 // The palette constants are generated from the tokens (scripts/gen-tokens.mjs). `paintBase` is built
 // (F-001); `paint` draws rectangles, ellipses, lines and arrows and the selection overlay (F-003), pen
 // strokes and highlights (F-004), step badges (F-006), text (F-005) and redactions (F-007: solid boxes, and
-// blur/pixelate patches composited per ADR-0006). Promoted
+// blur/pixelate patches composited per ADR-0006); the crop view and its frame overlay (F-010). Promoted
 // from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022) and, for text, the SP-text spike (ADR-0009,
 // ADR-0020).
 import {
@@ -109,17 +109,23 @@ export interface OverlayLook {
   readonly lineWidth: number;
   /** The visible handle's side (size.handle). */
   readonly handleSize: number;
+  /** F-010.R2: the dim over the image outside the crop frame (style.md "Work area": cropDim). */
+  readonly cropDim?: string;
 }
 
 /** Screen-only overlays (selection, handles, crop frame, checkerboard); never passed by the export. */
 export interface Overlays {
   readonly selection?: readonly string[];
-  readonly crop?: boolean;
   readonly look?: OverlayLook;
   /** The checkerboard shown where a patch replaces pixels with a transparent background (screen only). */
   readonly backdrop?: Backdrop;
   /** F-008.R1: the selection box being dragged with the select tool (image pixels, any direction). */
   readonly marquee?: Box | null;
+  /**
+   * F-010.R2 (CMP-Canvas "cropping"): the frame shown while cropping — the image outside it dimmed, its
+   * outline and eight handles on top. The scene is then the crop view (`cropView`).
+   */
+  readonly crop?: Frame | null;
 }
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -189,9 +195,83 @@ export function paintOverlays(
 ): void {
   const look = overlays.look;
   if (!look) return;
+  if (overlays.crop) paintCrop(ctx, overlays.crop, image, transform, look);
   if (overlays.selection?.length)
     paintSelection(ctx, scene, transform, overlays.selection, look, Math.min(image.width, image.height));
   if (overlays.marquee) paintMarquee(ctx, overlays.marquee, transform, look);
+}
+
+/**
+ * F-010.R2 / RULE-12: the scene as the crop view shows it — the whole image as the content, no padding
+ * drawn (the background stays under transparent pixels), annotations over the whole image. Only the
+ * screen uses it; the export always paints the document's own frame and padding (RULE-15).
+ */
+export function cropView(scene: Scene, image: { readonly width: number; readonly height: number }): Scene {
+  return {
+    annotations: scene.annotations,
+    frame: { x: 0, y: 0, width: image.width, height: image.height },
+    padding: { size: 'none', background: scene.padding.background },
+  };
+}
+
+/**
+ * CMP-Canvas "cropping" (F-010.R2): the image outside `frame` dimmed with cropDim — over the annotations
+ * there too, which stay visible — then the frame's outline (selection outline with its halo) and its
+ * eight handles, in context pixels so they keep their size at every zoom.
+ */
+function paintCrop(
+  ctx: Ctx,
+  frame: Frame,
+  image: { readonly width: number; readonly height: number },
+  transform: Transform,
+  look: OverlayLook,
+): void {
+  const img = screenRect({ x: 0, y: 0, width: image.width, height: image.height }, transform);
+  const { scale, dx, dy } = transform;
+  const x0 = Math.round(dx + frame.x * scale);
+  const y0 = Math.round(dy + frame.y * scale);
+  const x1 = Math.round(dx + (frame.x + frame.width) * scale);
+  const y1 = Math.round(dy + (frame.y + frame.height) * scale);
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  if (look.cropDim) {
+    ctx.fillStyle = look.cropDim;
+    const right = img.x + img.width;
+    const bottom = img.y + img.height;
+    ctx.fillRect(img.x, img.y, img.width, y0 - img.y); // above
+    ctx.fillRect(img.x, y1, img.width, bottom - y1); // below
+    ctx.fillRect(img.x, y0, x0 - img.x, y1 - y0); // left
+    ctx.fillRect(x1, y0, right - x1, y1 - y0); // right
+  }
+  ctx.lineWidth = look.lineWidth + 2;
+  ctx.strokeStyle = look.halo;
+  ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.lineWidth = look.lineWidth;
+  ctx.strokeStyle = look.outline;
+  ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  const s = Math.round(look.handleSize);
+  const w = Math.round(look.lineWidth);
+  const mx = (x0 + x1) / 2;
+  const my = (y0 + y1) / 2;
+  for (const [hx, hy] of [
+    [x0, y0],
+    [mx, y0],
+    [x1, y0],
+    [x1, my],
+    [x1, y1],
+    [mx, y1],
+    [x0, y1],
+    [x0, my],
+  ] as const) {
+    const x = Math.round(hx - s / 2);
+    const y = Math.round(hy - s / 2);
+    ctx.fillStyle = look.handleBorder;
+    ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = look.handleFill;
+    ctx.fillRect(x + w, y + w, s - 2 * w, s - 2 * w);
+  }
+  ctx.restore();
 }
 
 /** F-008.R1: the selection box, in the selection outline's colour with its halo, in context pixels. */

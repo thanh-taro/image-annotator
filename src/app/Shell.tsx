@@ -4,7 +4,8 @@
 // comes before the canvas in reading order (SCR-Annotator "Accessibility").
 // F-005: while a text is edited (SCR-Annotator "editing-text") the style panel shows and changes the
 // edited text's colour and size and keeps the edit open; a mouse press there keeps focus in the field.
-// Implements: SCR-Annotator states empty, default (image fitted), selecting, editing-text, dragging-file,
+// F-010: the crop tool (SCR-Annotator "cropping"); CMP-StatusBar shows the canvas size once a crop exists.
+// Implements: SCR-Annotator states empty, default (image fitted), selecting, editing-text, cropping, dragging-file,
 // loading, error; F-001.R6, F-001.R8; CMP-ConfirmDialog "the rest of the tool is inert"; D-014 layout widths.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
@@ -17,6 +18,7 @@ import { NoticeView } from './NoticeView';
 import { PrivacyStatus } from './PrivacyStatus'; // F-016
 import { createAnnotation, select, textEditEnded, textEditStarted } from './drawing';
 import { commitDrag } from './editing'; // F-008
+import { commitFrame, shownCanvasSize } from './crop'; // F-010
 import { viewChanged } from './history'; // F-009: a zoom or pan ends a nudge chain (RULE-11)
 import { StylePanel } from './StylePanel';
 import { Toolbar } from './Toolbar';
@@ -60,6 +62,7 @@ function screenState(): string {
   if (notice.value?.kind === 'progress') return 'loading';
   if (notice.value?.kind === 'error') return 'error';
   if (loaded.value && textEditing.value) return 'editing-text';
+  if (loaded.value && tool.value === 'crop') return 'cropping'; // F-010
   if (loaded.value && selection.value.length) return 'selecting';
   return loaded.value ? 'default' : 'empty';
 }
@@ -71,6 +74,9 @@ export function Shell() {
   const inert = modal ? true : undefined;
   const info = current?.image.info;
   const active = tool.value;
+  // CMP-StatusBar / D-017: the canvas size once a crop or padding exists (RULE-15: the export size); the
+  // canvas summary always names the canvas size (CMP-Canvas "Accessibility").
+  const size = shownCanvasSize();
   const root = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = root.current;
@@ -128,11 +134,12 @@ export function Shell() {
                 keepsTextEdit={inPanel}
                 onSelect={select}
                 onEdit={commitDrag}
+                onFrame={commitFrame}
               />
               <span id="tk-canvas-summary" class="tk-sr">
                 {t('a11y.canvas_summary', {
-                  width: info.width,
-                  height: info.height,
+                  width: size?.width ?? info.width,
+                  height: size?.height ?? info.height,
                   count: scene.annotations.length,
                 })}
               </span>
@@ -154,6 +161,8 @@ export function Shell() {
       <footer class="tk-status-bar" inert={inert}>
         {/* F-016: privacy statement, details and source link (start of CMP-StatusBar). */}
         <PrivacyStatus />
+        {/* F-010: COPY-status.image_size, the canvas size, once a crop exists (hidden on compact and narrow). */}
+        {size && <span class="tk-status-size">{t('status.image_size', size)}</span>}
         {/* F-002: the zoom control at the end of CMP-StatusBar. */}
         <ZoomControl />
       </footer>

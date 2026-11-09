@@ -2,7 +2,7 @@
 // style, or of the selection (only the choices every selected kind shares; a choice whose selected
 // annotations differ has nothing marked). Changes apply immediately (RULE-04). F-008 adds the position
 // and size fields of a single selection and the selection actions (not while a text is edited); canvas
-// settings (F-011) and crop fields (F-010) are added in the slots marked below. Redactions (F-007) show COPY-redact.kind first (solid with a check icon; blur and
+// settings (F-011) are added in the slot marked below; the crop tool shows the frame's (F-010). Redactions (F-007) show COPY-redact.kind first (solid with a check icon; blur and
 // pixelate tagged COPY-redact.not_secure_short); blur and pixelate add the inline not-secure note
 // (COPY-redact.not_secure, not a dialog) with COPY-redact.use_solid, then COPY-style.strength; solid has
 // colour only — never opacity, fill or size (F-007.R2).
@@ -14,12 +14,23 @@
 // Implements: CMP-StylePanel (anatomy: colour, size, fill; variants tool, selection, narrow), F-003.R3,
 // RULE-04, NFR-06 (colour choices named, not shown by colour alone); F-007.R2/R4/R6, RULE-10 (not-secure
 // labels wherever blur and pixelate are shown or chosen), style.md principle 5 (honest safety);
-// F-008.R4/R5/R8, D-008, NFR-06 (the position and size fields are the non-drag alternative).
+// F-008.R4/R5/R8, D-008, NFR-06 (the position and size fields are the non-drag alternative); F-010.R3/R4/R6
+// (CMP-StylePanel "crop": frame size, position and size fields, reset).
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { viewCommands } from '../canvas';
 import { t, type MessageId } from '../copy';
 import type { ComponentChildren } from 'preact';
-import { PALETTE_NAMES, type Colour, type Fill, type GeometryField, type RedactionKind, type Size } from '../core';
+import {
+  PALETTE_NAMES,
+  type Colour,
+  type Fill,
+  type Frame,
+  type FrameField,
+  type GeometryField,
+  type RedactionKind,
+  type Size,
+} from '../core';
+import { cropSizeText, resetFrame, setFrameField } from './crop';
 import { panelModel, setStyle, sizeLabel, summaryDetail, type PanelModel } from './drawing';
 import { deleteSelection, duplicateSelection, reorderSelection, setGeometry } from './editing';
 import { Icon } from './icons';
@@ -110,6 +121,7 @@ function KindLabel({ kind }: { kind: RedactionKind }) {
 
 function Sections({ model }: { model: PanelModel }) {
   if (model.variant === 'canvas') return null; // Slot: padding and background (F-011).
+  if (model.frame) return <Crop frame={model.frame} />;
   return (
     <>
       {model.kind !== undefined && (
@@ -206,15 +218,31 @@ const WHOLE = /^-?\d+$/;
  * applies on Enter or when focus leaves it, as one undo step; while focused, every key is the field's
  * own (RULE-19 scope, F-008.AC16). Anything else typed goes back to the current value.
  */
-function NumberField({ field, value }: { field: GeometryField; value: number }) {
+function NumberField({
+  field,
+  value,
+  onApply = setGeometry,
+}: {
+  field: GeometryField;
+  value: number;
+  /** Where a typed value goes: the selection (F-008.R8), or the frame (F-010.R6). */
+  onApply?: (field: GeometryField, value: number) => void;
+}) {
   const [draft, setDraft] = useState(String(value));
   // Typed into since it last applied: retyping the shown (rounded) number still applies it, so a
   // fractional position snaps to whole pixels (F-008 review m8); leaving an untouched field changes nothing.
   const typed = useRef(false);
-  useEffect(() => setDraft(String(value)), [value]);
+  // Only a new value replaces the draft: the effect also runs once after mounting, which may be after the
+  // user (or a test) has already typed into a freshly shown field (F-010: the crop panel appears on a click).
+  const shownValue = useRef(value);
+  useEffect(() => {
+    if (shownValue.current === value) return;
+    shownValue.current = value;
+    setDraft(String(value));
+  }, [value]);
   const apply = () => {
     const text = draft.trim();
-    if (typed.current && WHOLE.test(text)) setGeometry(field, Number(text));
+    if (typed.current && WHOLE.test(text)) onApply(field, Number(text));
     typed.current = false;
     setDraft(String(value)); // the new value arrives with the next render
   };
@@ -274,6 +302,43 @@ function Geometry({ geometry }: { geometry: NonNullable<PanelModel['geometry']> 
         fields(geometry.fields)
       )}
     </fieldset>
+  );
+}
+
+const FRAME_FIELDS: readonly FrameField[] = ['x', 'y', 'width', 'height'];
+
+/**
+ * CMP-StylePanel "crop" (F-010.R3/R4/R6, D-008): the frame's size (COPY-crop.size) under COPY-tool.crop,
+ * its position and size fields under COPY-geometry.title — the non-drag alternative to dragging the frame
+ * (NFR-06), applied on Enter or when focus leaves, one undo step each — and COPY-action.crop_reset.
+ */
+function Crop({ frame }: { frame: Frame }) {
+  const values: Record<FrameField, number> = frame;
+  return (
+    <>
+      <div class="tk-panel__section">
+        <div class="tk-panel__heading">{t('tool.crop')}</div>
+        <p class="tk-crop__size">{cropSizeText(frame)}</p>
+      </div>
+      <fieldset class="tk-panel__section">
+        <legend class="tk-panel__heading">{t('geometry.title')}</legend>
+        <div class="tk-geometry__fields">
+          {FRAME_FIELDS.map((field) => (
+            <NumberField
+              key={field}
+              field={field}
+              value={values[field]}
+              onApply={(f, v) => setFrameField(f as FrameField, v)}
+            />
+          ))}
+        </div>
+      </fieldset>
+      <div class="tk-panel__section">
+        <button type="button" class="tk-button tk-button--outlined tk-panel__action" onClick={resetFrame}>
+          {t('action.crop_reset')}
+        </button>
+      </div>
+    </>
   );
 }
 

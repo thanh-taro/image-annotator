@@ -82,7 +82,7 @@ describe('MOD-App drawing commands', () => {
     expect(undone?.selection).toEqual([]);
   });
 
-  it('CMP-Toolbar picking a tool clears nothing and is announced; unbuilt tools are ignored', () => {
+  it('CMP-Toolbar picking a tool clears nothing and is announced (the crop tool too, F-010)', () => {
     createAnnotation(draft());
     const selected = selection.value;
     setTool('ellipse');
@@ -90,7 +90,9 @@ describe('MOD-App drawing commands', () => {
     expect(selection.value).toBe(selected);
     expect(lastPolite()).toBe('Ellipse tool');
     setTool('crop');
-    expect(tool.value).toBe('ellipse');
+    expect(tool.value).toBe('crop');
+    expect(selection.value).toBe(selected);
+    expect(lastPolite()).toBe('Crop tool');
   });
 
   it('F-003.AC1 F-003.R3 RULE-04 with nothing selected a style change is the tool’s current style, no step', () => {

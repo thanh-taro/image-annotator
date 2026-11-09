@@ -293,10 +293,10 @@ test.describe('F-004 draw strokes and highlights', () => {
     expect(before.page).toBeLessThanOrEqual(0);
     expect(before.strip).toBeGreaterThan(0);
     await toolButton(page, 'Select (V)').focus();
-    await page.keyboard.press('End'); // the last built tool (F-007)
-    await expect(toolButton(page, 'Redact (X)')).toBeFocused();
-    await expect(toolButton(page, 'Redact (X)')).toHaveAttribute('aria-checked', 'true');
-    await expect(toolButton(page, 'Redact (X)')).toBeInViewport({ ratio: 1 });
+    await page.keyboard.press('End'); // the last tool (F-010)
+    await expect(toolButton(page, 'Crop (C)')).toBeFocused();
+    await expect(toolButton(page, 'Crop (C)')).toHaveAttribute('aria-checked', 'true');
+    await expect(toolButton(page, 'Crop (C)')).toBeInViewport({ ratio: 1 });
     const after = await sizes();
     expect(after.scrolled).toBeGreaterThan(0);
     expect(after.page).toBeLessThanOrEqual(0);

@@ -31,6 +31,7 @@ const TOOL_ICONS: Partial<Record<ToolName, IconName>> = {
   text: 'text',
   step: 'step',
   redact: 'redact',
+  crop: 'crop',
 };
 
 function OpenButton({ icon }: { icon: boolean }) {

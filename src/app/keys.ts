@@ -3,9 +3,10 @@
 // and runs the action. F-002 dispatches the View group and the arrow-key pan; F-003 the Tools keys,
 // Enter and Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the
 // Export keys (Mod+C copy, Mod+S download); F-008 the Edit keys (delete, duplicate, select all, reorder,
-// arrow-key moves, Alt+arrow resizes); F-009 the History keys (undo, redo); F-013 completes the map.
+// arrow-key moves, Alt+arrow resizes); F-009 the History keys (undo, redo); F-010 the arrows on the crop
+// frame; F-013 completes the map.
 // Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected, Tools keys, Enter, Esc, Edit,
-// History), F-002.R2/R4, F-003.R5, F-005.R2/R4, F-008.R1/R2/R3/R5, F-009.R1, F-012.R1/R2.
+// History), F-002.R2/R4, F-003.R5, F-005.R2/R4, F-008.R1/R2/R3/R5, F-009.R1, F-010.R6, F-012.R1/R2.
 import { canvasCommands, viewCommands } from '../canvas';
 import type { ToolName } from '../core';
 import { isEditing } from '../io';
@@ -19,6 +20,7 @@ import {
   reorderSelection,
   selectAll,
 } from './editing';
+import { moveFrame, resizeFrame } from './crop';
 import { copyNow, downloadNow } from './exporter';
 import { redo, undo } from './history';
 import { isMac } from './platform';
@@ -84,8 +86,18 @@ function onKeyDown(e: KeyboardEvent): void {
   if (action.kind === 'named' && action.group === 'edit' && action.name === 'escape') return escape();
   // F-008 / RULE-19 Edit keys. A pointer move or resize in progress commits the annotations as they were
   // at its press, so an edit key meanwhile would be lost: it waits for the drag to end (review m6).
-  if ((action.kind === 'nudge' || action.kind === 'resize' || action.group === 'edit') && canvasCommands.dragging())
+  if (
+    (action.kind === 'nudge' ||
+      action.kind === 'resize' ||
+      action.kind === 'frameMove' ||
+      action.kind === 'frameResize' ||
+      action.group === 'edit') &&
+    canvasCommands.dragging()
+  )
     return;
+  // F-010.R6 / RULE-19: with the crop tool the arrows move the frame and Alt+arrows resize it.
+  if (action.kind === 'frameMove') return moveFrame(action.dx, action.dy);
+  if (action.kind === 'frameResize') return resizeFrame(action.dx, action.dy);
   if (action.kind === 'nudge') return nudgeSelection(action.dx, action.dy);
   if (action.kind === 'resize') return altResizeSelection(action.dx, action.dy);
   if (action.kind === 'named' && action.group === 'edit') {

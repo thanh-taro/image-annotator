@@ -1,0 +1,81 @@
+/* MOD-App — F-010: the crop frame's size in CMP-StylePanel "crop", the size chip below the frame on the
+   canvas (placed by MOD-Canvas with CSSOM), the crop tool's cursors per grip, and the canvas size in
+   CMP-StatusBar once a crop exists (D-017), as on the SCR-Annotator cropping artboards. Tokens only. */
+@layer components {
+  .tk-crop__size {
+    margin: 0;
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-sm);
+  }
+
+  /* CMP-Canvas "cropping": COPY-crop.size below the frame (aria-hidden; the panel and the live region say it). */
+  .tk-crop-chip {
+    position: absolute;
+    z-index: 1;
+    display: none;
+    padding: var(--tk-space-1) var(--tk-space-2);
+    border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
+    border-radius: var(--tk-radius-sm);
+    background: var(--tk-color-surface);
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .tk-crop-chip[data-open] {
+    display: block;
+  }
+
+  /* CMP-Canvas: the pointer cursor per crop grip (edges and corners resize, inside moves, outside draws). */
+  .tk-canvas[data-tool='crop'][data-grip='move'] {
+    cursor: move;
+  }
+  .tk-canvas[data-tool='crop'][data-grip='n'],
+  .tk-canvas[data-tool='crop'][data-grip='s'] {
+    cursor: ns-resize;
+  }
+  .tk-canvas[data-tool='crop'][data-grip='e'],
+  .tk-canvas[data-tool='crop'][data-grip='w'] {
+    cursor: ew-resize;
+  }
+  .tk-canvas[data-tool='crop'][data-grip='nw'],
+  .tk-canvas[data-tool='crop'][data-grip='se'] {
+    cursor: nwse-resize;
+  }
+  .tk-canvas[data-tool='crop'][data-grip='ne'],
+  .tk-canvas[data-tool='crop'][data-grip='sw'] {
+    cursor: nesw-resize;
+  }
+
+  /* CMP-StatusBar: COPY-status.image_size (the canvas size), before the zoom control with a separator. */
+  .tk-status-size {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--tk-space-2);
+    margin-inline-start: auto;
+    color: var(--tk-color-fg);
+    font-family: var(--tk-font-family-mono);
+    font-size: var(--tk-font-size-xs);
+  }
+  .tk-status-size::after {
+    content: '';
+    inline-size: var(--tk-border-width-hairline);
+    block-size: var(--tk-space-5);
+    background: var(--tk-color-line);
+  }
+  .tk-status-size + .tk-zoom {
+    margin-inline-start: 0;
+  }
+  /* CMP-StatusBar "compact" and "narrow": the size is hidden (D-014). */
+  @container tk-annotator (width < 1000px) {
+    .tk-status-size {
+      display: none;
+    }
+    .tk-status-size + .tk-zoom {
+      margin-inline-start: auto;
+    }
+  }
+}

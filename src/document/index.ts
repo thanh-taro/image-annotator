@@ -3,7 +3,8 @@
 // The session, its history and the RULE-18 change epoch are built (F-001); `add` and `restyle` (F-003);
 // step numbering in `add`, `remove` and `duplicate` (F-006, RULE-07); `update`, `edit` and `reorder`
 // (F-008, wired with `remove` and `duplicate` to the keys and the panel by MOD-App); the text commit rules
-// in `commitText` (F-005); the frame and padding operations throw until F-010/F-011 build them.
+// in `commitText` (F-005); `setFrame` with the padding step-down (F-010, F-011.R6); the padding operations
+// throw until F-011 builds them.
 import {
   DUPLICATE_OFFSET,
   HISTORY_STEPS,
@@ -11,6 +12,8 @@ import {
   moved,
   nextStepNumber,
   renumberSteps,
+  sameFrame,
+  stepDownPadding,
   type Annotation,
   type Colour,
   type Frame,
@@ -167,7 +170,19 @@ export const reorder =
     else for (let i = 0; i < list.length - 1; i++) swapIfUp(i);
     return changed ? Object.freeze({ ...doc, annotations: Object.freeze(list) }) : doc;
   };
-export const setFrame = (_frame: Frame): Op => notImplemented('setFrame');
+/**
+ * F-010.R5 / RULE-11: sets the frame as one step (the caller keeps it within RULE-13, MOD-Core
+ * `clampFrame`). F-011.R6 / RULE-14: when the padded canvas would exceed RULE-02's limits, the padding
+ * steps down to the largest size that fits, in the same step. The same frame is no step (ADR-0008).
+ */
+export const setFrame =
+  (frame: Frame): Op =>
+  (doc) => {
+    if (sameFrame(doc.frame, frame)) return doc;
+    const next = freeze({ x: frame.x, y: frame.y, width: frame.width, height: frame.height });
+    const padding = stepDownPadding(next, doc.padding);
+    return freeze({ ...doc, frame: next, padding: padding === doc.padding ? padding : freeze({ ...padding }) });
+  };
 export const setPadding = (_size: PaddingSize): Op => notImplemented('setPadding');
 export const setBackground = (_background: 'transparent' | Colour): Op => notImplemented('setBackground');
 
