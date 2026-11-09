@@ -24,7 +24,7 @@ anything away, so the user can widen it again (D-002, PRN-04).
 - Out: rotating, straightening, fixed aspect presets (M-2 candidate).
 
 ## Requirements
-- **R1** With the crop tool, the user drags the frame's edges or corners to resize it, drags inside it to move it, or drags outside it to draw a new frame; values follow RULE-13.
+- **R1** With the crop tool, the user drags the frame's edges or corners to resize it, drags inside it to move it, or drags outside it to draw a new frame; while the frame covers the whole image, a drag inside it also draws a new frame (D-033); values follow RULE-13.
 - **R2** While the crop tool is active, the whole image shows with the areas outside the frame dimmed and the padding not drawn; they stay visible and editable, and nothing is deleted. Otherwise the view shows the canvas only (the frame and its padding).
 - **R3** The user can reset the frame to the whole image.
 - **R4** The frame's size in pixels is shown while cropping.
@@ -42,6 +42,7 @@ anything away, so the user can widen it again (D-002, PRN-04).
 - **AC8** Given a 1000 × 500 frame inside a 1920 × 1080 image, when the user drags inside the frame 100 image pixels right, then the frame moves and keeps its size. (R1)
 - **AC9** Given the crop tool, when the user types 800 in the width field, then the frame is 800 pixels wide. (R6)
 - **AC10** Given a 1920 × 1080 image cropped to 800 × 600 and a fitted view, when the user switches to the crop tool, then the whole image is visible, fitted, with the frame dimmed around; when they switch back, the canvas is fitted again. (R2)
+- **AC11** Given a fitted 1920 × 1080 image with the frame covering the whole image and the crop tool, when the user drags from (400, 300) to (1200, 900) on the image, then the frame is 800 × 600 at (400, 300), as one undo step. (R1)
 
 ## UX notes
 COPY-tool.crop in CMP-Toolbar. Frame size shown with COPY-crop.size; reset with

@@ -69,3 +69,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-008 review fixes: RULE-06 Shift on an edge handle scales the other axis about the centre, and on a line or arrow end snaps to 45° about the fixed end; MOD-Canvas `canvasCommands.dragging()`.
 - F-009 gaps and review: CMP-Toolbar tools name their shortcut, other controls state it as keyboard shortcuts; focus moves to the other history button when the clicked one becomes disabled; F-009 edge case for the history buttons while editing text.
 - F-009 review fixes: edge case for a new text before any step exists.
+- F-010 gaps and review: a drag inside a whole-image frame draws a new frame (D-033, owner; F-010.R1, new AC); RULE-11 frame nudges and resizes coalesce; RULE-12 keeps the frame's place within the pan limits; CMP-Canvas crop view dims annotations outside the frame and hides selection handles; CMP-StatusBar shows the size once the canvas differs from the image (D-017).

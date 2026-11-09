@@ -20,7 +20,7 @@ COPY-status.zoom, COPY-action.zoom_in, COPY-action.zoom_fit, COPY-action.zoom_ac
 | narrow | Narrow layout width (style.md, D-014). Privacy statement as an icon named COPY-privacy.badge_label; source link as an icon named COPY-privacy.source_label; image size hidden; COPY-action.zoom_fit and COPY-action.zoom_actual move into a menu opened from COPY-status.zoom |
 | no image | Size hidden, zoom disabled |
 
-COPY-status.image_size shows the canvas size, which is the export size (RULE-15): the frame plus its padding (RULE-14).
+COPY-status.image_size shows the canvas size, which is the export size (RULE-15): the frame plus its padding (RULE-14); it is shown once the canvas differs from the image (a crop or padding, D-017).
 
 ## Behavior
 Zoom level updates live.

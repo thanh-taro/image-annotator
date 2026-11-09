@@ -17,7 +17,7 @@ with dimmed outside while cropping; pointer cursor per tool.
 |---|---|
 | drawing | Live preview of the annotation being drawn |
 | selected | Handles on a single selection, outline on a multi-selection |
-| cropping | Frame handles over the whole image; the area outside the frame is dimmed and the padding is not drawn (F-010.R2). Outside the crop tool only the canvas shows: annotations and handles are clipped to it, and annotations entirely outside it stay in the list, the Tab order and Select all. With the crop tool, annotations are drawn everywhere, over the dimmed area too |
+| cropping | Frame handles over the whole image; the area outside the frame is dimmed and the padding is not drawn (F-010.R2). Outside the crop tool only the canvas shows: annotations and handles are clipped to it, and annotations entirely outside it stay in the list, the Tab order and Select all. With the crop tool, annotations are drawn over the whole image and dimmed with it outside the frame; parts beyond the image are not shown, and selection handles are hidden |
 
 ## Behavior
 Pointer events for mouse, pen and touch; one finger draws, two fingers pan and zoom (F-002).
