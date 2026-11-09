@@ -71,3 +71,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-009 review fixes: edge case for a new text before any step exists.
 - F-010 gaps and review: a drag inside a whole-image frame draws a new frame (D-033, owner; F-010.R1, new AC); RULE-11 frame nudges and resizes coalesce; RULE-12 keeps the frame's place within the pan limits; CMP-Canvas crop view dims annotations outside the frame and hides selection handles; CMP-StatusBar shows the size once the canvas differs from the image (D-017).
 - F-011 review: CMP-StylePanel lays the 9 background choices in 2 rows of 5 on narrow widths or a coarse pointer; the narrow summary bar shows a palette background's colour (none when transparent).
+- D-034 (owner): COPY-privacy.details says nothing the user adds is uploaded, stored or tracked, and that the tool keeps a copy of its own files in the browser to work offline and makes no other network requests (security review F-017 M1).
