@@ -3,7 +3,7 @@
 // <Canvas> shows the loaded image (F-001, ./Canvas.tsx) in a view that zooms and pans (F-002,
 // ./view.ts); shapes, pen strokes, highlights and steps are drawn with ./draw.ts (F-003, F-004, F-006);
 // text is placed and edited with ./text.ts and ./editor.ts (F-005); selecting, moving and resizing with
-// ./select.ts (F-008); crop arrives with F-010. The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
+// ./select.ts (F-008); the crop tool with ./crop.ts (F-010). The canvas is not a Preact tree: it is painted imperatively on rAF (ADR-0002).
 import type { Point } from '../core';
 import { activeCanvas } from './Canvas';
 
@@ -28,6 +28,7 @@ export {
 export { connectFontGate, FontGate, fontGate } from './fonts';
 export { DragLayers, dragRange, movePatches, type DragFrame, type PatchSource } from './drag';
 export { SelectTool, type SelectCallbacks, type SelectSetup } from './select';
+export { CropTool, type CropCallbacks, type CropSetup } from './crop';
 export { TextTool, type TextEdit, type TextEndReason, type TextField, type TextSetup } from './text';
 
 /**

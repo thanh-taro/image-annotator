@@ -1,7 +1,7 @@
 // MOD-Canvas — the display image layer (ADR-0016, promoted from the SP-engine spike's `baseLayer`):
 // a device-sized canvas holding MOD-Render `paintBase` for the current view. It is rebuilt only when
 // one of its inputs changes (zoom, pan, viewport size, device pixel ratio, theme, image, frame,
-// padding or background; the crop view arrives with F-010), so repaints for anything else — and the
+// padding or background, crop view on or off: F-010 passes the crop view's own frame and padding), so repaints for anything else — and the
 // annotations of F-003 on — just copy it. Several inputs in one animation frame cost one rebuild.
 import type { Doc } from '../document';
 import { paintBase, type BaseView, type Transform } from '../render';

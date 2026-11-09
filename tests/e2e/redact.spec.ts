@@ -6,7 +6,7 @@
 // (src/effects/reference.ts) computed here in Node from the image's own pixels.
 // The exported file (F-012) is checked too: downloaded, decoded in Node (ADR-0019) and compared with the
 // same reference. AC9's "sent behind" and AC10's "brought to front" use the order controls (F-008). Still
-// waiting: AC13 (crop and padding, F-010/F-011) — the named `test.fixme` placeholder at the end.
+// waiting: AC13's padding half (F-011) — the named `test.fixme` placeholder at the end; its crop half is in crop.spec.ts.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { referenceBlur, referencePixelate } from '../../src/effects/reference';
@@ -583,5 +583,5 @@ test.describe('F-007 redact', () => {
       await expect(tag).toBeVisible();
     }
   });
-  test.fixme('F-007.AC13 a blur spanning a cropped frame’s edge exports white in the padding and reads no pixel outside the frame (needs F-010, F-011)', async () => {});
+  test.fixme('F-007.AC13 (padding) the part of a blur box in padding M on white exports white (needs F-011; the crop part is in crop.spec.ts)', async () => {});
 });

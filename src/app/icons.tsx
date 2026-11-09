@@ -13,6 +13,7 @@ import {
   CircleDashed,
   CodeXml,
   Copy,
+  Crop,
   Download,
   Ellipsis,
   Grid2x2,
@@ -77,6 +78,8 @@ const SOURCES = {
   // F-009: CMP-Toolbar's undo and redo (the designs' curved arrows).
   undo: Undo2,
   redo: Redo2,
+  // F-010: the crop tool.
+  crop: Crop,
 } as const;
 
 export type IconName = keyof typeof SOURCES;

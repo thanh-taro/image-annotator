@@ -5,7 +5,7 @@
 // Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the Export
 // keys (Mod+C copy, Mod+S download); F-008 the Edit keys (Delete/Backspace, Mod+D, Mod+A, ] and [,
 // arrow-key moves and Alt+arrow resizes of the selection); F-009 the History keys (Mod+Z, Mod+Shift+Z,
-// Ctrl+Y off macOS); the other groups
+// Ctrl+Y off macOS); F-010 the arrow keys on the crop frame; the other groups
 // resolve to nothing (and are not yet kept from the browser) until F-013.
 
 /** What the adapter reads from a keyboard event (platform-mapping.md "Letter keys by layout"). */
@@ -64,7 +64,18 @@ export interface EditStepAction {
   readonly dy: number;
 }
 
-export type Action = NamedAction | PanAction | EditStepAction;
+/**
+ * RULE-19 with the crop tool (F-010.R6): arrow keys move the frame by (dx, dy) image pixels (`frameMove`);
+ * Alt+arrows resize it by its right or bottom edge, (dx, dy) wider and taller (`frameResize`).
+ */
+export interface FrameStepAction {
+  readonly kind: 'frameMove' | 'frameResize';
+  readonly group: 'edit';
+  readonly dx: number;
+  readonly dy: number;
+}
+
+export type Action = NamedAction | PanAction | EditStepAction | FrameStepAction;
 
 /** RULE-19: arrow keys move the selection 1 image pixel, 10 with Shift (Alt+arrows resize by the same). */
 export const NUDGE_STEP = 1;
@@ -197,9 +208,19 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
   if (plain && !key.shift && (key.code === 'Space' || key.key === ' ')) return act('view', 'panHold');
   const arrow = ARROWS[key.key];
   if (arrow && !key.mod) {
-    // With the crop tool the arrows act on the frame (F-010); until then they are kept and do nothing.
-    if (scope.tool === 'crop') return KEEP;
     const step = key.shift ? NUDGE_STEP_SHIFT : NUDGE_STEP;
+    // F-010.R6 / RULE-19: with the crop tool the arrows always act on the frame (never pan): they move it,
+    // Alt+arrows resize it by its right or bottom edge, 1 image pixel (Shift: 10).
+    if (scope.tool === 'crop')
+      return {
+        action: {
+          kind: key.alt ? 'frameResize' : 'frameMove',
+          group: 'edit',
+          dx: arrow[0] * step,
+          dy: arrow[1] * step,
+        },
+        preventDefault: true,
+      };
     const edit = (kind: EditStepAction['kind']): Resolution => ({
       action: { kind, group: 'edit', dx: arrow[0] * step, dy: arrow[1] * step },
       preventDefault: true,

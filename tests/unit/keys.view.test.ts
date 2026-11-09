@@ -51,7 +51,7 @@ describe('MOD-Keys view keys (RULE-19)', () => {
     // Not on another control, not with a selection (that moves it, F-008), not with the crop tool.
     expect(resolveKey(key({ key: 'ArrowRight' }), scope({ focus: 'control' }))).toEqual({ preventDefault: false });
     expect(name(key({ key: 'ArrowRight' }), scope({ selection: 'one' }))).toBe('nudge'); // F-008: moves it
-    expect(name(key({ key: 'ArrowRight' }), scope({ tool: 'crop' }))).toBeUndefined();
+    expect(name(key({ key: 'ArrowRight' }), scope({ tool: 'crop' }))).toBe('frameMove'); // F-010: moves the frame
   });
 
   it('RULE-19 Alt+arrows on the canvas are kept from the browser even with nothing to resize', () => {

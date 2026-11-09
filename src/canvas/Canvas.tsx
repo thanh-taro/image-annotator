@@ -19,10 +19,15 @@
 // the split drag layers with lo and hi from `dragRange`, so blur and pixelate above a dragged solid are
 // drawn live (ADR-0022), then the selection overlay of the moved annotations. The accessible list arrives
 // with F-013.
+// The crop tool (F-010, ./crop.ts) shows the crop view: the whole image as the content (RULE-12: Fit shows
+// the whole image; entering or leaving keeps the view, a fitted view is fitted again), no padding, the
+// annotations over the whole image, the outside of the frame dimmed with the frame's handles and its size
+// (COPY-crop.size) in a chip below it. A frame drag paints the cached drag layer (prepared at the press,
+// ADR-0022, NFR-02) with the frame overlay on top; the released frame goes to MOD-App as one step.
 // Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, F-004.R1/R2/R4, F-006.R1/R4, ADR-0009 §4, RULE-12, CMP-Canvas "Behavior" (two fingers pan
 // and zoom) and "drawing" / "selected", architecture A5 (crisp from 200 %), ADR-0016, ADR-0022;
 // F-005.R1/R2/R3/R4, CMP-TextEditor, ADR-0009, ADR-0020; F-007.R1/R3, ADR-0006, ADR-0017; F-008.R1/R2/R3/R6,
-// RULE-05, RULE-06.
+// RULE-05, RULE-06; F-010.R1/R2/R4, CMP-Canvas "cropping".
 import { useEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
 import {
@@ -37,6 +42,7 @@ import {
   textLayout,
   toImage,
   type Annotation,
+  type Frame,
   type Point,
   type Style,
   type TextAnnotation,
@@ -46,6 +52,7 @@ import {
 import type { Doc } from '../document';
 import { effects } from '../effects';
 import {
+  cropView,
   measureWith,
   paint as paintScene,
   paintOverlays,
@@ -53,8 +60,10 @@ import {
   type BaseView,
   type OverlayLook,
   type Patches,
+  type Scene,
   type Transform,
 } from '../render';
+import { CropTool } from './crop';
 import { DragLayers, dragRange, movePatches } from './drag';
 import { DRAFT_ID, DrawTool } from './draw';
 import { SelectTool } from './select';
@@ -91,6 +100,8 @@ export interface CanvasProps {
   readonly onSelect?: (ids: readonly string[]) => void;
   /** F-008.R2/R3: a finished move or resize; MOD-App records it as one undo step (RULE-11). */
   readonly onEdit?: (changes: readonly Annotation[]) => void;
+  /** F-010.R1: a finished crop drag; MOD-App records it as one undo step (RULE-11). */
+  readonly onFrame?: (frame: Frame) => void;
 }
 
 /** What the view commands reach while a canvas is shown (MOD-Canvas public surface). */
@@ -153,6 +164,7 @@ function overlayLook(el: Element, dpr: number): OverlayLook {
     handleBorder: style.getPropertyValue('--tk-color-handle-border').trim(),
     lineWidth: cssPx(el, '--tk-border-width-focus') * dpr,
     handleSize: cssPx(el, '--tk-size-handle') * dpr,
+    cropDim: style.getPropertyValue('--tk-color-crop-dim').trim(),
   };
 }
 
@@ -183,8 +195,10 @@ export function Canvas({
   keepsTextEdit,
   onSelect,
   onEdit,
+  onFrame,
 }: CanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const chipRef = useRef<HTMLSpanElement>(null);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const textRef = useRef<TextTool | null>(null);
   // Mutable per-mount state (MOD-Canvas: transient state stays in a plain controller, not signals).
@@ -203,6 +217,7 @@ export function Canvas({
     keepsTextEdit,
     onSelect,
     onEdit,
+    onFrame,
     schedule: () => {},
     onViewChanged: () => {},
   });
@@ -221,6 +236,7 @@ export function Canvas({
     keepsTextEdit,
     onSelect,
     onEdit,
+    onFrame,
   });
   const controller = useRef<ViewController | null>(null);
   controller.current ??= new ViewController((v) => {
@@ -233,8 +249,9 @@ export function Canvas({
   useEffect(() => {
     const el = ref.current;
     const ta = editorRef.current;
+    const chip = chipRef.current;
     const view = controller.current;
-    if (!el || !ta || !view) return;
+    if (!el || !ta || !chip || !view) return;
     const layer = new ImageLayer();
     let raf = 0;
     // The patches of the last paint with nothing being drawn (the cached lower layer's, NFR-02).
@@ -386,29 +403,89 @@ export function Canvas({
       },
       fonts,
     );
-    // F-005 first while a text is edited: a press then only ends the edit (F-005.R3). Then the select tool
-    // (the select tool's presses, Alt+press on an annotation, F-008.R6), then placing text, then drawing.
+    // F-010: the crop tool. Edges are grabbed within size.targetMin, whatever the zoom.
+    const crop = new CropTool(
+      () => {
+        const { image: img, tool: active, doc: scene } = live.current;
+        const now = view.view;
+        if (!now) return null;
+        return {
+          tool: active,
+          frame: scene.frame,
+          image: { width: img.width, height: img.height },
+          gripHalf: targetMin / 2 / (now.zoom / 100),
+          toImage: (p: Point) => {
+            const v = view.view;
+            return v ? toImage(v, p) : p;
+          },
+        };
+      },
+      {
+        commit: (frame) => live.current.onFrame?.(frame),
+        preview: () => schedule(),
+        // ADR-0022 / NFR-02: the next frame builds the drag layer, so the first crop frame only composites.
+        prepare: () => schedule(),
+      },
+    );
+    // F-005 first while a text is edited: a press then only ends the edit (F-005.R3). Then the crop tool
+    // (F-010), the select tool (the select tool's presses, Alt+press on an annotation, F-008.R6), then
+    // placing text, then drawing.
     const tools: ToolInput = {
-      down: (i) => (text.active && text.down(i)) || select.down(i) || text.down(i) || draw.down(i),
+      down: (i) => (text.active && text.down(i)) || crop.down(i) || select.down(i) || text.down(i) || draw.down(i),
       move: (i) => {
         text.move();
+        crop.move(i);
         select.move(i);
         draw.move(i);
       },
       up: (i) => {
         text.up(i);
+        crop.up(i);
         select.up(i);
         draw.up(i);
       },
-      cancel: () => text.cancel() || select.cancel() || draw.cancel(),
+      cancel: () => text.cancel() || crop.cancel() || select.cancel() || draw.cancel(),
+    };
+
+    // F-010.R2 / RULE-12: the crop view's frame and padding objects stay the same while the image and the
+    // background do, so the image layer (which compares them, ADR-0016) is not rebuilt for other edits.
+    let cropBase: { img: ImageBitmap; background: string; scene: Scene } | null = null;
+    const cropScene = (scene: Doc, img: ImageBitmap): Doc => {
+      const background = scene.padding.background;
+      if (!cropBase || cropBase.img !== img || cropBase.background !== background)
+        cropBase = { img, background, scene: cropView(scene, img) };
+      return { annotations: scene.annotations, frame: cropBase.scene.frame, padding: cropBase.scene.padding };
+    };
+
+    /** CMP-Canvas "cropping": COPY-crop.size in a chip centred below the shown frame (CSSOM, ./crop.css). */
+    const placeChip = (frame: Frame | null) => {
+      const v = view.view;
+      if (!frame || !v) {
+        delete chip.dataset['open'];
+        return;
+      }
+      const z = v.zoom / 100;
+      chip.textContent = t('crop.size', { width: frame.width, height: frame.height });
+      chip.dataset['open'] = '';
+      const gap = cssPx(el, '--tk-space-3');
+      const left = v.x + (frame.x + frame.width / 2) * z - chip.offsetWidth / 2;
+      const below = v.y + (frame.y + frame.height) * z + gap;
+      // Kept inside the work area: above the frame's bottom edge when there is no room below it.
+      const top = below + chip.offsetHeight > box.height - inset ? below - 2 * gap - chip.offsetHeight : below;
+      chip.style.left = `${Math.round(Math.max(0, Math.min(box.width - chip.offsetWidth, left)))}px`;
+      chip.style.top = `${Math.round(Math.max(0, top))}px`;
     };
 
     const paint = () => {
       raf = 0;
-      const { image: img, doc: shown, theme: th, selection: chosen } = live.current;
+      const { image: img, doc: shown, theme: th, selection: chosen, tool: activeTool } = live.current;
+      // F-010.R2: with the crop tool the scene is the crop view (whole image, no padding).
+      const cropping = activeTool === 'crop';
       // F-005.R2: while a text is edited it is painted with the field's value, at its final size and colour.
       const edited = draft();
-      const scene = withText(shown, edited, text.edit?.id === null);
+      const docScene = withText(shown, edited, text.edit?.id === null);
+      const scene = cropping ? cropScene(docScene, img) : docScene;
+      const shownFrame = cropping ? (crop.preview ?? shown.frame) : null;
       const selected = text.edit?.id ? chosen.filter((id) => id !== text.edit?.id) : chosen;
       const v = view.view;
       // The previous image's bitmap is closed when a new one loads (NFR-04); a closed (0 × 0) one is skipped.
@@ -424,10 +501,19 @@ export function Canvas({
       if (!ctx) return;
       const crisp = v.zoom >= CRISP_ZOOM;
       const source = layer.get(
-        { image: img, doc: shown, transform: viewTransform(v, ratio), width, height, theme: th, crisp },
+        {
+          image: img,
+          doc: cropping ? cropScene(shown, img) : shown,
+          transform: viewTransform(v, ratio),
+          width,
+          height,
+          theme: th,
+          crisp,
+        },
         () => ({ ...themed(th, ratio).view, crisp }),
       );
       if (!source) return;
+      placeChip(shownFrame);
       const transform = viewTransform(v, ratio);
       const preview = draw.preview;
       // F-008: the annotations being moved or resized, as they are now (./select.ts).
@@ -446,7 +532,8 @@ export function Canvas({
         preview && !isEffectRedaction(preview)
           ? stillPatches
           : effects().patchesFor(
-              preview ? { ...scene, annotations: [...scene.annotations, preview] } : scene,
+              // RULE-10: the patches are always the document's own frame's (the crop view shows them too).
+              preview ? { ...docScene, annotations: [...docScene.annotations, preview] } : docScene,
               preview ? DRAWING : NOTHING_MOVING,
             );
       if (!preview) {
@@ -474,19 +561,25 @@ export function Canvas({
         drag.paint(ctx, dragFrame);
         return;
       }
+      // F-010.R1 / ADR-0022: a frame drag composites the cached layer of everything, then the frame on top.
+      if (crop.preview) {
+        drag.paint(ctx, dragFrame);
+        paintOverlays(ctx, scene, img, transform, { selection: selected, look, crop: crop.preview });
+        return;
+      }
       paintScene(
         ctx,
         scene,
         img,
         transform,
         patches,
-        { selection: selected, look, backdrop, marquee: select.marquee },
+        { selection: selected, look, backdrop, marquee: select.marquee, crop: shownFrame },
         source,
       );
       // NFR-02: a gesture is pressed but not yet a drag: build the layers now (nothing new is drawn). A
       // press on an annotation or handle prepares the range its move or resize will draw (ADR-0022).
       const pending = select.pending;
-      if (draw.dragging) drag.prepare(dragFrame);
+      if (draw.dragging || crop.active) drag.prepare(dragFrame);
       else if (pending) drag.prepare({ ...dragFrame, ...moveRange(scene, new Set(pending)) });
       else drag.release();
       if (edited) placeEditor();
@@ -568,6 +661,7 @@ export function Canvas({
     live.current.onViewChanged = () => {
       draw.viewChanged();
       select.viewChanged();
+      crop.viewChanged();
     };
 
     const measure = () => {
@@ -617,7 +711,15 @@ export function Canvas({
       el.setPointerCapture(e.pointerId);
     };
     // F-004.R1: every position the browser sampled since the last move (where it reports them).
-    const onPointerMove = (e: PointerEvent) => input.move(read(e, true));
+    const onPointerMove = (e: PointerEvent) => {
+      // CMP-Canvas: the crop tool's cursor shows what a press there grabs (./crop.css).
+      if (!crop.active) {
+        const grip = crop.gripAt(local(e));
+        if (grip) el.dataset['grip'] = grip;
+        else delete el.dataset['grip'];
+      }
+      input.move(read(e, true));
+    };
     const onPointerEnd = (e: PointerEvent) => input.up(read(e));
     const onPointerCancel = (e: PointerEvent) => input.cancel(read(e));
     // RULE-06: Shift pressed or released mid-drag constrains the preview at once, without a move.
@@ -657,8 +759,8 @@ export function Canvas({
         inset = Math.max(0, px);
         measure();
       },
-      cancelDrag: () => draw.cancel() || select.cancel(),
-      dragging: () => select.active || draw.dragging,
+      cancelDrag: () => draw.cancel() || select.cancel() || crop.cancel(),
+      dragging: () => select.active || draw.dragging || crop.active,
       // RULE-19 Enter: the active tool's default annotation at the centre of the view (./draw.ts); with
       // the text tool, a new text there, editing (./text.ts).
       placeAtCentre: () => text.placeAt(view.centreImage()) || draw.placeAt(view.centreImage()),
@@ -715,15 +817,21 @@ export function Canvas({
   }, []);
 
   // F-002.R1: a new image is fitted; a content change (padding, crop) refits a fitted view.
+  // RULE-12 / F-010.R2: while the crop tool is active the content is the whole image; entering or leaving
+  // keeps the zoom and the frame's place on screen (within the pan limits), and a fitted view is refitted.
   const shown = useRef<ImageBitmap | null>(null);
+  const cropping = tool === 'crop';
   useEffect(() => {
     const fresh = shown.current !== image;
     // A new image starts a new session (F-001.R7): an open text edit belongs to the old one.
     if (fresh && shown.current) textRef.current?.end('discard');
     shown.current = image;
-    controller.current?.setContent(canvasRect(doc.frame, doc.padding.size), fresh);
+    const content = cropping
+      ? { x: 0, y: 0, width: image.width, height: image.height }
+      : canvasRect(doc.frame, doc.padding.size);
+    controller.current?.setContent(content, fresh);
     live.current.schedule();
-  }, [image, doc]);
+  }, [image, doc, cropping]);
 
   useEffect(() => live.current.schedule(), [theme, selection, textStyle]);
 
@@ -743,6 +851,7 @@ export function Canvas({
         autocomplete="off"
         autocapitalize="off"
       />
+      <span ref={chipRef} class="tk-crop-chip" aria-hidden="true" />
     </>
   );
 }

@@ -25,6 +25,7 @@ import {
   type Colour,
   type DrawingTool,
   type Fill,
+  type Frame,
   type GeometryField,
   type RedactionKind,
   type Size,
@@ -35,7 +36,7 @@ import {
 import { add, commitText, restyle, type Doc, type Op, type Selection } from '../document';
 import { announcePolite, commit, currentStyles, doc, loaded, selection, sheetOpen, textEditing, tool } from './state';
 
-/** The tools built so far, in CMP-Toolbar order; the others join with their features (F-005…F-010). */
+/** The tools, in CMP-Toolbar order (all built since F-010). */
 export const BUILT_TOOLS: readonly ToolName[] = [
   'select',
   'rectangle',
@@ -47,6 +48,7 @@ export const BUILT_TOOLS: readonly ToolName[] = [
   'text',
   'step',
   'redact',
+  'crop',
 ];
 
 const TOOL_COPY = {
@@ -223,8 +225,8 @@ export function placeAtCentre(): void {
 
 /** What CMP-StylePanel shows. `null` marks a choice whose selected annotations differ (nothing marked). */
 export interface PanelModel {
-  /** CMP-StylePanel variant: the active tool, the selection, or the canvas (F-011). */
-  readonly variant: 'tool' | 'selection' | 'canvas';
+  /** CMP-StylePanel variant: the active tool, the selection, the canvas (F-011), or the crop frame (F-010). */
+  readonly variant: 'tool' | 'selection' | 'canvas' | 'crop';
   /** The summary bar's subject (COPY-style.sheet_summary): the tool, the selected kind, or the count. */
   readonly subject: string;
   /** D-031 / RULE-10: the subject is a blur or pixelate redaction, so COPY-redact.not_secure_short follows it. */
@@ -251,6 +253,8 @@ export interface PanelModel {
   };
   /** F-008.R5: the selection actions (duplicate, delete, bring forward, send backward) are offered. */
   readonly actions?: true;
+  /** F-010.R4/R6 (CMP-StylePanel "crop"): the frame, for its size, position and size fields and reset. */
+  readonly frame?: Frame;
 }
 
 /** F-008.R8: the position and size fields of `a`, grouped as CMP-StylePanel lays them out. */
@@ -291,6 +295,8 @@ export function panelModel(
   styles: Readonly<Record<DrawingTool, Style>>,
   editing = false,
 ): PanelModel {
+  // CMP-StylePanel "crop": with the crop tool the panel is the frame's (F-010.R4/R6), whatever is selected.
+  if (active === 'crop' && d && !editing) return { variant: 'crop', subject: toolLabel('crop'), frame: d.frame };
   const picked = selectedAnnotations(d, ids);
   if (picked.length) {
     const kinds = new Set(picked.map((a) => a.kind));
@@ -335,6 +341,8 @@ export const sizeLabel = (size: Size): string => t(SIZE_COPY[size]);
 
 /** COPY-style.sheet_summary's detail: the size (a blur or pixelate redaction's strength; none for solid), or for the canvas "Padding None" (F-011 fills in the rest). */
 export function summaryDetail(model: PanelModel): string {
+  // COPY-style.sheet_summary: COPY-tool.crop · COPY-crop.size.
+  if (model.frame) return t('crop.size', { width: model.frame.width, height: model.frame.height });
   if (model.variant === 'canvas') return `${t('canvas.padding')} ${t('canvas.padding_none')}`;
   const size = model.size ?? model.strength;
   return size ? sizeLabel(size) : '';
