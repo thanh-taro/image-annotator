@@ -104,6 +104,10 @@ export const PERMISSIONS_POLICY = [
 ].join(', ');
 
 export const SW_CSP = "default-src 'none'; connect-src 'self'";
+// /sw.js is `no-cache` (F-017 security review m2, docs/offline.md): with `updateViaCache: 'all'` the
+// browser revalidates it each time the page opens online (a conditional request, ADR-0011's "check
+// for a new version while the page opens"), so a fixed or switched-off worker is picked up on the
+// next open instead of up to 24 h later.
 
 export function genHeaders({ check }) {
   const out = `# ${GENERATED_HEADER(BOOT_SOURCE + ' and HOST_ORIGINS', 'scripts/gen-headers.mjs')}
@@ -123,7 +127,7 @@ export function genHeaders({ check }) {
   ! Content-Security-Policy
   ! Cache-Control
   Content-Security-Policy: ${SW_CSP}
-  Cache-Control: public, max-age=86400
+  Cache-Control: no-cache
 `;
   return emit(OUT, out, { check });
 }

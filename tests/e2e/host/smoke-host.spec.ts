@@ -17,9 +17,9 @@ function consoleErrors(page: Page): string[] {
   return errors;
 }
 
-async function requestLog(page: Page, toolOrigin: string): Promise<{ path: string }[]> {
+async function requestLog(page: Page, toolOrigin: string): Promise<{ path: string; dest: string }[]> {
   const res = await page.request.get(`${toolOrigin}/__log/dump`);
-  return (await res.json()) as { path: string }[];
+  return (await res.json()) as { path: string; dest: string }[];
 }
 
 test.beforeEach(async ({ page }) => {
@@ -39,10 +39,15 @@ test('smoke: standalone under the production headers, the boot script runs and n
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi-VN');
   await page.waitForLoadState('networkidle');
   expect(errors).toEqual([]);
-  const paths = (await requestLog(page, TOOL_ALLOWED)).map((r) => r.path);
-  expect(paths[0]).toBe('/');
-  // The page, its hashed assets, and the browser's own favicon probe — all the tool's own origin.
-  for (const p of paths.slice(1)) expect(p).toMatch(/^\/(assets\/[\w.-]+|favicon\.ico)$/);
+  const log = await requestLog(page, TOOL_ALLOWED);
+  expect(log[0]?.path).toBe('/');
+  // The browser loading the page: its hashed assets, the offline worker script and its own favicon
+  // probe, each once. The offline worker's fetches (dest `empty`; F-017, ADR-0024: WebKit's worker
+  // fetches the files again rather than from the page's HTTP cache) may also ask for the page itself.
+  const byPage = log.slice(1).filter((r) => r.dest !== 'empty');
+  for (const r of byPage) expect(r.path).toMatch(/^\/(assets\/[\w.-]+|sw\.js|favicon\.ico)$/);
+  expect(byPage.length).toBe(new Set(byPage.map((r) => r.path)).size);
+  for (const r of log.filter((r) => r.dest === 'empty')) expect(r.path).toMatch(/^\/(assets\/[\w.-]+)?$/);
 });
 
 test('smoke: the stub host on a second origin embeds the allowed build', async ({ page }) => {

@@ -3,11 +3,11 @@
 // COPY-app.title (ADR-0015 §7) and mounts the SCR-Annotator frame.
 // After the first render MOD-Host starts the host contract (theme and language messages, the ready
 // signal; F-015, F-018) and loads the typefaces with their Vietnamese subsets (F-018.R7).
-// Offline and the effects worker start here once F-017 and F-007 are built.
+// Then it registers the offline service worker and seeds it once the typefaces have loaded (F-017).
 import { render } from 'preact';
 import './styles/index.css';
 import { language, t } from '../copy';
-import { loadFonts, resolveLanguage, startHost } from '../host';
+import { loadFonts, resolveLanguage, startHost, startOffline } from '../host';
 import { startKeys } from './keys';
 import { startLoader } from './loader';
 import { Shell } from './Shell';
@@ -29,4 +29,5 @@ if (root) render(<Shell />, root);
 startLoader(); // F-001: paste, drop, open — listening before the ready signal (F-001.R9)
 startKeys(); // F-002: the View keys and the arrow-key pan (RULE-19)
 startHost();
-void loadFonts();
+// Implements: F-017.R1 — offline after first render; the seed waits for both typeface subsets (ADR-0011).
+startOffline(loadFonts());

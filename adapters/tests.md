@@ -37,7 +37,10 @@ with its ID**; `python3 tools/spec_lint.py --coverage tests` lists criteria with
   a second origin (the D-006 frame grants and focus-on-ready; `grants=0`, `focus=0` for the fallback
   cases), a disallowed host origin, and the two tool builds. The tool servers keep a server-side
   request log (`/__log/dump`, `/__log/reset`, reachable only from the test runner, since the page has
-  `connect-src 'none'`) for NFR-01. The stub host records every message the tool posts and offers
+  `connect-src 'none'`) for NFR-01. For offline (F-017, ADR-0021) the allowed tool server can be taken
+  down (`/__ctl/down?on=1|0`: every other request has its connection dropped, as if stopped; Playwright's
+  `setOffline` breaks service workers on WebKit) and switched to a newly published build
+  (`/__ctl/version?v=2|1`, `dist-e2e/allowed-v2`: a renamed stylesheet and a version marker). The stub host records every message the tool posts and offers
   `__sendTheme`, `__sendLanguage`, `__fromSibling(data)` and `__resizeTool`.
 - Accessibility: `@axe-core/playwright` with tags `wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa` on
   every screen state in both themes; zero violations expected (NFR-06).

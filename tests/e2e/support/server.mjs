@@ -2,6 +2,9 @@
 // built dist/ with its real `_headers` (ADR-0010) and keeps a request log queried over HTTP from the
 // Playwright (node) side — the tool page itself cannot reach it (connect-src 'none'). `hostServer`
 // serves a stub portal page that embeds the tool and relays theme messages, on a second origin.
+// For offline (F-017, ADR-0021) the tool server can be taken down (every request but the control
+// channel has its connection dropped, as if the server were stopped; Playwright's `setOffline` breaks
+// service workers on WebKit) and can switch to a second build (`versions`), a newly published version.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,14 +26,40 @@ function listen(server, port) {
   return new Promise((resolve) => server.listen(port, () => resolve(server)));
 }
 
-/** Serve `root` (a built dist dir) applying its `_headers`; log every request for NFR-01 checks. */
-export async function staticServer({ root, port }) {
-  const rules = loadHeaders(path.join(root, '_headers'));
+/**
+ * Serve `root` (a built dist dir) applying its `_headers`; log every request for NFR-01 checks.
+ * `versions` maps a version name to another dist dir the control channel can switch to.
+ */
+export async function staticServer({ root: firstRoot, port, versions = {} }) {
+  const roots = { 1: firstRoot, ...versions };
+  let root = firstRoot;
+  let rules = loadHeaders(path.join(root, '_headers'));
+  let down = false;
   const log = [];
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://localhost:${port}`);
     const pathname = decodeURIComponent(url.pathname);
 
+    // Control channel (node-side only): take the server down or up, and switch the served version.
+    if (pathname === '/__ctl/down') {
+      down = url.searchParams.get('on') === '1';
+      res.writeHead(200, { 'content-type': 'application/json', Connection: 'close' });
+      res.end(JSON.stringify({ down }));
+      return;
+    }
+    if (pathname === '/__ctl/version') {
+      const v = url.searchParams.get('v') ?? '1';
+      if (!roots[v]) {
+        res.writeHead(404, { Connection: 'close' });
+        res.end();
+        return;
+      }
+      root = roots[v];
+      rules = loadHeaders(path.join(root, '_headers'));
+      res.writeHead(200, { 'content-type': 'application/json', Connection: 'close' });
+      res.end(JSON.stringify({ version: v }));
+      return;
+    }
     // Control channel (node-side only): dump or reset the request log.
     if (pathname === '/__log/dump') {
       res.writeHead(200, { 'content-type': 'application/json' });
@@ -44,7 +73,22 @@ export async function staticServer({ root, port }) {
       return;
     }
 
-    log.push({ method: req.method, path: pathname, contentLength: Number(req.headers['content-length'] ?? 0) });
+    log.push({
+      method: req.method,
+      path: pathname,
+      contentLength: Number(req.headers['content-length'] ?? 0),
+      // Who asked: `empty` is a fetch() (only the offline worker's, the page has connect-src 'none');
+      // anything else (document, iframe, script, style, font, worker, serviceworker) is the browser
+      // loading the page or the worker, whether or not the worker forwarded it.
+      dest: String(req.headers['sec-fetch-dest'] ?? ''),
+      // `navigate` only when the browser itself navigates; a worker forwarding a navigation sends `same-origin`.
+      mode: String(req.headers['sec-fetch-mode'] ?? ''),
+      ...(down ? { refused: true } : {}),
+    });
+    if (down) {
+      req.socket.destroy(); // as if the server were stopped: the browser sees a network error
+      return;
+    }
 
     // Static file (navigations and index both resolve to index.html); apply the deploy headers.
     let filePath = pathname === '/' ? '/index.html' : pathname;
@@ -99,6 +143,10 @@ const HOST_PAGE = `<!doctype html>
     focusIntact = false;
     frame.focus({ preventScroll: true });
   });
+  // Every load (or failed load) of the frame, so a test can wait for one instead of sleeping.
+  window.__frameLoads = 0;
+  frame.addEventListener('load', () => window.__frameLoads++);
+  frame.addEventListener('error', () => window.__frameLoads++);
   frame.id = 'tool';
   frame.setAttribute('title', 'embedded tool');
   frame.setAttribute(
