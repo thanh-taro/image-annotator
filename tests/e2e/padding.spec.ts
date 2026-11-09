@@ -238,6 +238,81 @@ test.describe('F-011 padding and background', () => {
     await expect(summary(page)).toHaveText('1,120 × 620 px canvas, 0 annotations');
   });
 
+  test('CMP-StylePanel narrow: a palette background shows its colour chip in the summary bar, none when transparent', async ({
+    page,
+  }) => {
+    await open(page, { width: 1000, height: 500 }, { viewport: { width: 390, height: 844 } });
+    const bar = page.locator('.tk-panel__bar');
+    await expect(bar.locator('.tk-panel__chip')).toHaveCount(0);
+    await bar.click();
+    const sheet = page.locator('#tk-style-sheet');
+    await sheet.getByRole('radio', { name: 'Blue', exact: true }).check();
+    await expect(bar.locator('.tk-panel__chip.tk-swatch--blue')).toBeVisible();
+    await expect(bar).toHaveAccessibleName('Style options: Canvas · Padding None');
+    await sheet.getByRole('radio', { name: 'Transparent', exact: true }).check();
+    await expect(bar.locator('.tk-panel__chip')).toHaveCount(0);
+  });
+
+  test('CMP-StylePanel narrow: the 9 background choices are laid out in 2 rows of 5 at touch size', async ({
+    page,
+  }) => {
+    await open(page, { width: 1000, height: 500 }, { viewport: { width: 390, height: 844 } });
+    await page.locator('.tk-panel__bar').click();
+    const swatches = page.locator('#tk-style-sheet').getByRole('group', { name: 'Background' }).locator('.tk-swatch');
+    await expect(swatches).toHaveCount(9);
+    const boxes = await swatches.evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { x: Math.round(r.x), y: Math.round(r.y), width: r.width, height: r.height };
+      }),
+    );
+    const rows = [...new Set(boxes.map((b) => b.y))];
+    expect(rows).toHaveLength(2);
+    expect(boxes.filter((b) => b.y === rows[0])).toHaveLength(5);
+    expect(boxes.filter((b) => b.y === rows[1])).toHaveLength(4);
+    for (const b of boxes) expect([b.width, b.height]).toEqual([44, 44]); // size.touchTarget
+    const sheet = await page.locator('#tk-style-sheet').boundingBox();
+    for (const b of boxes) expect(b.x + b.width).toBeLessThanOrEqual((sheet?.x ?? 0) + (sheet?.width ?? 0));
+  });
+
+  test('F-011.R2 RULE-14 a palette background shows under transparent pixels inside the frame, on screen and in the export', async ({
+    page,
+  }) => {
+    await page.setViewportSize(VIEWPORT);
+    await page.goto('/');
+    // A 1000 × 500 grey image whose right half is transparent.
+    await page.evaluate(async () => {
+      const c = new OffscreenCanvas(1000, 500);
+      const ctx = c.getContext('2d');
+      if (!ctx) throw new Error('no 2d context');
+      ctx.fillStyle = 'rgb(200,200,200)';
+      ctx.fillRect(0, 0, 500, 500);
+      const dt = new DataTransfer();
+      dt.items.add(new File([await c.convertToBlob({ type: 'image/png' })], 'half.png', { type: 'image/png' }));
+      document.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    });
+    await expect(summary(page)).toHaveText('1,000 × 500 px canvas, 0 annotations');
+    await background(page, 'Blue').check();
+    await expect(background(page, 'Blue')).toBeChecked();
+    const BLUE = await page.evaluate(() => {
+      const hex = getComputedStyle(document.documentElement).getPropertyValue('--tk-annotation-color-blue').trim();
+      return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).concat(255);
+    });
+    // On screen (100 %, image (x, y) at (100 + x, 150 + y)): the transparent half shows the background.
+    const canvasPx = () =>
+      page.locator('canvas.tk-canvas').evaluate((el) => {
+        const c = el as HTMLCanvasElement;
+        const k = c.width / c.getBoundingClientRect().width;
+        const ctx = c.getContext('2d', { colorSpace: 'srgb' });
+        return Array.from(ctx?.getImageData(Math.round(850 * k), Math.round(400 * k), 1, 1).data ?? []);
+      });
+    await expect.poll(async () => maxDiff(await canvasPx(), BLUE)).toBeLessThanOrEqual(1);
+    const png = await exported(page);
+    expect([png.width, png.height]).toEqual([1000, 500]); // padding none: the background has no other effect
+    expect(maxDiff(pngRegion(png, 750, 250, 1, 1), BLUE)).toBeLessThanOrEqual(1);
+    expect(maxDiff(pngRegion(png, 250, 250, 1, 1), GREY)).toBeLessThanOrEqual(1);
+  });
+
   for (const theme of ['light', 'dark'] as const)
     test(`NFR-06 F-011 the canvas-settings state has no axe violations (${theme})`, async ({ page }) => {
       await open(page, { width: 1000, height: 500 }, { query: `?theme=${theme}` });

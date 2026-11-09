@@ -326,8 +326,11 @@ export function panelModel(
     return { variant: 'tool', ...subjectOf(c, toolLabel(active)), ...c };
   }
   if (!d) return { variant: 'canvas', subject: t('canvas.title') };
-  const canvas = { padding: d.padding.size, background: d.padding.background, available: availablePaddings(d.frame) };
-  return { variant: 'canvas', subject: t('canvas.title'), canvas };
+  const { size, background } = d.padding;
+  const canvas = { padding: size, background, available: availablePaddings(d.frame) };
+  // CMP-StylePanel "narrow": the summary bar shows a palette background's colour, none when transparent.
+  const color = background === 'transparent' ? {} : { color: background };
+  return { variant: 'canvas', subject: t('canvas.title'), ...color, canvas };
 }
 
 /**

@@ -45,7 +45,7 @@
   /* Nine touch-sized background swatches do not fit one row of the narrow sheet or the docked panel on a
      coarse pointer: two rows of five (transparent and four colours, then four). */
   @container tk-annotator (width < 800px) {
-    .tk-panel__body .tk-swatches:has(.tk-swatch--transparent) {
+    .tk-panel__body .tk-swatches--5 {
       display: grid;
       grid-template-columns: repeat(5, var(--tk-size-touch-target));
       justify-content: space-between;
@@ -53,7 +53,7 @@
     }
   }
   @media (pointer: coarse) {
-    .tk-swatches:has(.tk-swatch--transparent) {
+    .tk-swatches--5 {
       grid-template-columns: repeat(5, var(--tk-size-touch-target));
     }
   }

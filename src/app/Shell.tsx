@@ -164,7 +164,7 @@ export function Shell() {
       <footer class="tk-status-bar" inert={inert}>
         {/* F-016: privacy statement, details and source link (start of CMP-StatusBar). */}
         <PrivacyStatus />
-        {/* F-010: COPY-status.image_size, the canvas size, once a crop exists (hidden on compact and narrow). */}
+        {/* F-010/F-011: COPY-status.image_size, the canvas size, once a crop or padding exists (D-017) (hidden on compact and narrow). */}
         {size && <span class="tk-status-size">{t('status.image_size', size)}</span>}
         {/* F-002: the zoom control at the end of CMP-StatusBar. */}
         <ZoomControl />

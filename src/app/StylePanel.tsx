@@ -86,16 +86,17 @@ function Choice<T extends string>(props: {
   disabled?: (v: T) => boolean;
   /** The id of a note that describes the group. */
   describedBy?: string | undefined;
+  /**
+   * An explicit grid for the group: four segments (the padding sizes), or swatches in rows of five on
+   * narrow widths or a coarse pointer (the 9 background choices, CMP-StylePanel "Accessibility").
+   */
+  columns?: 4 | 5;
   children?: ComponentChildren;
 }) {
-  const { name, legend, values, value, label, onPick, swatches, list, disabled, describedBy, children } = props;
-  const group = swatches
-    ? 'tk-swatches'
-    : list
-      ? 'tk-kinds'
-      : values.length === 4
-        ? 'tk-segmented tk-segmented--4'
-        : 'tk-segmented';
+  const { name, legend, values, value, label, onPick, swatches, list, disabled, describedBy, columns, children } =
+    props;
+  const base = swatches ? 'tk-swatches' : list ? 'tk-kinds' : 'tk-segmented';
+  const group = columns ? `${base} ${base}--${columns}` : base;
   const item = (v: T) => (swatches ? `tk-swatch tk-swatch--${v}` : list ? 'tk-kind' : 'tk-segment');
   return (
     <fieldset class="tk-panel__section" aria-describedby={describedBy}>
@@ -381,6 +382,7 @@ function CanvasSettings({ canvas }: { canvas: NonNullable<PanelModel['canvas']> 
         onPick={setPadding}
         disabled={(p) => !canvas.available.includes(p)}
         describedBy={unavailable ? UNAVAILABLE_NOTE : undefined}
+        columns={4}
       >
         {unavailable && (
           <p id={UNAVAILABLE_NOTE} class="tk-panel__note">
@@ -396,6 +398,7 @@ function CanvasSettings({ canvas }: { canvas: NonNullable<PanelModel['canvas']> 
         label={(b) => (b === 'transparent' ? t('canvas.transparent') : t(COLOUR_COPY[b]))}
         onPick={setBackground}
         swatches
+        columns={5}
       />
     </>
   );

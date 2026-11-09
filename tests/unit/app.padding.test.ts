@@ -98,4 +98,13 @@ describe('MOD-App padding and background', () => {
     commands.setPadding('M');
     expect(summaryDetail(model())).toBe('Padding Medium');
   });
+
+  it('CMP-StylePanel "narrow" the summary shows a palette background\'s colour, none when transparent', () => {
+    startNewSession(image(1000, 500));
+    expect(model().color).toBeUndefined();
+    commands.setBackground('blue');
+    expect(model().color).toBe('blue');
+    commands.setBackground('transparent');
+    expect(model().color).toBeUndefined();
+  });
 });
