@@ -13,6 +13,7 @@
 import { canvasCommands, type TextEdit, type TextEndReason } from '../canvas';
 import { t, type MessageId } from '../copy';
 import {
+  availablePaddings,
   geometryOf,
   hasFill,
   isBlankText,
@@ -27,6 +28,7 @@ import {
   type Fill,
   type Frame,
   type GeometryField,
+  type PaddingSize,
   type RedactionKind,
   type Size,
   type Style,
@@ -255,6 +257,15 @@ export interface PanelModel {
   readonly actions?: true;
   /** F-010.R4/R6 (CMP-StylePanel "crop"): the frame, for its size, position and size fields and reset. */
   readonly frame?: Frame;
+  /**
+   * F-011 (CMP-StylePanel "canvas"): the padding size, the background, and the sizes that are offered
+   * (RULE-14: the others would make the canvas exceed RULE-02 and are unavailable).
+   */
+  readonly canvas?: {
+    readonly padding: PaddingSize;
+    readonly background: 'transparent' | Colour;
+    readonly available: readonly PaddingSize[];
+  };
 }
 
 /** F-008.R8: the position and size fields of `a`, grouped as CMP-StylePanel lays them out. */
@@ -314,7 +325,12 @@ export function panelModel(
     const c = choices([{ kind: TOOL_KIND[active], style: styles[active] }]);
     return { variant: 'tool', ...subjectOf(c, toolLabel(active)), ...c };
   }
-  return { variant: 'canvas', subject: t('canvas.title') };
+  if (!d) return { variant: 'canvas', subject: t('canvas.title') };
+  const { size, background } = d.padding;
+  const canvas = { padding: size, background, available: availablePaddings(d.frame) };
+  // CMP-StylePanel "narrow": the summary bar shows a palette background's colour, none when transparent.
+  const color = background === 'transparent' ? {} : { color: background };
+  return { variant: 'canvas', subject: t('canvas.title'), ...color, canvas };
 }
 
 /**
@@ -339,11 +355,18 @@ const SIZE_COPY = { S: 'style.size_s', M: 'style.size_m', L: 'style.size_l' } as
 >;
 export const sizeLabel = (size: Size): string => t(SIZE_COPY[size]);
 
-/** COPY-style.sheet_summary's detail: the size (a blur or pixelate redaction's strength; none for solid), or for the canvas "Padding None" (F-011 fills in the rest). */
+/** F-011: a padding size's name — COPY-canvas.padding_none, or COPY-style.size_s/m/l (CMP-StylePanel). */
+export const paddingLabel = (size: PaddingSize): string =>
+  size === 'none' ? t('canvas.padding_none') : sizeLabel(size);
+
+/**
+ * COPY-style.sheet_summary's detail: the size (a blur or pixelate redaction's strength; none for solid), or
+ * for the canvas COPY-canvas.padding, a space and the padding size ("Padding None", F-011).
+ */
 export function summaryDetail(model: PanelModel): string {
   // COPY-style.sheet_summary: COPY-tool.crop · COPY-crop.size.
   if (model.frame) return t('crop.size', { width: model.frame.width, height: model.frame.height });
-  if (model.variant === 'canvas') return `${t('canvas.padding')} ${t('canvas.padding_none')}`;
+  if (model.variant === 'canvas') return `${t('canvas.padding')} ${paddingLabel(model.canvas?.padding ?? 'none')}`;
   const size = model.size ?? model.strength;
   return size ? sizeLabel(size) : '';
 }

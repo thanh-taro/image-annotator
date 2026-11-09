@@ -1,0 +1,60 @@
+/* MOD-App — F-011: CMP-StylePanel "canvas" (the padding sizes, four segments, with the unavailable ones
+   disabled and COPY-canvas.padding_unavailable below them; the background swatches, transparent first,
+   shown as the checkerboard), as on the canvas-settings artboards and CMP-StylePanel "canvas: at size
+   limit". Tokens only. */
+@layer components {
+  .tk-segmented--4 {
+    grid-template-columns: repeat(4, minmax(min-content, 1fr));
+  }
+  .tk-segment:has(.tk-choice:disabled) {
+    color: var(--tk-color-muted);
+  }
+  .tk-segment .tk-choice:disabled {
+    cursor: not-allowed;
+  }
+  .tk-panel__note {
+    margin: var(--tk-space-2) 0 0;
+    color: var(--tk-color-muted);
+    font-size: var(--tk-font-size-xs);
+    font-weight: var(--tk-font-weight-medium);
+  }
+  /* COPY-canvas.transparent: the same checkerboard as transparent areas on the canvas (CMP-Canvas). */
+  .tk-swatch--transparent {
+    background-color: var(--tk-color-checker-a);
+    background-image:
+      linear-gradient(
+        45deg,
+        var(--tk-color-checker-b) 25%,
+        transparent 25%,
+        transparent 75%,
+        var(--tk-color-checker-b) 75%
+      ),
+      linear-gradient(
+        45deg,
+        var(--tk-color-checker-b) 25%,
+        transparent 25%,
+        transparent 75%,
+        var(--tk-color-checker-b) 75%
+      );
+    background-position:
+      0 0,
+      calc(var(--tk-size-checker) / 2) calc(var(--tk-size-checker) / 2);
+    background-size: var(--tk-size-checker) var(--tk-size-checker);
+  }
+
+  /* Nine touch-sized background swatches do not fit one row of the narrow sheet or the docked panel on a
+     coarse pointer: two rows of five (transparent and four colours, then four). */
+  @container tk-annotator (width < 800px) {
+    .tk-panel__body .tk-swatches--5 {
+      display: grid;
+      grid-template-columns: repeat(5, var(--tk-size-touch-target));
+      justify-content: space-between;
+      row-gap: var(--tk-space-2);
+    }
+  }
+  @media (pointer: coarse) {
+    .tk-swatches--5 {
+      grid-template-columns: repeat(5, var(--tk-size-touch-target));
+    }
+  }
+}
