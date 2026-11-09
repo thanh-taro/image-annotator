@@ -23,10 +23,9 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 | AC | Needs |
 |---|---|
 | F-015.AC6, AC7 | every M-1 feature (end of M-1) |
-| F-018.AC6 (e2e) | crop size shown (F-010) |
 | F-018.AC7 | every screen state (end of M-1) |
 | F-018.AC10 | offline half (F-017); text and download halves done |
-| F-007.AC13 | F-010, F-011 |
+| F-007.AC13 (padding half) | F-011 |
 | F-014.AC5 (leave warning after undo) | F-014; unexported half unit-tested |
 
 ## Manual checks collected so far
@@ -54,3 +53,5 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - F-013: keep the selection in view when selecting from the keyboard (RULE-19 last sentence; deferred from F-008 review).
 - Flaky watch: F-008.AC1 WebKit pixel check failed once in F-009's run (8/8 on repeat).
 - check:full after F-009 merge: preview e2e failed once (load ~12), 400/400 and 57/57 on rerun. Intermittent e2e failures after merges are recurring; QA should hunt the flaky tests.
+- Flaky watch: F-007.AC4 WebKit pixelate test failed once in F-010's run (5/5 alone).
+- F-011: reuse MOD-Core `availablePaddings` and `stepDownPadding` (built in F-010).

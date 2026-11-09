@@ -11,7 +11,7 @@
 | F-007 | Redact part of the image | M-1 | P0 | building |
 | F-008 | Select and edit annotations | M-1 | P0 | shipped |
 | F-009 | Undo and redo | M-1 | P0 | shipped |
-| F-010 | Crop the export frame | M-1 | P0 | ready |
+| F-010 | Crop the export frame | M-1 | P0 | shipped |
 | F-011 | Add padding and background | M-1 | P2 | ready |
 | F-012 | Copy and download the result | M-1 | P0 | shipped |
 | F-013 | Work from the keyboard | M-1 | P1 | ready |

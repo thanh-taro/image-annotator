@@ -1,7 +1,7 @@
 ---
 id: F-010
 title: Crop the export frame
-status: ready
+status: shipped
 milestone: M-1
 priority: P0
 personas: [PER-01]
