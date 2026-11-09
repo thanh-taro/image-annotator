@@ -24,7 +24,7 @@ focus and platform.
 ## Public surface
 - `resolveKey(keyInfo, scope) → { action?, preventDefault }` with `action` from a closed union
   (tool choices, canvas, edit, history, view, load, export, help).
-- `shortcutList()` for CMP-ShortcutHelp, as data (key labels plus COPY IDs).
+- `shortcutList(mac)` for CMP-ShortcutHelp, as data: groups of rows with printed key labels, COPY IDs for the names, the pointer words and the spoken names (MOD-App translates them; MOD-Keys holds no copy).
 
 ## Implements
 F-013.R1/R2/R3/R4/R5; RULE-19; NFR-06.

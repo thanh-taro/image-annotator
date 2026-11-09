@@ -24,7 +24,7 @@ COPY-shortcut.zoom_pointer. Crop keys reuse COPY-shortcut.move and COPY-shortcut
 ## Behavior
 Opened with ? or COPY-action.shortcuts; closed with Esc. Shows Ctrl or ⌘ for the user's OS. Key labels (Ctrl, ⌘, Alt, ⌥, Shift, ⇧, Enter, Esc, Tab, Delete,
 Backspace, Space, arrows) are shown as printed on the keyboard and are not translated; aliases
-(Backspace for Delete, Ctrl+Y for redo on Windows/Linux) are listed with the main key.
+(Backspace for Delete, Ctrl+Y for redo on Windows/Linux) are listed with the main key. Arrow keys are printed as ← ↑ → ↓; pointer actions use COPY-key.drag and COPY-key.wheel. The move, resize and pan rows also show Shift for the larger step; the crop keys share the move and resize rows.
 
 ## Accessibility
-Modal dialog: focus moves to COPY-action.close, stays inside the dialog and returns to what opened it on close; the rest of the tool is inert and RULE-19 shortcuts are off while it is open, and the canvas live regions announce nothing until it closes. Key names readable by screen readers (spoken names as text, not only symbols).
+Modal dialog: focus moves to COPY-action.close, stays inside the dialog and returns to what opened it on close; the rest of the tool is inert and RULE-19 shortcuts are off while it is open, and the canvas live regions announce nothing until it closes. Key names readable by screen readers (spoken names as text, not only symbols): key labels as printed, with COPY-key.or, COPY-key.spoken_arrows, COPY-key.spoken_plus, COPY-key.spoken_minus, COPY-key.spoken_equals, COPY-key.spoken_question, COPY-key.drag and COPY-key.wheel in the tool's language.

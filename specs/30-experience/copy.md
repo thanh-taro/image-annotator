@@ -197,6 +197,14 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-shortcuts.help** | Help | Trợ giúp | |
 | **COPY-shortcuts.pointer** | Pointer | Con trỏ | |
 | **COPY-shortcuts.scope_note** | Single-key and editing shortcuts work while the image has focus. | Phím tắt một phím và phím chỉnh sửa hoạt động khi vùng ảnh đang được chọn. | RULE-19 scope |
+| **COPY-key.drag** | drag | kéo | Pointer action in a key cell (Space+drag, Alt+drag) |
+| **COPY-key.wheel** | wheel | con lăn | Pointer action in a key cell (Ctrl+wheel) |
+| **COPY-key.or** | or | hoặc | Joins aliases in spoken key names |
+| **COPY-key.spoken_arrows** | Left, Up, Right or Down arrow | mũi tên trái, lên, phải hoặc xuống | Spoken name of the arrow keys |
+| **COPY-key.spoken_plus** | plus | dấu cộng | Spoken name of + |
+| **COPY-key.spoken_minus** | minus | dấu trừ | Spoken name of − |
+| **COPY-key.spoken_equals** | equals | dấu bằng | Spoken name of = |
+| **COPY-key.spoken_question** | question mark | dấu chấm hỏi | Spoken name of ? |
 | **COPY-shortcut.place** | Place an annotation | Đặt chú thích | |
 | **COPY-shortcut.next** | Next / previous annotation | Chú thích tiếp theo / trước | |
 | **COPY-shortcut.select_all** | Select all | Chọn tất cả | |
