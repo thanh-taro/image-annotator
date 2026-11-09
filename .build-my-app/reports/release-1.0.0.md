@@ -1,6 +1,6 @@
 # Release report: Image Annotator 1.0.0-rc.1 (phase 6, local candidate)
 
-Branch `build/m1`. Nothing was uploaded, published, deployed, provisioned or tagged; no credentials were touched.
+Branch `build/m1`. Nothing was uploaded, published, deployed or provisioned; no credentials were touched. Tagged locally `v1.0.0-rc.1` (not pushed).
 The owner signs off the manual checks below (D-038), reviews the drafts, then tags and ships (phase 7).
 
 ## Candidate
@@ -110,13 +110,13 @@ Done by automation, not on the list: security review F-017 m3 (paste before the 
 - **Known gaps carried into the release notes:** WebKit embedded leave-page warning (D-028); Safari first-visit blur
   (fixed by ADR-0025, awaiting check 4); Safari clipboard colour-space tags; separate embedded and standalone offline
   copies; the source file name in the download name.
-- **Decisions needed from the owner:** (1) staging or none (ADR-0010 says none in M-1; `environments.md` proposes one);
-  (2) catalog category `developer` or `media`; (3) the source licence for the terms (`package.json` says UNLICENSED);
-  (4) legal review of the privacy policy, the terms and the privacy declaration; (5) that the GitHub repository is public.
-- **Deployment runbook not written:** `docs/deploy/runbook.md` is missing. A local hook that forbids deploy actions
-  before phase 7 blocked the command that wrote it (the file text holds the deploy and rollback commands). Nothing
-  else was blocked. It needs the owner's decision (see the hand-back message), then it is written in phase 7 or now.
-- `docs/deploy/environments.md` already points at the runbook for the release order and the staging block.
+- **Decided:** no staging (D-040, ADR-0010 kept); the runbook written as a file in phase 6 (D-039), nothing run.
+- **Decisions still with the owner:** (1) catalog category `developer` or `media`; (2) the source licence for the terms
+  (`package.json` says UNLICENSED, while the tool links to its source); (3) legal review of the privacy policy, the
+  terms and the privacy declaration; (4) the GitHub repository is public by launch.
+- **Deployment runbook:** `docs/deploy/runbook.md`: go/no-go, portal first, one-time setup, deploy of the verified
+  archive (checksum steps dry-run locally: 12/12 files OK), smoke checks, monitoring and rollback (wrangler rollback,
+  `Clear-Site-Data` or the kill-switch worker). Every account, token, domain, portal and upload step is USER-OWNED.
 
 ## Deployed
 Not deployed. (After phase 7, note here the production Cloudflare Version ID and the date.)

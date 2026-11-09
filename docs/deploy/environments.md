@@ -9,37 +9,19 @@ by the owner; Claude never creates, reads or sets accounts, secrets, domains or 
 |---|---|---|---|---|
 | local (dev) | `pnpm dev`, http://localhost:5173 | source, hot reload | default `https://tarokit.app` | exists |
 | local (release preview) | `scripts/release-build`, then `pnpm preview` or the host/offline harness (`pnpm test:e2e:host`) | the exact release `dist/`; the harness serves it with the real `_headers` on localhost origins and a stub host | `https://tarokit.app` for the release build; the harness builds its own variants | exists |
-| staging | PROPOSED, USER-OWNED: Cloudflare Worker `image-annotator-staging` on `https://image-annotator-staging.tarokit.app` | a staging-flavoured build (see below) | `https://tarokit.app https://staging.tarokit.app` | **not in ADR-0010** (decision needed) |
 | production | Cloudflare static assets, `https://image-annotator.tarokit.app` | `dist/` of the approved release | `https://tarokit.app` | USER-OWNED, not yet deployed |
 
-**Staging needs an owner decision.** ADR-0010 says "No staging in M-1" (the candidate is verified locally against
-the exact `dist/` that ships, and rollback takes seconds). The portal, however, has a temporary staging site
-(`https://staging.tarokit.app`, portal D-046). If you want a staging step, approve it and Claude writes a new ADR
-that supersedes that line of ADR-0010; then add the wrangler environment below. A staging build is a different
-build from the production one (a different `HOST_ORIGINS` changes `_headers`, the page and the hashed script), so
-staging verifies the process, the headers and the offline copy, not the production bytes. The production bytes are
-the ones verified locally and checksummed in `.build-my-app/reports/release-1.0.0.md`. If you decline staging, the
-runbook's production steps stand alone and the "STAGING" part is skipped.
-
-Wrangler environment to add for staging (not applied; non-inheritable keys must be repeated per environment):
-```jsonc
-"env": {
-  "staging": {
-    "name": "image-annotator-staging",
-    "workers_dev": false,
-    "preview_urls": false,
-    "routes": [{ "pattern": "image-annotator-staging.tarokit.app", "custom_domain": true }]
-  }
-}
-```
+**No staging (ADR-0010, confirmed for 1.0.0 by D-040).** The candidate is verified locally against the exact
+`dist/` that ships and checksummed in `.build-my-app/reports/release-1.0.0.md`; a bad production deploy is rolled
+back to the previous wrangler version (runbook). Adding staging later needs a new ADR.
 
 ## Configuration variables
 Every variable the scripts and tests read is listed in `.env.example`. Nothing is read at runtime in the browser
 except `HOST_ORIGINS`, which is baked in at build time (`__HOST_ORIGINS__`).
 
-| Name | Read by | When | Secret | Purpose | Local | Staging | Production |
-|---|---|---|---|---|---|---|---|
-| `HOST_ORIGINS` | `scripts/gen-headers.mjs`, `vite.config.ts` | build | no | Space-separated origins allowed to embed the tool: CSP `frame-ancestors` and the message allow-list (RULE-16, NFR-09). Wildcards are refused; empty means standalone only | default, or the harness's own | `https://tarokit.app https://staging.tarokit.app` | `https://tarokit.app` |
+| Name | Read by | When | Secret | Purpose | Local | Production |
+|---|---|---|---|---|---|---|
+| `HOST_ORIGINS` | `scripts/gen-headers.mjs`, `vite.config.ts` | build | no | Space-separated origins allowed to embed the tool: CSP `frame-ancestors` and the message allow-list (RULE-16, NFR-09). Wildcards are refused; empty means standalone only | default, or the harness's own | `https://tarokit.app` |
 | `RELEASE_OUT` | `scripts/release-build` | release | no | Output directory (outside the repo) | optional | optional | optional |
 | `SKIP_E2E` | `scripts/release-build` | release | no | `1` skips the e2e suites | optional | n/a | n/a |
 | `CI` | Playwright configs, `scripts/release-build` | test | no | CI mode: retries, no reused servers, no `.only` | optional | n/a | n/a |
@@ -50,8 +32,8 @@ except `HOST_ORIGINS`, which is baked in at build time (`__HOST_ORIGINS__`).
 | `SCREENS` | `tests/e2e/host/narrow-states.spec.ts` | test | no | Save narrow-state screenshots | optional | n/a | n/a |
 | `CATALOG_SHOTS` | `tests/e2e/host/catalog-screenshots.spec.ts` | test | no | Write the catalog screenshots to `docs/deploy/screenshots/` | optional | n/a | n/a |
 | `CHROME_PATH` | Lighthouse (`pnpm lhci`) | test | no | Chrome binary when none is installed | optional | optional | optional |
-| `CLOUDFLARE_ACCOUNT_ID` | wrangler | deploy | no (keep out of git) | The Cloudflare account that receives the deploy | n/a | USER-OWNED | USER-OWNED |
-| `CLOUDFLARE_API_TOKEN` | wrangler | deploy | **yes** | Scoped API token for wrangler; alternative is interactive `wrangler login` | n/a | USER-OWNED | USER-OWNED |
+| `CLOUDFLARE_ACCOUNT_ID` | wrangler | deploy | no (keep out of git) | The Cloudflare account that receives the deploy | n/a | USER-OWNED |
+| `CLOUDFLARE_API_TOKEN` | wrangler | deploy | **yes** | Scoped API token for wrangler; alternative is interactive `wrangler login` | n/a | USER-OWNED |
 
 There are no other secrets, no runtime secrets, no database and no migrations. `.env`, `.env.*` are git-ignored
 (only `.env.example` is committed).
@@ -66,7 +48,6 @@ There are no other secrets, no runtime secrets, no database and no migrations. `
   certificate are created by Cloudflare when the custom domain is attached (needs the `tarokit.app` zone in the same
   Cloudflare account). USER-OWNED.
 - **`tarokit.app`:** the portal that embeds the tool, and the only allowed frame ancestor in production.
-- **`staging.tarokit.app`:** the portal's temporary staging site (portal D-046), allowed to embed the staging tool only.
 
 ## External accounts and services (all USER-OWNED)
 | Service | Purpose | Needed for | Cost |
