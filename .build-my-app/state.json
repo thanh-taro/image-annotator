@@ -53,28 +53,28 @@
     },
     "build": {
       "title": "4 Implementation",
-      "status": "in_progress",
-      "step": "4 wave 3: F-006 building",
+      "status": "done",
+      "step": "4 gate G4: awaiting user approval",
       "gate": {
-        "status": "pending",
-        "at": null,
+        "status": "passed",
+        "at": "2026-11-09T14:25:02+00:00",
         "note": null
       }
     },
     "qa": {
       "title": "5 QA & hardening",
-      "status": "pending",
-      "step": null,
+      "status": "done",
+      "step": "5 gate G5: awaiting user (manual checks)",
       "gate": {
-        "status": "pending",
-        "at": null,
+        "status": "passed",
+        "at": "2026-11-09T16:16:30+00:00",
         "note": null
       }
     },
     "release": {
       "title": "6 Release candidate",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "6 release 1.0.0-rc.1: release-manager preparing build, notes, inventory, runbook",
       "gate": {
         "status": "pending",
         "at": null,
@@ -541,6 +541,143 @@
       "answer": "none: badges as designed (owner)",
       "asked": "2026-11-03T11:59:57+00:00",
       "answered": "2026-11-03T11:59:57+00:00"
+    },
+    {
+      "id": "D-030",
+      "question": "Text tool click outside the canvas (in the surround): do nothing, clamp inside, or show while typing? (F-005 review M2)",
+      "options": [
+        "nothing",
+        "clamp",
+        "show while typing"
+      ],
+      "recommendation": "nothing",
+      "kind": "product",
+      "phase": "build",
+      "status": "answered",
+      "answer": "nothing: a text-tool click outside the canvas does nothing (owner)",
+      "asked": "2026-11-03T14:21:28+00:00",
+      "answered": "2026-11-03T14:21:35+00:00"
+    },
+    {
+      "id": "D-031",
+      "question": "Narrow summary bar: show COPY-redact.not_secure_short for blur and pixelate? (security F-007 m4)",
+      "options": [
+        "show",
+        "kind only"
+      ],
+      "recommendation": "show",
+      "kind": "design",
+      "phase": "build",
+      "status": "answered",
+      "answer": "show: the bar shows the Not secure tag after the kind for blur and pixelate (owner)",
+      "asked": "2026-11-04T15:15:51+00:00",
+      "answered": "2026-11-04T15:15:51+00:00"
+    },
+    {
+      "id": "D-032",
+      "question": "Shift + marquee: add to the selection or replace it? (F-008 review gap 5)",
+      "options": [
+        "add",
+        "replace"
+      ],
+      "recommendation": "add",
+      "kind": "product",
+      "phase": "build",
+      "status": "answered",
+      "answer": "add: Shift + drag a box adds to the selection (owner)",
+      "asked": "2026-11-04T15:21:13+00:00",
+      "answered": "2026-11-04T15:21:14+00:00"
+    },
+    {
+      "id": "D-033",
+      "question": "Crop: a drag inside a whole-image frame draws a new frame, or edges only? (F-010 review m8)",
+      "options": [
+        "draw new frame",
+        "edges only"
+      ],
+      "recommendation": "draw new frame",
+      "kind": "product",
+      "phase": "build",
+      "status": "answered",
+      "answer": "draw new frame: while the frame covers the whole image, a drag inside it draws a new frame (owner)",
+      "asked": "2026-11-09T02:07:16+00:00",
+      "answered": "2026-11-09T02:07:16+00:00"
+    },
+    {
+      "id": "D-034",
+      "question": "Privacy statement wording after offline support (security F-017 M1)",
+      "options": [
+        "precise",
+        "short",
+        "unchanged"
+      ],
+      "recommendation": "precise",
+      "kind": "product",
+      "phase": "build",
+      "status": "answered",
+      "answer": "precise: nothing you add is uploaded, stored or tracked; the tool keeps a copy of its own files to work offline and makes no other requests (owner)",
+      "asked": "2026-11-09T06:58:01+00:00",
+      "answered": "2026-11-09T06:58:02+00:00"
+    },
+    {
+      "id": "D-035",
+      "question": "Multi-select heading in the style panel?",
+      "options": [
+        "add",
+        "keep"
+      ],
+      "recommendation": "add",
+      "kind": "design",
+      "phase": "qa",
+      "status": "answered",
+      "answer": "Add the heading",
+      "asked": "2026-11-09T15:09:04+00:00",
+      "answered": "2026-11-09T15:09:04+00:00"
+    },
+    {
+      "id": "D-036",
+      "question": "Tab order: image before style panel?",
+      "options": [
+        "image-first",
+        "panel-first"
+      ],
+      "recommendation": "image-first",
+      "kind": "design",
+      "phase": "qa",
+      "status": "answered",
+      "answer": "Image before panel",
+      "asked": "2026-11-09T15:09:05+00:00",
+      "answered": "2026-11-09T15:09:05+00:00"
+    },
+    {
+      "id": "D-037",
+      "question": "Legal: OFL font subsetting and MPL-2.0 build-only tools?",
+      "options": [
+        "accept",
+        "review"
+      ],
+      "recommendation": "accept",
+      "kind": "product",
+      "phase": "qa",
+      "status": "answered",
+      "answer": "Accept as is",
+      "asked": "2026-11-09T15:09:05+00:00",
+      "answered": "2026-11-09T15:09:05+00:00"
+    },
+    {
+      "id": "D-038",
+      "question": "Manual hardware checks: sign off now or at release candidate?",
+      "options": [
+        "release",
+        "now"
+      ],
+      "recommendation": "release",
+      "kind": "product",
+      "phase": "qa",
+      "status": "answered",
+      "answer": "At release: the 12 manual checks are the phase 6 sign-off list on the release candidate",
+      "asked": "2026-11-09T16:16:30+00:00",
+      "answered": "2026-11-09T16:16:30+00:00"
     }
   ],
   "loops": {
@@ -586,266 +723,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-10-27T04:28:20+00:00",
-      "event": "phase setup -> gate"
-    },
-    {
-      "at": "2026-10-27T04:29:18+00:00",
-      "event": "gate setup passed: Greenfield TaroKit sibling; profile reused from siblings; balanced autonomy"
-    },
-    {
-      "at": "2026-10-27T04:29:21+00:00",
-      "event": "phase product-spec -> in_progress"
-    },
-    {
-      "at": "2026-10-27T04:29:36+00:00",
-      "event": "product-spec step: 1.1 brainstorm: problem + market research"
-    },
-    {
-      "at": "2026-10-27T04:31:34+00:00",
-      "event": "Market research saved; problem round: all 4 use cases, clipboard+files equal, one-shot sessions"
-    },
-    {
-      "at": "2026-10-27T04:31:35+00:00",
-      "event": "product-spec step: 1.1 brainstorm: positioning + scope"
-    },
-    {
-      "at": "2026-10-27T04:34:39+00:00",
-      "event": "set spike_candidates"
-    },
-    {
-      "at": "2026-10-27T04:36:39+00:00",
-      "event": "decision D-001 opened: Milestone split"
-    },
-    {
-      "at": "2026-10-27T04:36:40+00:00",
-      "event": "decision D-002 opened: Crop behaviour"
-    },
-    {
-      "at": "2026-10-27T04:36:40+00:00",
-      "event": "decision D-003 opened: Local-only proof"
-    },
-    {
-      "at": "2026-10-27T04:36:40+00:00",
-      "event": "decision D-004 opened: Warn on leaving with unexported work"
-    },
-    {
-      "at": "2026-10-27T04:36:45+00:00",
-      "event": "decision D-001 answered: Everything in M-1 (user chose against recommendation; strategist warned of size risk)"
-    },
-    {
-      "at": "2026-10-27T04:36:45+00:00",
-      "event": "decision D-002 answered: Non-destructive"
-    },
-    {
-      "at": "2026-10-27T04:36:45+00:00",
-      "event": "decision D-003 answered: Badge + strict CSP"
-    },
-    {
-      "at": "2026-10-27T04:36:45+00:00",
-      "event": "decision D-004 answered: Warn"
-    },
-    {
-      "at": "2026-10-27T04:36:45+00:00",
-      "event": "product-spec step: 1.1 vision brief: awaiting approval"
-    },
-    {
-      "at": "2026-10-27T04:38:32+00:00",
-      "event": "decision D-005 opened: Approve vision brief"
-    },
-    {
-      "at": "2026-10-27T04:38:32+00:00",
-      "event": "decision D-005 answered: Approved"
-    },
-    {
-      "at": "2026-10-27T04:38:32+00:00",
-      "event": "product-spec step: 1.2 idea → spec"
-    },
-    {
-      "at": "2026-10-27T04:38:32+00:00",
-      "event": "Vision brief approved"
-    },
-    {
-      "at": "2026-10-27T04:46:14+00:00",
-      "event": "Phase-1 specs written: 18 features, 19 rules, 5 INV, 9 NFR, lint clean"
-    },
-    {
-      "at": "2026-10-27T04:46:14+00:00",
-      "event": "product-spec step: 1.3 spec review loop round 1"
-    },
-    {
-      "at": "2026-10-27T04:46:14+00:00",
-      "event": "loop spec-review started (max 3)"
-    },
-    {
-      "at": "2026-10-27T05:34:09+00:00",
-      "event": "decision D-006 opened: Portal frame grants (downloads, leave-page dialog, focus after ready)"
-    },
-    {
-      "at": "2026-10-27T05:34:09+00:00",
-      "event": "decision D-007 opened: Redaction count placement"
-    },
-    {
-      "at": "2026-10-27T05:34:09+00:00",
-      "event": "decision D-008 opened: WCAG 2.5.7 non-drag alternative"
-    },
-    {
-      "at": "2026-10-27T05:34:09+00:00",
-      "event": "decision D-009 opened: Product name and repository"
-    },
-    {
-      "at": "2026-10-27T05:34:10+00:00",
-      "event": "decision D-010 opened: Minor spec defaults from review round 1"
-    },
-    {
-      "at": "2026-10-27T05:34:10+00:00",
-      "event": "decision D-006 answered: Request all three; portal change request written; fallbacks: click-then-paste hint, standalone"
-    },
-    {
-      "at": "2026-10-27T05:34:10+00:00",
-      "event": "decision D-007 answered: Live count next to Copy/Download + after-export confirmation; counts redactions overlapping the frame"
-    },
-    {
-      "at": "2026-10-27T05:34:10+00:00",
-      "event": "decision D-008 answered: X/Y/W/H (X1/Y1/X2/Y2 for lines) fields in style panel for single selection and crop frame"
-    },
-    {
-      "at": "2026-10-27T05:34:10+00:00",
-      "event": "decision D-009 answered: Image Annotator; https://github.com/thanh-taro/image-annotator"
-    },
-    {
-      "at": "2026-10-27T05:34:10+00:00",
-      "event": "decision D-010 answered: Decided by orchestrator (balanced, non-product): text click ends edit/edits existing, tool stays; step diameter 2x text size; outline pairing per RULE-07; disable padding over limit; undo-back still unexported; export 1.5 s for 14.7 MP; zoom keys Shift+1/Shift+0; [ ] for reorder; keyboard multi-select limited to select all"
-    },
-    {
-      "at": "2026-10-27T05:34:10+00:00",
-      "event": "product-spec step: 1.3 spec review round 1: applying fixes"
-    },
-    {
-      "at": "2026-10-27T08:42:04+00:00",
-      "event": "loop spec-review round 2"
-    },
-    {
-      "at": "2026-10-27T08:42:04+00:00",
-      "event": "product-spec step: 1.3 spec review round 2"
-    },
-    {
-      "at": "2026-10-27T08:42:04+00:00",
-      "event": "Round 1: 5 blockers + majors fixed; D-006..D-010; lint 0/0"
-    },
-    {
-      "at": "2026-10-27T08:50:37+00:00",
-      "event": "loop spec-review ended: converged after 2 rounds; A6 deferred to design, N5 to architecture"
-    },
-    {
-      "at": "2026-10-27T08:50:38+00:00",
-      "event": "Spec review converged in 2 rounds"
-    },
-    {
-      "at": "2026-10-27T08:50:38+00:00",
-      "event": "phase product-spec -> gate"
-    },
-    {
-      "at": "2026-10-27T08:52:47+00:00",
-      "event": "gate product-spec passed: 18 features ready; 2 review rounds; D-001..D-010; UI tokens→design, reference blur→architecture"
-    },
-    {
-      "at": "2026-10-27T08:53:00+00:00",
-      "event": "G1 passed; specs ready (status fix committed after a shell glob mistake)"
-    },
-    {
-      "at": "2026-10-27T08:53:08+00:00",
-      "event": "phase design -> in_progress"
-    },
-    {
-      "at": "2026-10-27T08:53:08+00:00",
-      "event": "phase architecture -> in_progress"
-    },
-    {
-      "at": "2026-10-27T08:54:28+00:00",
-      "event": "design step: 2.1 style builder: discovery"
-    },
-    {
-      "at": "2026-10-27T08:54:28+00:00",
-      "event": "Architecture proposal running in background agent"
-    },
-    {
-      "at": "2026-10-27T08:55:06+00:00",
-      "event": "decision D-011 opened: Style direction"
-    },
-    {
-      "at": "2026-10-27T08:55:06+00:00",
-      "event": "decision D-012 opened: Layout"
-    },
-    {
-      "at": "2026-10-27T08:55:06+00:00",
-      "event": "decision D-013 opened: Design tool"
-    },
-    {
-      "at": "2026-10-27T08:55:06+00:00",
-      "event": "decision D-011 answered: Same Workbench style; portal tokens reused exactly; add image-editor roles only"
-    },
-    {
-      "at": "2026-10-27T08:55:06+00:00",
-      "event": "decision D-012 answered: Top toolbar + right style panel; bottom sheet on narrow"
-    },
-    {
-      "at": "2026-10-27T08:55:06+00:00",
-      "event": "decision D-013 answered: Claude Design canvas, sibling conventions"
-    },
-    {
-      "at": "2026-10-27T08:55:06+00:00",
-      "event": "set design_tool"
-    },
-    {
-      "at": "2026-10-27T11:03:24+00:00",
-      "event": "design step: 2.4 design loop D1: creating canvas"
-    },
-    {
-      "at": "2026-10-27T11:04:10+00:00",
-      "event": "set design_canvas_url"
-    },
-    {
-      "at": "2026-10-27T11:10:41+00:00",
-      "event": "context compaction (auto) at: build-my-app: phase 2 Design [in_progress] — 2.4 design loop D1: creating canvas · 2/9 phases done · autonomy balanced"
-    },
-    {
-      "at": "2026-10-27T11:14:56+00:00",
-      "event": "design step: 2.4 design loop D1: audit round 1"
-    },
-    {
-      "at": "2026-10-27T11:14:56+00:00",
-      "event": "loop design-D1 started (max 3)"
-    },
-    {
-      "at": "2026-10-27T11:14:56+00:00",
-      "event": "D1: all 11 boards published (canvas v12)"
-    },
-    {
-      "at": "2026-10-27T11:36:57+00:00",
-      "event": "loop design-D1 round 2"
-    },
-    {
-      "at": "2026-10-27T11:36:57+00:00",
-      "event": "design step: 2.4 design loop D1: audit round 2"
-    },
-    {
-      "at": "2026-10-27T11:36:57+00:00",
-      "event": "D1 round 1: 2 blockers / 29 major / 45 minor fixed on all 10 CMP boards (canvas v22); 2 copy keys added (draft until G2)"
-    },
-    {
-      "at": "2026-10-27T13:06:52+00:00",
-      "event": "loop design-D1 round 3"
-    },
-    {
-      "at": "2026-10-27T13:06:52+00:00",
-      "event": "design step: 2.4 design loop D1: audit round 3"
-    },
-    {
-      "at": "2026-10-27T13:06:52+00:00",
-      "event": "D1 round 2 fixed (canvas v29); spec changes RULE-19 scope, CMP-Toolbar narrow, CMP-Notice pause, 8 copy keys"
-    },
     {
       "at": "2026-11-02T02:29:43+00:00",
       "event": "design step: 2.4 design loop D1: audit + UI critique round 3 running"
@@ -1385,9 +1262,269 @@
     {
       "at": "2026-11-03T11:59:57+00:00",
       "event": "decision D-029 answered: none: badges as designed (owner)"
+    },
+    {
+      "at": "2026-11-03T13:37:35+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 4 Implementation [in_progress] — 4 wave 3: F-006 building · 4/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-03T13:46:34+00:00",
+      "event": "F-006 merged and green (check:full 11/11); F-015.AC4 transient overflow fixed (c8bc8c7); F-006 building"
+    },
+    {
+      "at": "2026-11-03T13:46:38+00:00",
+      "event": "build step: 4 wave 3: F-005 building"
+    },
+    {
+      "at": "2026-11-03T14:21:28+00:00",
+      "event": "decision D-030 opened: Text tool click outside the canvas (in the surround): do nothing, clamp inside, or show while typing? (F-005 review M2)"
+    },
+    {
+      "at": "2026-11-03T14:21:35+00:00",
+      "event": "decision D-030 answered: nothing: a text-tool click outside the canvas does nothing (owner)"
+    },
+    {
+      "at": "2026-11-03T14:30:06+00:00",
+      "event": "F-005 merged (addb1b7), check:full 11/11, building; D-030 answered; wave 3 complete"
+    },
+    {
+      "at": "2026-11-03T14:30:06+00:00",
+      "event": "build step: 4 wave 4: F-007 Redact"
+    },
+    {
+      "at": "2026-11-04T04:02:11+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 4 Implementation [in_progress] — 4 wave 4: F-007 Redact · 4/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-04T04:41:37+00:00",
+      "event": "F-007 merged (e14ef93), check:full 11/11, building; wave 4 complete"
+    },
+    {
+      "at": "2026-11-04T04:41:37+00:00",
+      "event": "build step: 4 wave 5: F-012 Copy and download"
+    },
+    {
+      "at": "2026-11-04T05:18:02+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 4 Implementation [in_progress] — 4 wave 5: F-012 Copy and download · 4/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-04T08:23:42+00:00",
+      "event": "F-012 merged (eafa077), all checks green (e2e rerun after a load failure), building; F-002 shipped; wave 5 complete"
+    },
+    {
+      "at": "2026-11-04T08:23:42+00:00",
+      "event": "build step: 4 wave 6: F-008 Select and edit"
+    },
+    {
+      "at": "2026-11-04T15:13:50+00:00",
+      "event": "Portal applied frame grants (taro-kit 4c4ae94); A2 + stub host updated (commit on build/m1)"
+    },
+    {
+      "at": "2026-11-04T15:15:51+00:00",
+      "event": "decision D-031 opened: Narrow summary bar: show COPY-redact.not_secure_short for blur and pixelate? (security F-007 m4)"
+    },
+    {
+      "at": "2026-11-04T15:15:51+00:00",
+      "event": "decision D-031 answered: show: the bar shows the Not secure tag after the kind for blur and pixelate (owner)"
+    },
+    {
+      "at": "2026-11-04T15:21:13+00:00",
+      "event": "decision D-032 opened: Shift + marquee: add to the selection or replace it? (F-008 review gap 5)"
+    },
+    {
+      "at": "2026-11-04T15:21:14+00:00",
+      "event": "decision D-032 answered: add: Shift + drag a box adds to the selection (owner)"
+    },
+    {
+      "at": "2026-11-04T15:21:39+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 4 Implementation [in_progress] — 4 wave 6: F-008 Select and edit · 4/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-04T15:43:30+00:00",
+      "event": "F-008 merged (dc47176), check:full 11/11, building; D-031, D-032 answered; worktree still locked by its agent, remove later"
+    },
+    {
+      "at": "2026-11-04T15:43:30+00:00",
+      "event": "build step: 4 wave 6: F-009 Undo and redo"
+    },
+    {
+      "at": "2026-11-04T16:13:32+00:00",
+      "event": "F-009 merged (0e3fae6), e2e green on rerun; F-005/006/008/009/012/016 shipped; wave 6 complete"
+    },
+    {
+      "at": "2026-11-04T16:13:32+00:00",
+      "event": "build step: 4 wave 7: F-010 Crop"
+    },
+    {
+      "at": "2026-11-09T02:07:16+00:00",
+      "event": "decision D-033 opened: Crop: a drag inside a whole-image frame draws a new frame, or edges only? (F-010 review m8)"
+    },
+    {
+      "at": "2026-11-09T02:07:16+00:00",
+      "event": "decision D-033 answered: draw new frame: while the frame covers the whole image, a drag inside it draws a new frame (owner)"
+    },
+    {
+      "at": "2026-11-09T02:08:14+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 4 Implementation [in_progress] — 4 wave 7: F-010 Crop · 4/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-09T02:36:37+00:00",
+      "event": "F-010 merged (991241c), check:full 11/11, shipped; D-033 answered"
+    },
+    {
+      "at": "2026-11-09T02:36:37+00:00",
+      "event": "build step: 4 wave 7: F-011 Padding"
+    },
+    {
+      "at": "2026-11-09T03:35:38+00:00",
+      "event": "F-011 merged (d7aa8f3); e2e: one load flake (F-007.AC4 WebKit, load ~218) passed 6/6 on rerun, host 57/57; F-007, F-011 shipped; wave 7 complete"
+    },
+    {
+      "at": "2026-11-09T03:35:39+00:00",
+      "event": "build step: 4 wave 8: F-013 keyboard, F-014 warning, F-017 offline"
+    },
+    {
+      "at": "2026-11-09T03:58:37+00:00",
+      "event": "Usage limit reached mid wave 8: F-013 and F-017 builders running in worktrees (uncommitted until they report); F-014 waits for F-013 merge. Resume: SendMessage the builders, then review, merge, check:full."
+    },
+    {
+      "at": "2026-11-09T06:58:01+00:00",
+      "event": "decision D-034 opened: Privacy statement wording after offline support (security F-017 M1)"
+    },
+    {
+      "at": "2026-11-09T06:58:02+00:00",
+      "event": "decision D-034 answered: precise: nothing you add is uploaded, stored or tracked; the tool keeps a copy of its own files to work offline and makes no other requests (owner)"
+    },
+    {
+      "at": "2026-11-09T07:02:27+00:00",
+      "event": "F-013 and F-017 reviewed; spec changes committed (COPY-key, ADR-0024, D-034); both builders fixing"
+    },
+    {
+      "at": "2026-11-09T07:42:13+00:00",
+      "event": "F-013 merged (bbe23c8), check:full 11/11 after fixing flaky F-007.AC4; F-013 shipped"
+    },
+    {
+      "at": "2026-11-09T07:42:17+00:00",
+      "event": "build step: 4 wave 8: F-014 warning (F-017 in fixes)"
+    },
+    {
+      "at": "2026-11-09T07:47:55+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 4 Implementation [in_progress] — 4 wave 8: F-014 warning (F-017 in fixes) · 4/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-09T07:55:54+00:00",
+      "event": "F-017 offline merged and shipped; check:full green"
+    },
+    {
+      "at": "2026-11-09T07:55:54+00:00",
+      "event": "build step: 4 wave 8: F-014 warning (F-017 shipped)"
+    },
+    {
+      "at": "2026-11-09T13:22:14+00:00",
+      "event": "build step: 4 wave 8: F-014 review fixes (round 1)"
+    },
+    {
+      "at": "2026-11-09T13:22:15+00:00",
+      "event": "F-014 reviewed: code 1 major/2 minor, a11y 2 major/4 minor; spec gaps settled (7884965, eb0e68d)"
+    },
+    {
+      "at": "2026-11-09T13:37:58+00:00",
+      "event": "F-014 merged and shipped; check:full green; 16/18 shipped"
+    },
+    {
+      "at": "2026-11-09T13:37:58+00:00",
+      "event": "build step: 4 end of M-1: whole-app checks F-015.AC6/AC7, F-018.AC7"
+    },
+    {
+      "at": "2026-11-09T14:22:37+00:00",
+      "event": "End of M-1: all 18 features shipped; check:full green (load flakes rerun); AC coverage 100%"
+    },
+    {
+      "at": "2026-11-09T14:22:38+00:00",
+      "event": "build step: 4 gate G4: awaiting user approval"
+    },
+    {
+      "at": "2026-11-09T14:25:02+00:00",
+      "event": "gate build passed"
+    },
+    {
+      "at": "2026-11-09T14:25:02+00:00",
+      "event": "G4 build gate approved by user (M-1)"
+    },
+    {
+      "at": "2026-11-09T14:25:14+00:00",
+      "event": "phase qa -> in_progress"
+    },
+    {
+      "at": "2026-11-09T14:26:02+00:00",
+      "event": "qa step: 5.1 audits running: flows/visual/matrix, perf, a11y, security, licences"
+    },
+    {
+      "at": "2026-11-09T15:09:04+00:00",
+      "event": "decision D-035 opened: Multi-select heading in the style panel?"
+    },
+    {
+      "at": "2026-11-09T15:09:04+00:00",
+      "event": "decision D-035 answered: Add the heading"
+    },
+    {
+      "at": "2026-11-09T15:09:05+00:00",
+      "event": "decision D-036 opened: Tab order: image before style panel?"
+    },
+    {
+      "at": "2026-11-09T15:09:05+00:00",
+      "event": "decision D-036 answered: Image before panel"
+    },
+    {
+      "at": "2026-11-09T15:09:05+00:00",
+      "event": "decision D-037 opened: Legal: OFL font subsetting and MPL-2.0 build-only tools?"
+    },
+    {
+      "at": "2026-11-09T15:09:05+00:00",
+      "event": "decision D-037 answered: Accept as is"
+    },
+    {
+      "at": "2026-11-09T15:11:19+00:00",
+      "event": "qa step: 5.7 QA fix round 1 (security M1, ADR-0025, RULE-15, D-035, D-036, dev deps)"
+    },
+    {
+      "at": "2026-11-09T15:11:19+00:00",
+      "event": "QA audits done: 0 blockers; 1 major (WebKit worker CSP); decisions D-035..D-037; specs 0df795f"
+    },
+    {
+      "at": "2026-11-09T16:15:39+00:00",
+      "event": "QA fix round 1 merged; check:full all 11 green in one run; security harness 16/16"
+    },
+    {
+      "at": "2026-11-09T16:15:39+00:00",
+      "event": "qa step: 5 gate G5: awaiting user (manual checks)"
+    },
+    {
+      "at": "2026-11-09T16:16:30+00:00",
+      "event": "decision D-038 opened: Manual hardware checks: sign off now or at release candidate?"
+    },
+    {
+      "at": "2026-11-09T16:16:30+00:00",
+      "event": "decision D-038 answered: At release: the 12 manual checks are the phase 6 sign-off list on the release candidate"
+    },
+    {
+      "at": "2026-11-09T16:16:30+00:00",
+      "event": "gate qa passed"
+    },
+    {
+      "at": "2026-11-09T16:16:31+00:00",
+      "event": "G5 QA gate approved by user; manual checks deferred to phase 6 (D-038)"
+    },
+    {
+      "at": "2026-11-09T16:16:41+00:00",
+      "event": "phase release -> in_progress"
+    },
+    {
+      "at": "2026-11-09T16:17:06+00:00",
+      "event": "release step: 6 release 1.0.0-rc.1: release-manager preparing build, notes, inventory, runbook"
     }
   ],
-  "updated": "2026-11-03T11:59:57+00:00",
+  "updated": "2026-11-09T16:17:06+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=../schemas/tool.json
+# DRAFT for the portal repo (taro-kit), file `content/tools/image-annotator.yaml`. Not applied: the
+# owner makes this change in the portal, through its own spec process (runbook step P1, USER-OWNED).
+# Image Annotator (taro-kit-tools/developer-tools/image-annotator), live at its own address.
+# Name, summary and tags come from specs/00-product/vision.md and glossary.md. Summary <= 120 characters
+# per language, name <= 40, <= 20 tags of <= 24 characters (portal schema).
+id: image-annotator
+kind: tool
+name: Image Annotator
+summary:
+  en-US: Mark up screenshots, redact what matters and copy the result. Nothing leaves your browser.
+  vi-VN: Chú thích ảnh chụp màn hình, che thông tin nhạy cảm và sao chép kết quả. Không gì rời khỏi trình duyệt.
+# Owner's choice: `developer` (the suite folder and the primary persona) or `media` (images).
+category: developer
+url: https://image-annotator.tarokit.app/
+origin: own
+openMode: embedded
+# Gives the frame sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups
+# allow-popups-to-escape-sandbox allow-modals", allow="clipboard-write" and the focus-on-ready rule
+# (portal commit 4c4ae94, D-070/D-071). `file-pick` is declarative: the portal changelog lists only the
+# other four.
+permissions: [downloads, clipboard-write, popups, dialogs, file-pick]
+offline: true
+sourceUrl: https://github.com/thanh-taro/image-annotator # D-009; the repository must be public by launch
+tags:
+  [
+    screenshot,
+    annotate,
+    markup,
+    redact,
+    blur,
+    pixelate,
+    arrow,
+    crop,
+    png,
+    bug report,
+    ghi chú ảnh,
+    chú thích,
+    che thông tin,
+    chụp màn hình,
+  ]
+added: 2026-11-09 # set to the real launch date
