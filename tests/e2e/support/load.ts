@@ -57,7 +57,7 @@ export async function paste(page: Page | Frame, files: AnySpec[], strings: Recor
 }
 
 /** Starts a file drag over the work area (dragenter + dragover); returns a handle to drop or leave. */
-export async function dragOver(page: Page, files: AnySpec[]) {
+export async function dragOver(page: Page | Frame, files: AnySpec[]) {
   const dt = await page.evaluateHandle((files) => {
     const dt = new DataTransfer();
     for (const f of files) {
@@ -82,7 +82,7 @@ export async function dragOver(page: Page, files: AnySpec[]) {
 }
 
 /** Drags these files over the tool and drops them. */
-export async function drop(page: Page, files: AnySpec[]): Promise<void> {
+export async function drop(page: Page | Frame, files: AnySpec[]): Promise<void> {
   const drag = await dragOver(page, files);
   await drag.drop();
 }

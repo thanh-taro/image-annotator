@@ -30,6 +30,9 @@ function RedactionCount() {
       return;
     }
     const measure = () => {
+      // Measured with COPY-action.copy's label on one line: its label wraps (narrow, F-018.R7) only when
+      // the row does not fit even with the short count.
+      row.classList.add('tk-toolbar__row--measuring');
       const spacer = row.querySelector<HTMLElement>('.tk-toolbar__spacer');
       const full = probe.current?.offsetWidth ?? 0;
       // The row's content without the flexible spacer, with the full text in place of what is shown now,
@@ -39,6 +42,7 @@ function RedactionCount() {
         if (c !== el && c !== spacer && !c.contains(probe.current) && c instanceof HTMLElement)
           squeezed += Math.max(0, c.scrollWidth - c.offsetWidth);
       const needed = row.scrollWidth - (spacer?.offsetWidth ?? 0) - el.offsetWidth + full + squeezed;
+      row.classList.remove('tk-toolbar__row--measuring');
       setShort(needed > row.clientWidth);
     };
     measure();

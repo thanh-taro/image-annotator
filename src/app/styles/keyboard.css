@@ -99,6 +99,12 @@
     font-weight: var(--tk-font-weight-medium);
     white-space: nowrap;
   }
+  /* F-018.R7 (NFR-07): on the narrowest widths a long key cell (aliases such as "Delete / Backspace")
+     wraps at its spaces, right-aligned, instead of pushing the row wider than the dialog. */
+  .tk-shortcuts--narrow .tk-kbd {
+    white-space: normal;
+    text-align: end;
+  }
   /* Narrow: a touch-sized close button (CMP-ShortcutHelp "open, narrow 390"). */
   .tk-shortcuts--narrow .tk-shortcuts__close {
     width: var(--tk-size-touch-target);

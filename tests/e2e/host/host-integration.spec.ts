@@ -1,7 +1,7 @@
 // F-015 Fit into the host portal (RULE-16, ADR-0010, ADR-0021) on the multi-origin harness: theme
 // from the address and from messages, the device preference standalone, filling the host area,
 // origin and source checks, the single ready signal and frame-ancestors.
-// Deferred ACs (need later features): AC6/AC7 (every M-1 feature), AC9/AC10 (copy and download, F-012).
+// AC6 and AC7 (every M-1 feature) are in ./m1-embedded.spec.ts and ../m1-tour.spec.ts; AC9/AC10 in ./export-embedded.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
 import { fixture, paste } from '../support/load';
 import { HOST_ALLOWED, HOST_OTHER, TOOL_ALLOWED, TOOL_EMPTY, hostPageUrl } from '../support/urls';
