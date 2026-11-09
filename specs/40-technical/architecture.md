@@ -168,16 +168,16 @@ signal (RULE-16). After first render it registers `sw.js`; once fonts and the wo
 seeds every same-origin URL the page used; later openings serve the page network-first and hashed
 assets cache-first, adopting a new version only on a later open (ADR-0011, F-017).
 
-## Security headers (generated, ADR-0010)
+## Security headers (generated, ADR-0010, ADR-0025)
 ```
 Content-Security-Policy: default-src 'none'; script-src 'self' '<boot-hash>'; style-src 'self';
-  img-src 'self' data:; font-src 'self'; worker-src 'self'; connect-src 'none'; manifest-src 'none';
+  img-src 'self'; font-src 'self'; worker-src 'self'; connect-src 'none'; manifest-src 'none';
   frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';
   frame-ancestors https://tarokit.app            # HOST_ORIGINS; empty → 'none' (RULE-16, NFR-09)
 Permissions-Policy: clipboard-write=(self), clipboard-read=(), camera=(), microphone=(), geolocation=(), …
 Referrer-Policy: no-referrer · X-Content-Type-Options: nosniff · Cross-Origin-Opener-Policy: same-origin
 Strict-Transport-Security: max-age=31536000; includeSubDomains · Cache-Control: no-cache (/assets/* immutable)
-/sw.js → Content-Security-Policy: default-src 'none'; connect-src 'self'
+/sw.js → Content-Security-Policy: default-src 'none'; connect-src 'self'; worker-src 'self'
 ```
 No relaxation is needed for decoding a `File`, drawing on canvases or downloading through `blob:`.
 No `'wasm-unsafe-eval'`. `img-src blob:` only if SP-decode selects the `<img>` fallback (a new ADR).

@@ -7,8 +7,8 @@ there on 2026-10-19); the license audit re-verifies them on the registry before 
 
 Kinds: **runtime** = shipped to the browser (main bundle or the effects worker; there are no lazy
 chunks, ADR-0003, ADR-0011); **asset** = shipped non-code file; **build** / **dev** = never shipped.
-Status: `proposed` → `approved` → `removed`. Every row below is `proposed` until the license audit
-approves it. M-1 adds **no runtime package** beyond the suite's Preact + signals: rendering
+Status: `proposed` → `approved` → `removed`. A row is `proposed` until the license audit approves
+it; every row below has been approved (audits 2026-11-02 and QA 2026-11-09). M-1 adds **no runtime package** beyond the suite's Preact + signals: rendering
 (ADR-0004), decoding (ADR-0005), blur/pixelate (ADR-0006) and PNG chunk handling (ADR-0007) are our
 own code on platform features.
 
@@ -25,7 +25,7 @@ own code on platform features.
 | **DEP-04** | @fontsource-variable/manrope | ^5 | OFL-1.1 (copyright + licence text in the notices file) | asset | UI face and canvas text face (weight 600), self-hosted `latin` + `vietnamese` subsets (~40 KB); no `latin-ext` (D-025) | approved | ADR-0009, ADR-0013, ADR-0015 |
 | **DEP-05** | @fontsource-variable/jetbrains-mono | ^5 | OFL-1.1 (copyright + licence text in the notices file) | asset | Numbers per style.md (zoom, sizes, fields), `latin` + `vietnamese` subsets (~40 KB) | approved | ADR-0013, ADR-0015 |
 | **DEP-06** | lucide-static | ^1.55 | ISC (+ Feather MIT notice in the notices file) | asset | Icons, only used SVGs inlined at build (~3 KB in HTML) | approved | ADR-0013 |
-| **DEP-07** | Portal design tokens (`tokens.json`) | copy pinned to a portal commit, plus the image-editor roles (D-011) | Owner's own work | asset (source) | Colours, spacing, radii, motion shared with the portal | approved (owner's own work; record the pinned portal commit) | ADR-0013 |
+| **DEP-07** | Portal design tokens (`tokens.json`) | copy pinned to a portal commit, plus the image-editor roles (D-011) | Owner's own work | asset (source) | Colours, spacing, radii, motion shared with the portal | approved (owner's own work; pinned to portal taro-kit `27ea733`, 2026-10-13: shared colour, space, radius and motion values identical; the tool adds its image-editor roles and its own contrast-pair list) | ADR-0013 |
 
 ## Build, dev, test (never shipped)
 | ID | Name | Version range | License | Kind | Purpose | Status | Decided by |
@@ -68,8 +68,10 @@ own code on platform features.
 
 ## Notes
 - Shipped third-party code is Preact + signals (MIT) only; fonts (OFL text) and icons (ISC) are
-  the shipped assets. `/third-party-notices.txt` lists exactly those.
+  the shipped assets. The notices file (a hashed file under `/assets/`, in the offline copy, ADR-0025) lists exactly those.
 - `pnpm check:licenses` scans the built `dist/` and fails when the shipped set and the notices
   differ, or when anything ships that is not an approved runtime/asset row.
 - No CI dependencies: there are no code-host workflows (ADR-0014).
-- 2026-11-02 licence audit: DEP-01–18 and DEP-20–27 approved (26/27 as fallbacks only); DEP-19 waits for the real lockfile's transitive licence list; re-run the audit against the lockfile in phase 3.3.
+- 2026-11-02 licence audit: DEP-01–27 approved (26/27 as fallbacks only); DEP-19 approved against the real lockfile in phase 3.3.
+- 2026-11-09 QA licence audit: no blockers. The owner accepts OFL-1.1 font subsetting (copyright and licence text kept in the notices) and the MPL-2.0 build/dev-only exceptions (DEP-11, DEP-18) without further legal review (D-037).
+- Test fixtures (`tests/fixtures/*`, made by `make-fixtures.sh` with ImageMagick from our own patterns, and `tools/exif_orient.py`) are our own work, carry no ICC profile or third-party content, and never ship; a fixture with a third-party profile needs its own row (ADR-0018).

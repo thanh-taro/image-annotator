@@ -76,3 +76,9 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-017 gaps and review: ADR-0024 (amends ADR-0011): the build lists every hashed file for the offline seed, the page is network-first, WebKit's second download is accepted. F-017.R3 uses a new version from the first online open and keeps open copies unchanged; F-017.AC3 checks the first online open and the cached copy. MOD-Build lists the seed files.
 - F-014 gaps and review: CMP-Toolbar orders the overflow as COPY-action.shortcuts, a separator, then COPY-action.clear; COPY-action.clear is unavailable while no image is loaded (F-014 UX notes); copy.md COPY-a11y.cleared, announced by CMP-Canvas after starting over; F-014 edge case: starting over closes any notice and the narrow style sheet.
 - End of M-1 (F-015.AC6/AC7, F-018.AC7): CMP-StylePanel lays the 8 swatches in 2 rows of 4 in the narrow sheet below 386 px (F-018.R7).
+
+## 2026-11-09 — QA (phase 5)
+- QA decisions D-035 (CMP-StylePanel: a multi-selection heading COPY-a11y.selected_count atop the wide panel, as on the artboard), D-036 (SCR-Annotator: reading and focus order toolbar, canvas, style panel, status bar; a visually hidden level-1 heading COPY-app.title), D-037 (OFL subsetting and MPL-2.0 build/dev exceptions accepted).
+- ADR-0025 (amends ADR-0001, ADR-0010, ADR-0024): `/sw.js` policy adds `worker-src 'self'` (WebKit refused the effects worker through the offline copy); a worker error is fatal at any time; `img-src 'self'`; the notices ship as a hashed file in the offline copy; the seed list is posted as soon as the service worker is ready. architecture.md "Security headers" updated.
+- RULE-15: the download name replaces `/ \ : * ? " < > |` with `_` and trims surrounding spaces, so the notice names the saved file.
+- dependencies.md: DEP-07 pinned to portal `27ea733`; stale notes corrected; test fixtures recorded as own work.

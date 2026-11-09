@@ -36,7 +36,7 @@ Overlays: CMP-Notice, CMP-ConfirmDialog, CMP-ShortcutHelp.
 - Exits to: none (single screen). Leaving with unexported work warns (F-014).
 
 ## Accessibility
-Reading order: toolbar, style panel, canvas, status bar. The canvas is one focusable region
+Reading and focus order: toolbar, canvas, style panel, status bar (D-036); the style panel follows the canvas whether it is shown beside it or as the narrow sheet. A visually hidden level-1 heading COPY-app.title starts the tool. The canvas is one focusable region
 whose annotations are reachable with Tab (F-013); every drag has a single-pointer non-drag
 alternative (position and size fields in CMP-StylePanel) and a keyboard alternative (NFR-06).
 The page title is COPY-app.title when standalone.
