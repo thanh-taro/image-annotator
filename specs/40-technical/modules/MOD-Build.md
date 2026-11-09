@@ -6,6 +6,7 @@ depends_on: []
 ---
 
 ## Responsibility
+Lists the build's hashed files in `<meta name="tk-assets">` for the offline seed (ADR-0024).
 The build, generation, and local-check machinery (ADR-0003, ADR-0010; no code-host workflows,
 ADR-0014). Scripts copied from the sibling and adapted: `gen-all`, `gen-copy` (catalog from
 copy.md, failing on a missing language, mismatched placeholders or plural forms, F-018.AC8),
