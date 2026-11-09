@@ -2,6 +2,18 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
+## 1.0.0 — 2026-11-09 (milestone M-1, release candidate 1.0.0-rc.1)
+First release. All 18 features of M-1 are `shipped`; nothing was added to the specs for the release itself.
+- Open an image by paste, drop or file picker (F-001); zoom and pan (F-002).
+- Draw rectangles, ellipses, lines and arrows (F-003); pen and highlighter strokes (F-004); text (F-005); numbered steps (F-006).
+- Redact with solid fill (secure) or blur and pixelate (labelled not secure); the exported file never holds the hidden pixels (F-007).
+- Select and edit every annotation (F-008); undo and redo (F-009).
+- Non-destructive crop (F-010); padding and background (F-011).
+- Copy to the clipboard or download as a flattened PNG with no metadata from the original (F-012).
+- Keyboard map with a shortcut help (F-013); a warning before losing unexported work (F-014).
+- Fits the portal: embedded or standalone, the portal's theme (F-015), the privacy statement (F-016), offline use after one visit (F-017), the portal's language, English and Vietnamese (F-018).
+- Known gaps carried into 1.0.0: the leave-page warning does not show in an embedded WebKit frame (D-028, ADR-0021); a Safari first-visit blur export and the other manual checks wait for the owner's sign-off (D-038).
+
 ## 2026-10-27
 - Initial specs written in phase 1 (all items draft).
 

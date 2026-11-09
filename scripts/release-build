@@ -1,20 +1,40 @@
 #!/usr/bin/env bash
 # Repeatable release build (phase 6, MOD-Build; copied from DAFV). Builds a git ref from a clean
-# checkout and runs every gate on it (ADR-0014): codegen, types, lint, unit, spec lint, build,
-# licences + dist scan, size, and the e2e suites on Chromium and WebKit.
-# Usage: scripts/release-build [ref]   (default: HEAD)   — env: HOST_ORIGINS (default https://tarokit.app)
-# Output: <tmp>/ia-release-<ref>/dist plus SHA-256 checksums in dist.sha256. Uploads nothing.
+# clone of the committed tree (uncommitted changes are never included) and runs every gate on it
+# (ADR-0014): frozen-lockfile install, codegen check, types, lint, unit, spec lint, production
+# build, licence + dist scans, size, then the output archive and SHA-256 checksums, then the e2e
+# suites on Chromium and WebKit. Uploads nothing; touches no credentials.
+#
+# Usage: scripts/release-build [ref]   (default: HEAD)
+# Env:   HOST_ORIGINS  production frame-ancestors / message allow-list, space separated
+#                      (default https://tarokit.app, ADR-0010); read by scripts/gen-headers.mjs
+#        RELEASE_OUT   output directory (default $TMPDIR/ia-release-<ref>)
+#        SKIP_E2E=1    skip the e2e suites (used for the reproducibility comparison)
+# Output in $RELEASE_OUT:
+#   repo/                              the clean clone (its dist/ is the build)
+#   image-annotator-<version>.tar.gz   deterministic archive of dist/ without *.map and .vite
+#                                      (what wrangler uploads, see public/.assetsignore)
+#   dist.sha256                        SHA-256 of every file in dist/ except *.map
+#   SHA256SUMS                         SHA-256 of the archive and of dist.sha256
+# Reproducible: the same commit and lockfile give byte-identical archive and checksums.
 set -euo pipefail
 REF="${1:-HEAD}"
-REPO="$(git rev-parse --show-toplevel)"
+SRC="$(git rev-parse --show-toplevel)"
 OUT="${RELEASE_OUT:-${TMPDIR:-/tmp}/ia-release-$(echo "$REF" | tr '/' '-')}"
+OUT="${OUT%/}"
 export HOST_ORIGINS="${HOST_ORIGINS:-https://tarokit.app}"
+export TZ=UTC LC_ALL=C
 
+case "$OUT" in "$SRC"|"$SRC"/*) echo "RELEASE_OUT must be outside the repository" >&2; exit 1;; esac
 rm -rf "$OUT"
-git clone --quiet --no-local "$REPO" "$OUT"
-cd "$OUT"
+mkdir -p "$OUT"
+CLONE="$OUT/repo"
+git clone --quiet --no-local "$SRC" "$CLONE"
+cd "$CLONE"
 git checkout --quiet "$REF"
-echo "Release build of $(git describe --tags --always) in $OUT (HOST_ORIGINS=$HOST_ORIGINS)"
+COMMIT="$(git rev-parse HEAD)"
+VERSION="$(node -p "require('./package.json').version")"
+echo "Release build of $VERSION at $COMMIT in $OUT (HOST_ORIGINS=$HOST_ORIGINS)"
 
 pnpm install --frozen-lockfile
 pnpm gen:check
@@ -27,10 +47,45 @@ pnpm check:licenses
 pnpm check:size
 pnpm check:dist
 
+# Checksums of every deployed file, then a deterministic archive (sorted, mtime 0, owner 0, gzip header without a time).
+(cd dist && find . -type f ! -name '*.map' | sort | xargs shasum -a 256) > "$OUT/dist.sha256"
+ARCHIVE="$OUT/image-annotator-$VERSION.tar.gz"
+python3 -I - "$CLONE/dist" "$ARCHIVE" <<'PY'
+import gzip, io, os, sys, tarfile
+src, dest = sys.argv[1], sys.argv[2]
+files = []
+for root, dirs, names in os.walk(src):
+    dirs[:] = sorted(d for d in dirs if d != '.vite')
+    for n in sorted(names):
+        if n.endswith('.map'):
+            continue
+        p = os.path.join(root, n)
+        files.append((os.path.relpath(p, src).replace(os.sep, '/'), p))
+files.sort()
+raw = io.BytesIO()
+with tarfile.open(fileobj=raw, mode='w', format=tarfile.PAX_FORMAT) as tar:
+    for rel, p in files:
+        info = tarfile.TarInfo(rel)
+        info.size = os.path.getsize(p)
+        info.mtime = 0
+        info.mode = 0o644
+        info.uid = info.gid = 0
+        info.uname = info.gname = ''
+        with open(p, 'rb') as f:
+            tar.addfile(info, f)
+with open(dest, 'wb') as out:
+    with gzip.GzipFile(filename='', mode='wb', fileobj=out, mtime=0, compresslevel=9) as gz:
+        gz.write(raw.getvalue())
+PY
+(cd "$OUT" && shasum -a 256 "image-annotator-$VERSION.tar.gz" dist.sha256 > SHA256SUMS)
+echo "archive:   $ARCHIVE"
+echo "checksums: $OUT/SHA256SUMS"
+cat "$OUT/SHA256SUMS"
+
 if [ "${SKIP_E2E:-0}" != "1" ]; then
   pnpm exec playwright install chromium webkit >/dev/null
   CI=1 pnpm test:e2e:all  # e2e runs against `vite preview` of this dist/ and the host/offline harness
+  # The e2e run must not have changed the build.
+  (cd dist && find . -type f ! -name '*.map' | sort | xargs shasum -a 256) | cmp - "$OUT/dist.sha256"
 fi
-
-(cd dist && find . -type f ! -name '*.map' | LC_ALL=C sort | xargs shasum -a 256) > dist.sha256
-echo "dist checksum (sha256 of dist.sha256): $(shasum -a 256 dist.sha256 | cut -d' ' -f1)"
+echo "OK: $VERSION $COMMIT"
