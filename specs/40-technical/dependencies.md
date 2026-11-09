@@ -31,12 +31,12 @@ own code on platform features.
 | ID | Name | Version range | License | Kind | Purpose | Status | Decided by |
 |---|---|---|---|---|---|---|---|
 | **DEP-08** | typescript | ~6.0 (match the suite) | Apache-2.0 | dev | Type checking | approved | ADR-0003 |
-| **DEP-09** | vite | ^8.3 | MIT | build | Dev server, bundling, the module worker; no lazy chunks | approved | ADR-0003 |
+| **DEP-09** | vite | ^8.3.6 (≥ 8.3.3: dev-server advisories, QA security m4) | MIT | build | Dev server, bundling, the module worker; no lazy chunks | approved | ADR-0003 |
 | **DEP-10** | @preact/preset-vite | ^2.10 | MIT | build | Preact JSX/HMR for Vite | approved | ADR-0003 |
 | **DEP-11** | lightningcss (via vite) | native binary dependency of vite | MPL-2.0 (build-only exception) | build | CSS transforms in Vite | approved | ADR-0001 |
 | **DEP-12** | caniuse-lite (via browserslist) | transitive | CC-BY-4.0 (data not shipped; no notice needed) | build | Browser target data | approved | ADR-0001 |
 | **DEP-13** | style-dictionary | ~5.5 | Apache-2.0 | dev | Compile DTCG tokens to CSS variables (same as the suite) | approved | ADR-0013 |
-| **DEP-14** | vitest | ^5.0 | MIT | dev | Unit, integration and bench | approved | ADR-0012 |
+| **DEP-14** | vitest | ^5.0.5 (≥ 5.0.3: `@vitest/mocker` advisory, QA security m4) | MIT | dev | Unit, integration and bench | approved | ADR-0012 |
 | **DEP-15** | fast-check | ^4.10 | MIT | dev | Property tests: effects vs reference, undo round trips, geometry | approved | ADR-0012 |
 | **DEP-16** | @playwright/test | ~1.63 | Apache-2.0 | dev | E2E on Chromium and WebKit, perf and memory traces, request log | approved | ADR-0012, ADR-0014 |
 | **DEP-17** | Playwright browser binaries (Chromium, WebKit) | via DEP-16 | Chromium BSD; WebKit LGPL-2.1 (test-only exception) | dev | E2E engines (no Firefox, ADR-0014) | approved | ADR-0001, ADR-0014 |
@@ -46,7 +46,7 @@ own code on platform features.
 | **DEP-21** | typescript-eslint | ^8.71 | MIT | dev | TypeScript lint rules | approved | ADR-0003 |
 | **DEP-22** | eslint-plugin-jsx-a11y | ^6.10 | MIT | dev | Accessibility lint for TSX | approved | ADR-0003 |
 | **DEP-23** | prettier | ^3.9 | MIT | dev | Formatting | approved | ADR-0003 |
-| **DEP-24** | wrangler | ^4 (pinned, newest allowed by `minimumReleaseAge`) | MIT OR Apache-2.0; its sharp pulls LGPL-3.0 libvips binaries, deploy-only, never in `dist/` (D-026) | dev (deploy) | Deploy static assets by hand (phase 7) | approved | ADR-0010 |
+| **DEP-24** | wrangler | ^4.158 (pinned, newest allowed by `minimumReleaseAge`; its miniflare needs undici ≥ 7.30.1, QA security m4) | MIT OR Apache-2.0; its sharp pulls LGPL-3.0 libvips binaries, deploy-only, never in `dist/` (D-026) | dev (deploy) | Deploy static assets by hand (phase 7) | approved | ADR-0010 |
 | **DEP-25** | pnpm | 11.x | MIT | dev | Package manager, license report | approved | ADR-0003 |
 
 ## Evaluated, not adopted (recorded fallbacks)
@@ -74,4 +74,5 @@ own code on platform features.
 - No CI dependencies: there are no code-host workflows (ADR-0014).
 - 2026-11-02 licence audit: DEP-01–27 approved (26/27 as fallbacks only); DEP-19 approved against the real lockfile in phase 3.3.
 - 2026-11-09 QA licence audit: no blockers. The owner accepts OFL-1.1 font subsetting (copyright and licence text kept in the notices) and the MPL-2.0 build/dev-only exceptions (DEP-11, DEP-18) without further legal review (D-037).
+- 2026-11-09 QA security m4: vite 8.3.6, vitest 5.0.5 and wrangler 4.158.0 (miniflare → undici 7.30.1); `pnpm-workspace.yaml` overrides raise the transitive `tmp`, `uuid`, `glob` and `minimatch` of dev tools to fixed, API-compatible releases. `pnpm audit --prod` is clean; the remaining dev-only advisories (zod 3 and basic-ftp 5 under @lhci/cli's puppeteer, major-version fixes only; extract-zip and deepmerge, no fix) never ship.
 - Test fixtures (`tests/fixtures/*`, made by `make-fixtures.sh` with ImageMagick from our own patterns, and `tools/exif_orient.py`) are our own work, carry no ICC profile or third-party content, and never ship; a fixture with a third-party profile needs its own row (ADR-0018).

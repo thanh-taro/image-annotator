@@ -157,6 +157,15 @@
     padding: 0;
     border: 0;
   }
+  /* D-035: the multi-selection count atop the wide panel (artboard SCR-Annotator_selecting_embedded). */
+  .tk-panel__count {
+    margin: 0;
+    padding-block-end: var(--tk-space-2);
+    border-block-end: var(--tk-border-width-hairline) solid var(--tk-color-line);
+    color: var(--tk-color-fg);
+    font-size: var(--tk-font-size-sm);
+    font-weight: var(--tk-font-weight-semibold);
+  }
   .tk-panel__heading {
     margin-bottom: var(--tk-space-2);
     padding: 0;

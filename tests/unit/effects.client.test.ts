@@ -241,17 +241,49 @@ describe('MOD-Effects client', () => {
     expect(h.jobs()).toHaveLength(3);
   });
 
-  it('MOD-Effects a worker error fails the job in flight and does not stall the queue', async () => {
+  it('ADR-0025.1 a worker error during a job fails it and every queued job at once (no job goes to the dead worker)', async () => {
     const h = harness();
     h.load();
+    const c = red('c', { x: 600, y: 300, width: 50, height: 50 }, { redactionKind: 'blur' });
     const result = h.client.exactPatches(doc(blurAt(100)));
-    h.client.patchesFor(
-      doc(blurAt(100), red('c', { x: 600, y: 300, width: 50, height: 50 }, { redactionKind: 'blur' })),
-    );
+    h.client.patchesFor(doc(blurAt(100), c));
+    const both = h.client.exactPatches(doc(c));
     h.workers[0]!.crash();
     await h.settle();
     await expect(result).rejects.toThrow();
-    expect(h.jobs()).toHaveLength(2);
+    await expect(both).rejects.toThrow();
+    expect(h.jobs()).toHaveLength(1);
+  });
+
+  it('ADR-0025.1 F-012.R7 a worker that errors before its first job makes a later export reject at once', async () => {
+    const h = harness();
+    h.load();
+    h.workers[0]!.crash(); // e.g. its script was refused (security M1): nothing in flight yet
+    let settled = false;
+    const result = h.client.exactPatches(doc(blurAt(100)));
+    result.catch(() => {}).finally(() => (settled = true));
+    await h.settle();
+    expect(settled).toBe(true);
+    await expect(result).rejects.toThrow();
+    expect(h.jobs()).toHaveLength(0);
+    // A new image gets a fresh worker that works again (ADR-0022).
+    h.load();
+    const again = h.client.exactPatches(doc(blurAt(100)));
+    await h.answer();
+    await expect(again).resolves.toBeTruthy();
+  });
+
+  it('ADR-0025.1 a worker error while an export waits rejects it at once', async () => {
+    const h = harness();
+    h.load();
+    h.client.patchesFor(doc(blurAt(100)));
+    await h.answer(); // the worker served one job, then dies with nothing in flight
+    h.workers[0]!.crash();
+    const result = h.client.exactPatches(doc(blurAt(200)));
+    await h.settle();
+    await expect(result).rejects.toThrow();
+    // The exact patch it already made still paints.
+    expect(h.client.patchesFor(doc(blurAt(100))).get('b')?.exact).toBe(true);
   });
 
   it('MOD-Effects a patch whose bitmap cannot be made fails its job (exactPatches rejects)', async () => {

@@ -70,6 +70,75 @@ async function place(page: Page, letter: string) {
 const isMac = (page: Page) => page.evaluate(() => /Mac|iPhone|iPad|iPod/.test(navigator.platform));
 
 test.describe('F-013 work from the keyboard', () => {
+  test('D-036 SCR-Annotator a visually hidden h1 "Image Annotator" starts the tool, before the toolbar', async ({
+    page,
+  }) => {
+    await page.setViewportSize(VIEWPORT);
+    await page.goto('/');
+    const h1 = page.getByRole('heading', { level: 1 });
+    await expect(h1).toHaveCount(1);
+    await expect(h1).toHaveText('Image Annotator');
+    expect(
+      await h1.evaluate((el) => {
+        const toolbar = document.querySelector('[role="toolbar"]');
+        const r = el.getBoundingClientRect();
+        return {
+          first: el.parentElement?.matches('header.tk-toolbar') === true && el.parentElement.firstElementChild === el,
+          beforeToolbar: !!toolbar && !!(el.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING),
+          hidden: r.width <= 1 && r.height <= 1,
+        };
+      }),
+    ).toEqual({ first: true, beforeToolbar: true, hidden: true });
+  });
+
+  for (const [layout, viewport] of [
+    ['wide', VIEWPORT],
+    ['narrow', { width: 600, height: 800 }],
+  ] as const) {
+    test(`D-036 SCR-Annotator reading order is toolbar, canvas, style panel, status bar; the panel shows beside or below the canvas (${layout})`, async ({
+      page,
+    }) => {
+      await open(page, '', viewport);
+      const order = await page.evaluate(() =>
+        [
+          ...document.querySelectorAll('header.tk-toolbar, main.tk-work-area, .tk-body__panel, footer.tk-status-bar'),
+        ].map((el) => el.className.split(' ')[0]),
+      );
+      expect(order).toEqual(['tk-toolbar', 'tk-work-area', 'tk-body__panel', 'tk-status-bar']);
+      // The visual layout is kept: on wide widths the panel is right of the canvas; on narrow widths the
+      // summary bar sits between the work area and the status bar.
+      const work = (await workArea(page).boundingBox())!;
+      const aside = (await page.locator('.tk-body__panel').boundingBox())!;
+      const status = (await page.locator('footer.tk-status-bar').boundingBox())!;
+      if (layout === 'wide') {
+        expect(aside.x).toBeGreaterThanOrEqual(work.x + work.width - 1);
+      } else {
+        expect(aside.y).toBeGreaterThanOrEqual(work.y + work.height - 1);
+        expect(aside.y + aside.height).toBeLessThanOrEqual(status.y + 1);
+      }
+    });
+  }
+
+  test('D-036 RULE-19 focus order: Tab from the canvas with nothing to select reaches the style panel, then the status bar', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== 'chromium', 'WebKit’s default Tab order skips buttons, links and radio buttons');
+    await open(page);
+    // The toolbar's last control is followed by the canvas region.
+    await more(page).focus();
+    await page.keyboard.press('Tab');
+    await expect(workArea(page)).toBeFocused();
+    // No annotation to select: Tab leaves the canvas for the style panel (RULE-19).
+    await page.keyboard.press('Tab');
+    await expect(panel(page).locator(':focus')).toHaveCount(1);
+    // On through the panel to the status bar.
+    const inFooter = () => page.evaluate(() => !!document.activeElement?.closest('footer.tk-status-bar'));
+    for (let i = 0; i < 40 && !(await inFooter()); i++) await page.keyboard.press('Tab');
+    expect(await inFooter()).toBe(true);
+    await expect(page.locator('footer.tk-status-bar').getByRole('button').first()).toBeFocused();
+  });
+
   test('F-013.AC1 A picks the arrow tool, R the rectangle and X the redaction tool', async ({ page }) => {
     await open(page);
     await focusCanvas(page);
@@ -253,7 +322,7 @@ test.describe('F-013 work from the keyboard', () => {
     await expect(summary(page)).toHaveText(count(0)); // still the 1,000 × 800 image
   });
 
-  test('F-013 review M1: Shift+Tab from the canvas with nothing selected lands on the checked radio, not another', async ({
+  test('F-013 review M1 D-036: Shift+Tab from the status bar into the panel lands on the checked radio, not another', async ({
     page,
     browserName,
   }) => {
@@ -261,6 +330,8 @@ test.describe('F-013 work from the keyboard', () => {
     await open(page);
     await focusCanvas(page);
     await page.keyboard.press('r'); // the rectangle tool: the panel ends with the fill choice
+    // The panel follows the canvas (D-036); the status bar's first control follows the panel.
+    await page.locator('footer.tk-status-bar').getByRole('button').first().focus();
     await page.keyboard.press('Shift+Tab');
     const focused = () =>
       page.evaluate(() => {
@@ -349,23 +420,26 @@ test.describe('F-013 work from the keyboard', () => {
     await page.keyboard.press('Tab');
     await expect(options(page).nth(2)).toBeFocused();
     await expect(options(page).nth(2)).toHaveAccessibleName(/^Step 1 at /);
-    // After the last annotation, Tab moves focus to the next control (the status bar), the step staying selected.
+    // After the last annotation, Tab moves focus to the next control (the style panel, D-036), the step
+    // staying selected.
     await page.keyboard.press('Tab');
     const focusedIn = () =>
       page.evaluate(() => {
         const el = document.activeElement;
-        return el?.closest('footer') ? 'footer' : el?.closest('main') ? 'main' : el?.tagName;
+        return el?.closest('.tk-body__panel') ? 'panel' : el?.closest('main') ? 'main' : el?.tagName;
       });
-    // The browser moves focus on (WebKit's default Tab order skips the status bar's buttons and links).
+    // The browser moves focus on (WebKit's default Tab order skips the panel's buttons and radio buttons).
     await expect.poll(focusedIn).not.toBe('main');
-    if (browserName === 'chromium') expect(await focusedIn()).toBe('footer');
+    if (browserName === 'chromium') expect(await focusedIn()).toBe('panel');
     await expect(options(page).nth(2)).toHaveAttribute('aria-selected', 'true');
     // Back with Shift+Tab: the selected annotation's option is the Tab stop (roving focus).
     await page.keyboard.press('Shift+Tab');
     await expect(options(page).nth(2)).toBeFocused();
   });
 
-  test('F-013.AC6 Shift+Tab before the first annotation moves focus to the previous control', async ({ page }) => {
+  test('F-013.AC6 D-036 Shift+Tab before the first annotation moves focus to the previous control', async ({
+    page,
+  }) => {
     await open(page);
     await focusCanvas(page);
     await place(page, 'r');
@@ -373,7 +447,8 @@ test.describe('F-013 work from the keyboard', () => {
     await page.keyboard.press('Tab');
     await expect(options(page).nth(0)).toBeFocused();
     await page.keyboard.press('Shift+Tab');
-    await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest('.tk-body__panel'))).toBe(true);
+    // The toolbar comes before the canvas (D-036).
+    await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest('header.tk-toolbar'))).toBe(true);
   });
 
   test('F-013.AC7 Alt+Left with nothing selected is kept from the browser; the session is unchanged', async ({

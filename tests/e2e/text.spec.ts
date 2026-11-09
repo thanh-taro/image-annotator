@@ -569,10 +569,10 @@ test.describe('F-005 add text', () => {
     expect(await textDiff(page, { ax: 200, ay: 150, lines: ['Hi!'], fill: '#0B63E5', outline: WHITE })).toBeLessThan(
       1.5,
     );
-    // Keyboard users reach the panel with Shift+Tab and the edit stays open (WebKit's default Tab order
-    // skips radio buttons, so this part runs on Chromium).
+    // Keyboard users reach the panel with Tab (it follows the canvas, D-036) and the edit stays open
+    // (WebKit's default Tab order skips radio buttons, so this part runs on Chromium).
     if (browserName === 'chromium') {
-      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab');
       await expect(page.getByRole('complementary', { name: 'Style' }).locator(':focus')).toHaveCount(1);
       await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
       await expect(editor(page)).toBeVisible();
@@ -584,7 +584,7 @@ test.describe('F-005 add text', () => {
     await expect(summary(page)).toHaveText(count(1));
   });
 
-  test('F-005.R3 RULE-19 with focus moved from the text into the style panel, focus going on ends the edit', async ({
+  test('F-005.R3 RULE-19 D-036 with focus moved from the text into the style panel, focus going on ends the edit', async ({
     page,
     browserName,
   }) => {
@@ -592,16 +592,16 @@ test.describe('F-005 add text', () => {
     await open(page);
     await startText(page, 200, 150);
     await page.keyboard.type('Bug');
-    await page.keyboard.press('Shift+Tab'); // into the panel: the edit stays open
+    await page.keyboard.press('Tab'); // into the panel, which follows the canvas (D-036): the edit stays open
     await expect(page.getByRole('complementary', { name: 'Style' }).locator(':focus')).toHaveCount(1);
     await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
-    // On through the panel's groups to the toolbar: the edit ends there, the text is kept.
+    // On through the panel's groups to the status bar: the edit ends there, the text is kept.
     const panelFocus = page.getByRole('complementary', { name: 'Style' }).locator(':focus');
-    for (let i = 0; i < 4 && (await panelFocus.count()) > 0; i++) {
+    for (let i = 0; i < 6 && (await panelFocus.count()) > 0; i++) {
       await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
-      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab');
     }
-    await expect(page.getByRole('toolbar', { name: 'Tools and actions' }).locator(':focus')).toHaveCount(1);
+    await expect(page.locator('footer.tk-status-bar').locator(':focus')).toHaveCount(1);
     await expect(editor(page)).toBeHidden();
     await expect(summary(page)).toHaveText(count(1));
     await expect(state(page)).toHaveAttribute('data-state', 'selecting');

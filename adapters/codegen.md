@@ -10,7 +10,7 @@ the generators produce.
 |---|---|---|---|
 | `scripts/gen-tokens.mjs` | `specs/30-experience/tokens.json` | `src/app/styles/tokens.gen.css`, `src/app/styles/tokens.gen.ts`, `src/render/palette.gen.ts` | all CSS (`var(--tk-…)`), TS token names, MOD-Render palette |
 | `scripts/gen-copy.mjs` | `specs/30-experience/copy.md` | `src/copy/messages.gen.ts` | MOD-Copy `t(id, params)` |
-| `scripts/gen-notices.mjs` | `specs/40-technical/dependencies.md` + installed packages | `public/third-party-notices.txt` | shipped at `/third-party-notices.txt` |
+| `scripts/gen-notices.mjs` | `specs/40-technical/dependencies.md` + installed packages | `src/app/third-party-notices.txt` | imported as a URL by the privacy details; shipped as the hashed `/assets/third-party-notices-<hash>.txt`, listed in `tk-assets` (ADR-0025.3) |
 | `scripts/gen-headers.mjs` | `src/host/boot.js` + `HOST_ORIGINS` | `public/_headers` | Cloudflare static assets (phase 7), e2e host harness |
 
 `scripts/gen-all.mjs` runs all four; `--check` compares instead of writing.

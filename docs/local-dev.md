@@ -74,6 +74,6 @@ clone of a git ref (phase 6).
 ## Generated files
 `pnpm gen` (also the first step of `dev` and `build`) regenerates, from the specs:
 `src/app/styles/tokens.gen.{css,ts}` and `src/render/palette.gen.ts` (tokens.json),
-`src/copy/messages.gen.ts` (copy.md), `public/third-party-notices.txt` (dependencies.md) and
+`src/copy/messages.gen.ts` (copy.md), `src/app/third-party-notices.txt` (dependencies.md) and
 `public/_headers` (boot script + `HOST_ORIGINS`). They are checked in; never edit them by hand
 (`adapters/codegen.md`).

@@ -31,5 +31,5 @@ startLoader(); // F-001: paste, drop, open — listening before the ready signal
 startKeys(); // F-002: the View keys and the arrow-key pan (RULE-19)
 startLeaveWarning(); // F-014: ask before leaving with unexported changes (RULE-18)
 startHost();
-// Implements: F-017.R1 — offline after first render; the seed waits for both typeface subsets (ADR-0011).
+// Implements: F-017.R1 — offline after first render; the build's files are seeded at once, the page once both typeface subsets have loaded (ADR-0011, ADR-0025.4).
 startOffline(loadFonts());

@@ -24,5 +24,12 @@ allowBuilds:
 # miniflare (inside wrangler) depends on sharp for the local-dev Images binding only. Its prebuilt
 # libvips is LGPL-3.0: ADR-0001 tolerates it as deploy-only tooling (D-026), but a static-assets
 # deploy never loads it, so it is removed (`-`) as in the sibling tools and never enters the tree.
+# QA security m4: transitive dev-tool advisories, raised where the newer release is API-compatible
+# for its caller (checked by gen, lint, the tests and the licence audit). zod (puppeteer, 3 → 4) and
+# basic-ftp (5 → 6) are major API changes and stay; extract-zip and deepmerge have no fix. None ships.
 overrides:
   sharp: '-'
+  'tmp@<0.2.6': 0.2.7
+  'uuid@<11.1.1': 11.1.1
+  'glob@>=9 <14.0.2': 14.0.4
+  'minimatch@>=7 <11.0.1': 11.0.4

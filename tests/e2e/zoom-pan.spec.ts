@@ -251,9 +251,11 @@ test.describe('F-002 zoom and pan the view', () => {
     const box = await workArea(page).boundingBox();
     if (!box) throw new Error('no work area');
     const clip = { x: box.x + box.width / 2 - 20, y: box.y, width: 40, height: 4 };
-    // The tab stop before the canvas: the style panel's last group, the canvas background (F-011; its
-    // checked choice, COPY-canvas.transparent, is the group's tab stop).
-    await page.getByRole('radio', { name: 'Transparent', exact: true }).focus();
+    // The tab stop before the canvas: the toolbar's last control, COPY-action.more (D-036).
+    await page
+      .getByRole('toolbar', { name: 'Tools and actions' })
+      .getByRole('button', { name: 'More actions' })
+      .focus();
     const before = await page.screenshot({ clip });
     await page.keyboard.press('Tab'); // keyboard focus: :focus-visible
     await expect(workArea(page)).toBeFocused();

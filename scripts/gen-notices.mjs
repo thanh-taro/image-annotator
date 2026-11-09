@@ -1,4 +1,6 @@
-// Dependency registry → acknowledgements (`/third-party-notices.txt`, ADR-0001, MOD-Build). Copied from DAFV.
+// Dependency registry → acknowledgements (ADR-0001, MOD-Build). Copied from DAFV.
+// ADR-0025.3: written to src/app/third-party-notices.txt, which the privacy details import as a URL, so
+// the build emits it as a hashed file under /assets/ that `tk-assets` lists and the offline copy holds.
 // Lists every shipped (runtime/asset) registry entry that is installed, with its license text,
 // plus the attribution required for CC-BY data used at build time.
 import fs from 'node:fs';
@@ -6,12 +8,24 @@ import path from 'node:path';
 import { abs, emit, GENERATED_HEADER } from './lib/util.mjs';
 import { findInstalled, isActive, isShipped, readRegistry, REGISTRY } from './lib/registry.mjs';
 
-const OUT = abs('public/third-party-notices.txt');
+export const NOTICES_SOURCE = 'src/app/third-party-notices.txt';
+const OUT = abs(NOTICES_SOURCE);
 const LICENSE_FILES = /^(licen[cs]e|copying|notice)(\.(md|txt))?$/i;
+
+/**
+ * A copyright line that repeats itself for another font file (Fontsource's JetBrains Mono licence:
+ * "Copyright … JetBrainsMono-Italic[wght].ttf: Copyright …") keeps only its first statement (QA licences m4).
+ */
+export function cleanLicense(text) {
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/^(Copyright .*?)\s+[\w.-]+(?:\[[^\]]*\])?\.(?:ttf|otf|woff2?): .*$/gim, '$1')
+    .trim();
+}
 
 function licenseText(dir) {
   const f = fs.readdirSync(dir).find((n) => LICENSE_FILES.test(n));
-  return f ? fs.readFileSync(path.join(dir, f), 'utf8').replace(/\r\n/g, '\n').trim() : null;
+  return f ? cleanLicense(fs.readFileSync(path.join(dir, f), 'utf8')) : null;
 }
 
 export function genNotices({ check }) {

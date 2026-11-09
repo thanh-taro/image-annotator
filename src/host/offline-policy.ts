@@ -32,6 +32,11 @@ export function isAssetPath(pathname: string): boolean {
   return ASSET.test(pathname) && !pathname.includes('..') && !pathname.endsWith('.map');
 }
 
+/** The open-source notices, emitted by the build as a hashed text file (ADR-0025.3). */
+export function isNoticesPath(pathname: string): boolean {
+  return isAssetPath(pathname) && /^\/assets\/third-party-notices-[\w-]+\.txt$/.test(pathname);
+}
+
 /** The tool's page (served at the root of its own origin). */
 export function isPagePath(pathname: string): boolean {
   return pathname === '/' || pathname === '/index.html';
@@ -67,7 +72,12 @@ export function routeOf(req: { method: string; url: string; mode: string }, orig
     return null;
   }
   if (!ownHttp(u, origin)) return null;
-  if (req.mode === 'navigate') return isPagePath(u.pathname) ? 'page' : null;
+  if (req.mode === 'navigate') {
+    if (isPagePath(u.pathname)) return 'page';
+    // ADR-0025.3: the notices are a hashed text file the privacy details open in a new tab; offline it
+    // comes from the offline copy like any hashed file. No other hashed file is opened as a page.
+    return isNoticesPath(u.pathname) && !u.search ? 'asset' : null;
+  }
   return isAssetPath(u.pathname) && !u.search ? 'asset' : null;
 }
 

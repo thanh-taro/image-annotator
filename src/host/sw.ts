@@ -108,12 +108,13 @@ scope.addEventListener('fetch', (event) => {
 });
 
 /**
- * Seeding (ADR-0011): the page posts the files it loaded; they come from the HTTP cache. Files first,
+ * Seeding (ADR-0011, ADR-0025.4): the page posts the build's files as soon as this worker is ready (no
+ * page: only the files are stored), then the files it loaded; they come from the HTTP cache. Files first,
  * then the page, stored only when every file its build names is cached (the HTML the HTTP cache returns
  * may be a newer version than the page that loaded); otherwise the stored page is kept. Pruning only
  * after a page was stored. Seeds run one at a time. Resolves true when the page was stored.
  */
-async function seed(assets: readonly SeedTarget[], page: SeedTarget): Promise<boolean> {
+async function seed(assets: readonly SeedTarget[], page: SeedTarget | null): Promise<boolean> {
   const cache = await caches.open(CACHE_NAME);
   const get = async (href: string) => {
     try {
@@ -129,6 +130,7 @@ async function seed(assets: readonly SeedTarget[], page: SeedTarget): Promise<bo
     if (!res) return false;
     await cache.put(key, res);
   }
+  if (!page) return false; // ADR-0025.4: the early seed names the build's files only
   const res = await get(page.href);
   if (!res) return false;
   const keys = (await cache.keys()).map((r) => r.url);
@@ -149,7 +151,7 @@ let seeding: Promise<unknown> = Promise.resolve();
 scope.addEventListener('message', (event) => {
   if (event.origin !== ORIGIN) return;
   const { assets, page } = seedPlan(event.data, ORIGIN);
-  if (!page) return;
+  if (!page && !assets.length) return;
   const run = () => seed(assets, page);
   seeding = seeding.then(run, run);
   event.waitUntil(seeding);

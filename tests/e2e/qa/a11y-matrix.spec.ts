@@ -33,8 +33,8 @@ async function pasteGrey(page: Page) {
 }
 
 async function scan(page: Page, label: string, found: string[]) {
-  // page-has-heading-one is a best-practice rule for whole pages; the tool is an iframe in the portal (qa-a11y.md m1).
-  const r = await new AxeBuilder({ page }).withTags(TAGS).disableRules(['page-has-heading-one']).analyze();
+  // D-036: the tool starts with a visually hidden h1, so page-has-heading-one is no longer excluded.
+  const r = await new AxeBuilder({ page }).withTags(TAGS).analyze();
   for (const v of r.violations)
     found.push(`${label} | ${v.id} (${v.impact}) | ${v.nodes.length} node(s) | ${v.nodes[0]?.target.join(' ')}`);
 }

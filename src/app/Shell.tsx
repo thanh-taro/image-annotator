@@ -1,7 +1,8 @@
 // MOD-App — SCR-Annotator (layout regions 1–4; style.md "Regions"). F-001 builds the empty state, the
 // image fitted in the work area, the drop overlay, notices and the confirm dialog; F-003 the tools and
-// the style panel (region 3: docked on the right, or the narrow summary bar and sheet of D-019), which
-// comes before the canvas in reading order (SCR-Annotator "Accessibility").
+// the style panel (region 3: docked on the right, or the narrow summary bar and sheet of D-019). Reading
+// and focus order: toolbar, canvas, style panel, status bar, after a visually hidden h1 COPY-app.title
+// (D-036, SCR-Annotator "Accessibility").
 // F-005: while a text is edited (SCR-Annotator "editing-text") the style panel shows and changes the
 // edited text's colour and size and keeps the edit open; a mouse press there keeps focus in the field.
 // F-010: the crop tool (SCR-Annotator "cropping"); CMP-StatusBar shows the canvas size once a crop exists.
@@ -55,7 +56,7 @@ const inPanel = (target: Element) => !!target.closest('.tk-body__panel');
 
 /**
  * SCR-Annotator "editing-text": CMP-TextEditor has focus. A mouse press on a panel control applies it
- * to the edited text and leaves focus in the field (keyboard users reach the panel with Shift+Tab).
+ * to the edited text and leaves focus in the field (keyboard users reach the panel with Tab, D-036).
  */
 function keepEditorFocus(e: MouseEvent): void {
   // Text and number fields in the panel (F-008 position fields) still take focus on a press.
@@ -109,15 +110,12 @@ export function Shell() {
       data-layout={layout.value}
     >
       <header class="tk-toolbar" inert={inert}>
+        {/* D-036: a visually hidden level-1 heading COPY-app.title starts the tool (inside the banner
+            landmark, so all content stays in landmarks). */}
+        <h1 class="tk-sr">{t('app.title')}</h1>
         <Toolbar />
       </header>
       <div class="tk-body">
-        {current && (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- keeps focus in CMP-TextEditor (SCR-Annotator "editing-text")
-          <div class="tk-body__panel" inert={inert} onMouseDown={keepEditorFocus}>
-            <StylePanel />
-          </div>
-        )}
         <main
           class="tk-work-area"
           aria-label={t('a11y.canvas')}
@@ -170,6 +168,14 @@ export function Shell() {
             {assertive.value}
           </div>
         </main>
+        {/* D-036: the style panel follows the canvas in reading and focus order (beside it on wide and
+            compact widths, the narrow summary bar and sheet below it: drawing.css). */}
+        {current && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- keeps focus in CMP-TextEditor (SCR-Annotator "editing-text")
+          <div class="tk-body__panel" inert={inert} onMouseDown={keepEditorFocus}>
+            <StylePanel />
+          </div>
+        )}
       </div>
       <footer class="tk-status-bar" inert={inert}>
         {/* F-016: privacy statement, details and source link (start of CMP-StatusBar). */}
