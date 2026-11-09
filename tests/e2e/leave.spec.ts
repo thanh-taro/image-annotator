@@ -16,6 +16,8 @@ const more = (page: Page) => toolbar(page).getByRole('button', { name: 'More act
 const menu = (page: Page) => page.getByRole('menu', { name: 'More actions' });
 const clearItem = (page: Page) => menu(page).getByRole('menuitem', { name: 'Start over' });
 const dialog = (page: Page) => page.getByRole('alertdialog');
+const live = (page: Page) => page.locator('.tk-sr[aria-live="polite"]');
+const CLEARED = 'Image cleared. Open, paste or drop an image to start';
 const summaryText = (n: number) => `400 × 300 px canvas, ${n} annotation${n === 1 ? '' : 's'}`;
 
 /** Pastes a plain 400 × 300 image (a dispatched paste: no user activation). */
@@ -153,6 +155,8 @@ test.describe('F-014 warn before losing work', () => {
     await expect(page.locator('[data-state="empty"]')).toBeVisible();
     await expect(page.getByText('Paste, drop or open an image', { exact: false }).first()).toBeVisible();
     await expect(toolbar(page).getByRole('button', { name: 'Undo' })).toBeDisabled();
+    // CMP-Canvas: starting over is announced politely (COPY-a11y.cleared).
+    await expect(live(page)).toContainText(CLEARED);
     await expect(more(page)).toBeFocused();
     expect(await closeTab(page)).toBe('closed');
   });
@@ -165,8 +169,40 @@ test.describe('F-014 warn before losing work', () => {
     await clearItem(page).click();
     await expect(page.locator('[data-state="empty"]')).toBeVisible();
     await expect(dialog(page)).toHaveCount(0);
+    await expect(live(page)).toContainText(CLEARED);
     // Paste works again in the empty state.
     await pasteImage(page);
+  });
+
+  test('F-014 edge case starting over closes the clipboard-error notice, so its Download action is gone', async ({
+    page,
+  }) => {
+    await recordClipboard(page, { refuse: true });
+    await open(page);
+    await annotate(page);
+    await copyButton(page).click();
+    await expect(notice(page)).toContainText('The browser blocked copying the image. Download it instead.');
+    await more(page).click();
+    await clearItem(page).click();
+    await dialog(page).getByRole('button', { name: 'Start over' }).click();
+    await expect(page.locator('[data-state="empty"]')).toBeVisible();
+    await expect(notice(page)).toHaveCount(0);
+  });
+
+  test('F-014 edge case starting over closes the narrow style sheet; the next image shows without it', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 760 });
+    await page.goto('/');
+    await pasteImage(page);
+    const bar = page.getByRole('button', { name: /^Style options/ });
+    await bar.click();
+    await expect(bar).toHaveAttribute('aria-expanded', 'true');
+    await more(page).click();
+    await clearItem(page).click();
+    await expect(page.locator('[data-state="empty"]')).toBeVisible();
+    await pasteImage(page);
+    await expect(page.getByRole('button', { name: /^Style options/ })).toHaveAttribute('aria-expanded', 'false');
   });
 
   for (const theme of ['light', 'dark'] as const) {

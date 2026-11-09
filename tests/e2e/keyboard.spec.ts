@@ -582,7 +582,14 @@ test.describe('F-013 work from the keyboard', () => {
     await page.goto('/');
     await more(page).click();
     await expect(menu(page).getByRole('menuitem', { name: 'Download' })).toBeDisabled();
-    await expect(menu(page).getByRole('menuitem', { name: 'Start over' })).toBeDisabled();
+    // a11y review F-014 M2: announced as unavailable but still reachable with the arrow keys and End.
+    const clear = menu(page).getByRole('menuitem', { name: 'Start over' });
+    await expect(clear).toHaveAttribute('aria-disabled', 'true');
+    await page.keyboard.press('End');
+    await expect(clear).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(clear).toBeFocused(); // activating it does nothing; the menu stays open
+    await page.keyboard.press('ArrowUp');
     await expect(menu(page).getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
   });
 

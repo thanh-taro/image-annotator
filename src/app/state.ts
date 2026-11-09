@@ -102,7 +102,8 @@ export function startNewSession(image: DecodedImage): Session {
 /**
  * Starts over (F-014.R3, COPY-action.clear): no image and no session, so the empty state shows. Like a new
  * session it can't be undone (RULE-11); the image's bitmap and the effects worker's pixels are released
- * (NFR-04).
+ * (NFR-04). F-014 edge case: any notice and the narrow style sheet close, so the empty state shows alone
+ * (a progress notice can't be showing: starting over waits for a load to finish).
  */
 export function endSession(): void {
   const previous = loaded.value;
@@ -110,6 +111,8 @@ export function endSession(): void {
   loaded.value = null;
   doc.value = null;
   selection.value = [];
+  sheetOpen.value = false;
+  if (notice.value?.kind !== 'progress') setNotice(null);
   version.value++;
   previous.image.bitmap.close();
   releaseEffects();

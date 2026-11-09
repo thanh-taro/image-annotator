@@ -84,7 +84,7 @@
     text-align: start;
     cursor: pointer;
   }
-  .tk-menu__item:hover:not(:disabled),
+  .tk-menu__item:hover:not(:disabled, [aria-disabled='true']),
   .tk-menu__item:focus-visible {
     background: var(--tk-color-surface2);
   }
@@ -92,7 +92,8 @@
     outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
     outline-offset: calc(-1 * var(--tk-border-width-focus));
   }
-  .tk-menu__item:disabled {
+  .tk-menu__item:disabled,
+  .tk-menu__item[aria-disabled='true'] {
     color: var(--tk-color-muted);
     cursor: default;
   }

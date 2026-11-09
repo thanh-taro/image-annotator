@@ -5,8 +5,9 @@
 // while a load is running or while a dialog is open (as for the load input, F-001 edge case).
 // Implements: F-014.R3, CMP-ConfirmDialog variant "clear".
 import { canvasCommands } from '../canvas';
+import { t } from '../copy';
 import { isBusy } from './loader';
-import { askConfirm, endSession, loaded, modalOpen, textEditing, unexported } from './state';
+import { announcePolite, askConfirm, endSession, loaded, modalOpen, textEditing, unexported } from './state';
 
 /** COPY-action.clear: starts over, asking first when there are unexported changes (F-014.R3). */
 export async function clearImage(): Promise<void> {
@@ -16,5 +17,8 @@ export async function clearImage(): Promise<void> {
   if (textEditing.value) return;
   if (unexported.value && !(await askConfirm('clear'))) return;
   // The dialog is modal, but a load that was already decoding may have replaced the session meanwhile.
-  if (loaded.value === current) endSession();
+  if (loaded.value !== current) return;
+  endSession();
+  // Implements: F-014.R3, CMP-Canvas "Accessibility" (starting over is announced with COPY-a11y.cleared).
+  announcePolite(t('a11y.cleared'));
 }

@@ -43,7 +43,8 @@ export function ConfirmDialog({ request }: { request: DialogRequest }) {
         const i = items.indexOf(document.activeElement as HTMLElement);
         const step = e.shiftKey ? items.length - 1 : 1;
         e.preventDefault();
-        items[i < 0 ? 0 : (i + step) % items.length]?.focus();
+        // Focus outside the buttons: Tab goes to the first, Shift+Tab to the last.
+        items[i < 0 ? (e.shiftKey ? items.length - 1 : 0) : (i + step) % items.length]?.focus();
       }
     };
     document.addEventListener('keydown', onKeyDown, true);

@@ -29,6 +29,11 @@ export interface MenuItem {
   /** aria-keyshortcuts (RULE-19), when the item has a shortcut that works from the menu's context. */
   readonly keys?: string;
   readonly disabled?: boolean;
+  /**
+   * Unavailable but kept in the arrow-key and Home/End order and announced as unavailable
+   * (`aria-disabled`); activating it does nothing (a11y review F-014 M2).
+   */
+  readonly unavailable?: boolean;
   readonly run: () => void;
 }
 
@@ -52,7 +57,7 @@ export function moreItems(narrow: boolean, hasImage: boolean): readonly (readonl
   const clear: MenuItem = {
     id: 'clear',
     label: t('action.clear'),
-    disabled: !hasImage,
+    unavailable: !hasImage,
     run: () => void clearImage(),
   };
   return [narrow ? [download, shortcuts] : [shortcuts], [clear]];
@@ -147,8 +152,10 @@ export function MoreMenu() {
                 data-item={item.id}
                 aria-keyshortcuts={item.keys}
                 disabled={item.disabled}
+                aria-disabled={item.unavailable ? 'true' : undefined}
                 tabIndex={-1}
                 onClick={() => {
+                  if (item.unavailable) return;
                   close();
                   item.run();
                 }}

@@ -14,7 +14,11 @@ import {
   doc,
   exported,
   loaded,
+  notice,
+  polite,
   selection,
+  setNotice,
+  sheetOpen,
   startNewSession,
   unexported,
 } from '../../src/app/state';
@@ -94,6 +98,33 @@ describe('F-014 COPY-action.clear', () => {
     expect(canUndo.value).toBe(true);
   });
 
+  it('F-014.R3 CMP-Canvas starting over is announced politely with COPY-a11y.cleared, with and without the dialog', async () => {
+    const cleared = 'Image cleared. Open, paste or drop an image to start';
+    startNewSession(image());
+    polite.value = [];
+    await clearImage();
+    expect(polite.value.map((m) => m.text)).toEqual([cleared]);
+    startNewSession(image());
+    change();
+    polite.value = [];
+    const done = clearImage();
+    await settle();
+    expect(polite.value).toEqual([]); // nothing while the dialog asks
+    dialog.value!.answer(true);
+    await done;
+    expect(polite.value.map((m) => m.text)).toEqual([cleared]);
+  });
+
+  it('F-014 edge case starting over closes the notice and the narrow style sheet, so the empty state shows alone', async () => {
+    startNewSession(image());
+    sheetOpen.value = true;
+    setNotice({ kind: 'error', id: 'error.clipboard', text: () => 'The browser blocked copying the image.' });
+    await clearImage();
+    expect(loaded.value).toBeNull();
+    expect(notice.value).toBeNull();
+    expect(sheetOpen.value).toBe(false);
+  });
+
   it('F-014.R3 with no image, clearing does nothing', async () => {
     startNewSession(image());
     await clearImage();
@@ -106,8 +137,10 @@ describe('F-014 COPY-action.clear', () => {
     const ids = (narrow: boolean, has: boolean) => moreItems(narrow, has).map((g) => g.map((i) => i.id));
     expect(ids(false, true)).toEqual([['shortcuts'], ['clear']]);
     expect(ids(true, true)).toEqual([['download', 'shortcuts'], ['clear']]);
-    expect(moreItems(false, false).at(-1)?.[0]?.disabled).toBe(true);
-    expect(moreItems(false, true).at(-1)?.[0]?.disabled).toBeFalsy();
+    // a11y review M2: unavailable (aria-disabled), not disabled, so it stays in the arrow-key order.
+    expect(moreItems(false, false).at(-1)?.[0]?.unavailable).toBe(true);
+    expect(moreItems(false, false).at(-1)?.[0]?.disabled).toBeFalsy();
+    expect(moreItems(false, true).at(-1)?.[0]?.unavailable).toBeFalsy();
     expect(moreItems(false, true).at(-1)?.[0]?.label).toBe('Start over');
   });
 });

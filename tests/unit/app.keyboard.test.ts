@@ -95,7 +95,7 @@ describe('MOD-App COPY-action.more and showShortcuts', () => {
 
   it('CMP-Toolbar with no image the download and clear items are unavailable and the shortcuts item is not', () => {
     const items = moreItems(true, false).flat();
-    expect(items.map((i) => !!i.disabled)).toEqual([true, false, true]);
+    expect(items.map((i) => !!i.disabled || !!i.unavailable)).toEqual([true, false, true]);
   });
 
   it('F-013.R3 COPY-action.shortcuts opens CMP-ShortcutHelp; not while a confirm dialog is open', () => {
