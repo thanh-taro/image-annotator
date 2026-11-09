@@ -1,7 +1,7 @@
 // F-018 Use the portal's language (RULE-16, RULE-17, ADR-0015) on the multi-origin harness: the
 // language from the address before first display, live taro:language messages, the browser
 // fallback, the origin/source/value checks, 320 px and the Vietnamese faces in the initial load.
-// Deferred ACs (need later features): AC7 (every SCR-Annotator state). AC5 (export) is in tests/e2e/export.spec.ts.
+// AC7 (every SCR-Annotator state at 320 px) is in ./narrow-states.spec.ts; AC5 (export) in tests/e2e/export.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
 import { CATALOG } from '../../../src/copy/messages.gen';
 import { download, expectCleanPng, pngRegion } from '../support/export';

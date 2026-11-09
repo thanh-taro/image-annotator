@@ -22,6 +22,18 @@
   .tk-toolbar__rows .tk-button {
     height: var(--tk-size-touch-target);
   }
+  /* F-018.R7 and its UX notes (longer Vietnamese labels wrap): on the narrowest widths COPY-action.copy
+     beside the redaction count would push COPY-action.more out of the row; its label wraps instead,
+     the button shrinking no further than its longest word. */
+  .tk-toolbar__rows .tk-button--filled {
+    flex: 0 1 auto;
+    white-space: normal;
+    line-height: var(--tk-font-line-height-tight);
+    text-align: center;
+  }
+  .tk-toolbar__row--measuring .tk-button--filled {
+    white-space: nowrap;
+  }
 
   /* COPY-export.redaction_count (RULE-20): a pill next to the export actions. */
   .tk-count {

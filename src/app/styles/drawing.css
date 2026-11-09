@@ -365,6 +365,17 @@
       min-height: var(--tk-size-touch-target);
     }
   }
+  /* F-018.R7 (NFR-07): below 386 px the sheet's content box (the width less its hairlines and space.4
+     padding) is narrower than eight touch-sized swatches (8 × size.touchTarget = 352 px), so they take two
+     rows of four, as on a coarse pointer, instead of scrolling sideways. */
+  @container tk-annotator (width < 386px) {
+    .tk-panel__body .tk-swatches:not(.tk-swatches--5) {
+      display: grid;
+      grid-template-columns: repeat(4, var(--tk-size-touch-target));
+      justify-content: space-between;
+      row-gap: var(--tk-space-2);
+    }
+  }
   .tk-panel__bar {
     display: flex;
     flex: none;
