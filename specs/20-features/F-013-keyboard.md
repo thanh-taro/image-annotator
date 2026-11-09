@@ -1,7 +1,7 @@
 ---
 id: F-013
 title: Work from the keyboard
-status: ready
+status: shipped
 milestone: M-1
 priority: P1
 personas: [PER-01]

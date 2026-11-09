@@ -194,6 +194,7 @@ test.describe('F-007 redact', () => {
   test('F-007.AC4 F-007.R3 RULE-10 pixelate M on a 1000 × 800 image shows 16 × 16 blocks from the box corner, updating while dragging', async ({
     page,
   }) => {
+    test.slow();
     const { shot, pixels } = await open(page, 1000, 800);
     await toolButton(page, 'Redact (X)').click();
     await kindGroup(page)
@@ -225,9 +226,12 @@ test.describe('F-007 redact', () => {
     // While dragging (pointer still down): blocks over the box as it is now — first a box that is not a
     // multiple of 16 (150 × 70: the last column and row of blocks are cut short), then a larger one.
     await dragImage(page, shot, [96, 64], [96 + 150, 64 + 70]);
-    await expect.poll(() => blocks(96, 64, 150, 70)).toBe(true);
+    // Generous waits: under heavy machine load the live preview and the pixel reads are slow, and
+    // timing is not what this criterion checks (NFR-02 is measured separately).
+    const slow = { timeout: 20_000 };
+    await expect.poll(() => blocks(96, 64, 150, 70), slow).toBe(true);
     await to(96 + 320, 64 + 192);
-    await expect.poll(() => blocks(96, 64, 320, 192)).toBe(true);
+    await expect.poll(() => blocks(96, 64, 320, 192), slow).toBe(true);
     // Released: the exact patch, equal to the reference pixelate (ADR-0006), still 16 × 16 blocks.
     await page.mouse.up();
     await deselect(page);
@@ -239,7 +243,7 @@ test.describe('F-007 redact', () => {
       [],
     );
     await expect
-      .poll(async () => maxDiff(await region(page, shot, 96, 64, 320, 192), ref!.data))
+      .poll(async () => maxDiff(await region(page, shot, 96, 64, 320, 192), ref!.data), slow)
       .toBeLessThanOrEqual(1);
     expect(await blocks(96, 64, 320, 192)).toBe(true);
   });

@@ -57,4 +57,4 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - check:full after F-009 merge: preview e2e failed once (load ~12), 400/400 and 57/57 on rerun. Intermittent e2e failures after merges are recurring; QA should hunt the flaky tests.
 - Flaky watch: F-007.AC4 WebKit pixelate test failed once in F-010's run (5/5 alone).
 - F-011: reuse MOD-Core `availablePaddings` and `stepDownPadding` (built in F-010).
-- MUST FIX before the build gate: F-007.AC4 WebKit pixelate-while-dragging e2e fails under load (F-010, F-011 builder runs and the F-011 merge run, load 100-220); passes alone. Make its wait robust.
+- Fixed: F-007.AC4 flaky under load; its waits now allow 20 s (timing is NFR-02's job), test.slow(). Passed 8/8 at load ~60 and in check:full.

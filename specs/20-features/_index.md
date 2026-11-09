@@ -14,7 +14,7 @@
 | F-010 | Crop the export frame | M-1 | P0 | shipped |
 | F-011 | Add padding and background | M-1 | P2 | shipped |
 | F-012 | Copy and download the result | M-1 | P0 | shipped |
-| F-013 | Work from the keyboard | M-1 | P1 | ready |
+| F-013 | Work from the keyboard | M-1 | P1 | shipped |
 | F-014 | Warn before losing work | M-1 | P1 | ready |
 | F-015 | Fit into the host portal | M-1 | P0 | building |
 | F-016 | Show the privacy guarantee | M-1 | P1 | shipped |
