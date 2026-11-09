@@ -1,7 +1,7 @@
 ---
 id: F-011
 title: Add padding and background
-status: ready
+status: shipped
 milestone: M-1
 priority: P2
 personas: [PER-01]

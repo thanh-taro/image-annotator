@@ -8,11 +8,11 @@
 | F-004 | Draw strokes and highlights | M-1 | P0 | shipped |
 | F-005 | Add text | M-1 | P0 | shipped |
 | F-006 | Add numbered steps | M-1 | P1 | shipped |
-| F-007 | Redact part of the image | M-1 | P0 | building |
+| F-007 | Redact part of the image | M-1 | P0 | shipped |
 | F-008 | Select and edit annotations | M-1 | P0 | shipped |
 | F-009 | Undo and redo | M-1 | P0 | shipped |
 | F-010 | Crop the export frame | M-1 | P0 | shipped |
-| F-011 | Add padding and background | M-1 | P2 | ready |
+| F-011 | Add padding and background | M-1 | P2 | shipped |
 | F-012 | Copy and download the result | M-1 | P0 | shipped |
 | F-013 | Work from the keyboard | M-1 | P1 | ready |
 | F-014 | Warn before losing work | M-1 | P1 | ready |
