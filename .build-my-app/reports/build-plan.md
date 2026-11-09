@@ -24,7 +24,6 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 |---|---|
 | F-015.AC6, AC7 | every M-1 feature (end of M-1) |
 | F-018.AC7 | every screen state (end of M-1) |
-| F-018.AC10 | offline half (F-017); text and download halves done |
 | F-014.AC5 (leave warning after undo) | F-014; unexported half unit-tested |
 
 ## Manual checks collected so far
@@ -34,6 +33,7 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - Screen readers (VoiceOver, NVDA), 400 % reflow, forced colours, notices and touch (a11y F-013)
 - Firefox: embedded and standalone offline copies kept apart; real Chrome partitioning (F-017)
 - Real Safari: second download of the offline files on a first visit (ADR-0024)
+- QA (security review F-017 m3): on a first visit, work pasted before the offline copy is saved; confirm no image data reaches the network and the copy still completes
 - WebKit IME and Safari Telex Vietnamese input, real drop of text into the editor (F-005)
 
 ## Notes for later features
