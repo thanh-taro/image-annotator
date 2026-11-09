@@ -223,6 +223,8 @@ Rows marked with an audit are left for the performance, accessibility and securi
 
 ## Manual checks awaiting the user's sign-off
 
+The user chose (D-038) to sign these off on the release candidate in phase 6; nothing ships before.
+
 Collected from the build plan and the QA audits. Automated checks cover everything else. Step-by-step
 screen-reader steps are in `qa-a11y.md` ("Manual checklist").
 
