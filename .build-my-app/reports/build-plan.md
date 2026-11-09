@@ -36,6 +36,7 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - WebKit IME and Safari Telex Vietnamese input, real drop of text into the editor (F-005)
 
 ## Notes for later features
+- QA/design: narrow artboards stop at 390 px; at 320–385 px the swatches take 2 rows of 4, shortcut key cells wrap and the Copy label wraps beside the redaction count (F-018.AC7 fixes). Consider a 320 px artboard.
 - F-008: a straight (Shift) highlight has a zero-height bounding box; decide how its selection box and handles show (F-004 review m3).
 - Flaky: F-003.AC8 pixel check failed once in F-006's run (passed 16/16 on rerun); watch it.
 - F-013: write the step label for steps (F-006 removed the unused `stepName`).

@@ -39,5 +39,5 @@ unavailable (RULE-14).
 When the selected annotations differ in a choice (colour, size or kind), no option of that choice is marked.
 
 ## Accessibility
-Swatches are a labelled radio group named by their colour names, never by colour alone. On a coarse pointer the wide panel lays the 8 swatches out in 2 rows of 4; on narrow widths or a coarse pointer the 9 background choices (transparent and the 8 colours) are laid out in 2 rows of 5 at touch size. The
+Swatches are a labelled radio group named by their colour names, never by colour alone. On a coarse pointer the wide panel, and the narrow sheet below 386 px wide (where 8 touch-sized swatches don't fit in one row), lay the 8 swatches out in 2 rows of 4; on narrow widths or a coarse pointer the 9 background choices (transparent and the 8 colours) are laid out in 2 rows of 5 at touch size. The
 position and size fields are the non-drag alternative for moving and resizing (NFR-06). On narrow widths the summary bar is a button named "COPY-style.sheet_toggle: COPY-style.sheet_summary" (its visible text), reporting whether the sheet is expanded; the sheet follows it in reading order and opening it does not move focus.
