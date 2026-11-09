@@ -122,6 +122,9 @@ export interface DialogRequest {
 /** CMP-ConfirmDialog, while open. */
 export const dialog = signal<DialogRequest | null>(null);
 
+/** CMP-ShortcutHelp, while open (F-013.R3): a modal dialog, so the rest of the tool is inert. */
+export const shortcutsOpen = signal(false);
+
 /** CMP-DropOverlay: a file is dragged over the tool. */
 export const dragging = signal(false);
 

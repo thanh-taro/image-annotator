@@ -2,7 +2,8 @@
 // <Canvas> feeds it the work area's size, the content and the input (wheel, pinch, keys, commands);
 // it reports each new view once, so a repaint is scheduled only when the view really changed (NFR-02).
 // It never sees the document, so no view change can edit it or add an undo step (INV-05, F-002.AC7).
-// Implements: F-002.R1/R2/R3/R4, RULE-12, F-002 edge case "the host resizes the tool".
+// Implements: F-002.R1/R2/R3/R4, RULE-12, F-002 edge case "the host resizes the tool"; RULE-19 (keep the
+// selection in view, F-013).
 import {
   clampView,
   clampZoom,
@@ -142,6 +143,28 @@ export class ViewController {
   /** F-002.R4 arrow keys (RULE-19): moves the view by (dx, dy) — positive dx shows more of the right side. */
   panView(dx: number, dy: number): void {
     this.panBy(-dx, -dy);
+  }
+
+  /**
+   * RULE-19 "the view scrolls to keep a newly placed or selected annotation visible": pans as little as
+   * possible so `box` (image pixels) is inside the visible area, at Fit's margin from its edges; a box
+   * larger than the area shows its top-left corner. The zoom is kept; the pan limits apply (F-002.R4).
+   */
+  reveal(box: Box): void {
+    const view = this.current;
+    if (!view || !this.port) return;
+    const z = view.zoom / 100;
+    const m = this.margin;
+    const axis = (pos: number, start: number, size: number, extent: number) => {
+      const a = pos + start * z;
+      const b = a + size * z;
+      if (a >= m && b <= extent - m) return 0;
+      if (a < m || b - a > extent - 2 * m) return m - a;
+      return extent - m - b;
+    };
+    const dx = axis(view.x, box.x, box.width, this.area.width);
+    const dy = axis(view.y, box.y, box.height, this.area.height);
+    if (dx || dy) this.panBy(dx, dy);
   }
 
   /**

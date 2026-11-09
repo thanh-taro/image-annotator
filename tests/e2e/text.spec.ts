@@ -605,8 +605,8 @@ test.describe('F-005 add text', () => {
     await expect(editor(page)).toBeHidden();
     await expect(summary(page)).toHaveText(count(1));
     await expect(state(page)).toHaveAttribute('data-state', 'selecting');
-    // The canvas is a Tab stop again.
-    await expect(workArea(page)).toHaveAttribute('tabindex', '0');
+    // The canvas is a Tab stop again: the selected text's option in its annotation list (F-013 roving focus).
+    await expect(workArea(page).locator('[role="option"][tabindex="0"]')).toHaveCount(1);
   });
 
   test('F-005.R3 RULE-19 Esc with focus in the style panel ends the edit and returns focus to the canvas', async ({
@@ -621,7 +621,8 @@ test.describe('F-005 add text', () => {
     await expect(editor(page)).toBeHidden();
     await expect(summary(page)).toHaveText(count(1));
     await expect(workArea(page)).toBeFocused();
-    await expect(workArea(page)).toHaveAttribute('tabindex', '0');
+    // The canvas is a Tab stop again: the selected text's option in its annotation list (F-013 roving focus).
+    await expect(workArea(page).locator('[role="option"][tabindex="0"]')).toHaveCount(1);
   });
 
   test('F-005.AC16 with the text tool a click outside the canvas creates nothing and edits nothing', async ({

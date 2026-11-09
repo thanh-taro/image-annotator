@@ -10,7 +10,7 @@
 import { t } from '../copy';
 import { altResized, moved, withGeometry, type Annotation, type GeometryField } from '../core';
 import { duplicate, edit, remove, reorder, type Op, type Selection } from '../document';
-import { select } from './drawing';
+import { announceSelection, select } from './drawing';
 import { announcePolite, commit, doc, loaded, selection } from './state';
 
 /** The selected annotations, in drawing order. */
@@ -49,7 +49,9 @@ export function duplicateSelection(): void {
 /** F-008.R1 / RULE-19 Mod+A: selects every annotation, in drawing order (not an undo step). */
 export function selectAll(): void {
   const all = (doc.value?.annotations ?? []).map((a) => a.id);
-  if (all.length) select(all);
+  if (!all.length) return;
+  select(all);
+  announceSelection(all); // CMP-Canvas "Accessibility": COPY-a11y.selected_count (F-013)
 }
 
 /** F-008.R5 / RULE-19 ] and [: brings the selection forward or sends it backward one place (one step). */

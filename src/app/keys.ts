@@ -4,9 +4,12 @@
 // Enter and Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the
 // Export keys (Mod+C copy, Mod+S download); F-008 the Edit keys (delete, duplicate, select all, reorder,
 // arrow-key moves, Alt+arrow resizes); F-009 the History keys (undo, redo); F-010 the arrows on the crop
-// frame; F-013 completes the map.
+// frame; F-013 completes the map: Tab / Shift+Tab through the annotation list (focus on one of its
+// options counts as the canvas), ? opens CMP-ShortcutHelp and Mod+O opens a file (until F-013 the loader's
+// own listener).
 // Implements: RULE-19 (View keys, Space+drag, arrows pan with nothing selected, Tools keys, Enter, Esc, Edit,
-// History), F-002.R2/R4, F-003.R5, F-005.R2/R4, F-008.R1/R2/R3/R5, F-009.R1, F-010.R6, F-012.R1/R2.
+// History, Load, Help, Tab), F-002.R2/R4, F-003.R5, F-005.R2/R4, F-008.R1/R2/R3/R5, F-009.R1, F-010.R6,
+// F-012.R1/R2, F-013.R1/R3/R4/R5.
 import { canvasCommands, viewCommands } from '../canvas';
 import type { ToolName } from '../core';
 import { isEditing } from '../io';
@@ -21,19 +24,26 @@ import {
   selectAll,
 } from './editing';
 import { moveFrame, resizeFrame } from './crop';
+import { openImage } from './loader';
+import { showShortcuts } from './shortcuts';
 import { copyNow, downloadNow } from './exporter';
 import { redo, undo } from './history';
 import { isMac } from './platform';
-import { dialog, doc, selection, textEditing, tool } from './state';
+import { dialog, doc, selection, shortcutsOpen, textEditing, tool } from './state';
 
 /** Where focus is, for RULE-19's scope. The canvas region is the work area while an image is shown. */
 function focusScope(e: KeyboardEvent): Scope['focus'] {
   const focused = document.activeElement;
-  if (dialog.value || focused?.closest('[role="menu"], [role="dialog"]')) return 'dialog';
+  if (dialog.value || shortcutsOpen.value || focused?.closest('[role="menu"], [role="dialog"]')) return 'dialog';
   // CMP-TextEditor: a text annotation being edited (RULE-19: only Esc and Mod+S act).
   if (e.target instanceof Element && e.target.classList.contains('tk-text-editor')) return 'textAnnotation';
   if (isEditing(e.target)) return 'text';
-  if (focused instanceof HTMLElement && focused.classList.contains('tk-work-area')) return 'canvas';
+  // CMP-Canvas "Accessibility": the region, or one of its annotation list's options (roving focus).
+  if (
+    focused instanceof HTMLElement &&
+    (focused.classList.contains('tk-work-area') || focused.matches('.tk-annotation'))
+  )
+    return 'canvas';
   return 'control';
 }
 
@@ -77,9 +87,19 @@ function onKeyDown(e: KeyboardEvent): void {
       pageTextSelected: pageTextSelected(),
     },
   );
-  if (resolution.preventDefault) e.preventDefault();
   const action = resolution.action;
+  // RULE-19 Tab / Shift+Tab: the next or previous annotation; after the last (or before the first) focus
+  // leaves the canvas — MOD-Canvas moves it, or, with no control beyond it, leaves it to the browser.
+  if (action?.kind === 'named' && action.group === 'canvas' && (action.name === 'next' || action.name === 'previous')) {
+    if (canvasCommands.dragging()) return e.preventDefault();
+    const step = action.name === 'next' ? canvasCommands.selectNext : canvasCommands.selectPrevious;
+    if (step()) e.preventDefault();
+    return;
+  }
+  if (resolution.preventDefault) e.preventDefault();
   if (!action) return;
+  if (action.kind === 'named' && action.group === 'help') return showShortcuts();
+  if (action.kind === 'named' && action.group === 'load') return openImage();
   if (action.kind === 'named' && action.group === 'tool') return setTool(action.name as ToolName);
   if (action.kind === 'named' && action.group === 'canvas' && action.name === 'place') return placeAtCentre();
   if (action.kind === 'named' && action.group === 'canvas' && action.name === 'editText') return editSelectedText();
