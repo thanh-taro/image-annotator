@@ -32,3 +32,12 @@ export function feedEffects(bitmap: ImageBitmap): void {
   if (idle) idle(run, { timeout: 200 });
   else setTimeout(run, 0);
 }
+
+/**
+ * Starting over (F-014.R3): no image is left, so the effects worker and its pixels are released and a
+ * pending feed is dropped (NFR-04).
+ */
+export function releaseEffects(): void {
+  generation++;
+  clearImage();
+}

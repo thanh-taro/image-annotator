@@ -6,7 +6,7 @@
 import { computed, signal } from '@preact/signals';
 import { startSession, type Doc, type Restore, type Selection, type Session } from '../document';
 import { DEFAULT_STYLES, type DrawingTool, type Style, type ToolName, type View } from '../core';
-import { feedEffects, type DecodedImage, type Size } from '../io';
+import { feedEffects, releaseEffects, type DecodedImage, type Size } from '../io';
 import { toolbarCount } from './export';
 import type { Notice } from './notice';
 
@@ -100,6 +100,25 @@ export function startNewSession(image: DecodedImage): Session {
 }
 
 /**
+ * Starts over (F-014.R3, COPY-action.clear): no image and no session, so the empty state shows. Like a new
+ * session it can't be undone (RULE-11); the image's bitmap and the effects worker's pixels are released
+ * (NFR-04). F-014 edge case: any notice and the narrow style sheet close, so the empty state shows alone
+ * (a progress notice can't be showing: starting over waits for a load to finish).
+ */
+export function endSession(): void {
+  const previous = loaded.value;
+  if (!previous) return;
+  loaded.value = null;
+  doc.value = null;
+  selection.value = [];
+  sheetOpen.value = false;
+  if (notice.value?.kind !== 'progress') setNotice(null);
+  version.value++;
+  previous.image.bitmap.close();
+  releaseEffects();
+}
+
+/**
  * The view of the shown canvas (zoom, pan; F-002), reported by MOD-Canvas; null in the empty state.
  * It is never part of the session (INV-05): changing it adds no history step and no unexported change.
  */
@@ -115,12 +134,27 @@ export const zoomLevel = computed(() => (loaded.value && view.value ? view.value
 export const notice = signal<Notice | null>(null);
 
 export interface DialogRequest {
-  readonly kind: 'replace' | 'scale-down';
+  /** CMP-ConfirmDialog variants: replace and scale-down (F-001), clear (F-014.R3). */
+  readonly kind: 'replace' | 'scale-down' | 'clear';
   readonly size?: Size;
   answer(ok: boolean): void;
 }
 /** CMP-ConfirmDialog, while open. */
 export const dialog = signal<DialogRequest | null>(null);
+
+/** Opens CMP-ConfirmDialog of `kind` and resolves with the user's choice once it closes. */
+export function askConfirm(kind: DialogRequest['kind'], size?: Size): Promise<boolean> {
+  return new Promise((resolve) => {
+    dialog.value = {
+      kind,
+      ...(size ? { size } : {}),
+      answer(ok) {
+        dialog.value = null;
+        resolve(ok);
+      },
+    };
+  });
+}
 
 /** CMP-ShortcutHelp, while open (F-013.R3): a modal dialog, so the rest of the tool is inert. */
 export const shortcutsOpen = signal(false);

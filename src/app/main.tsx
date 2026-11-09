@@ -9,6 +9,7 @@ import './styles/index.css';
 import { language, t } from '../copy';
 import { loadFonts, resolveLanguage, startHost, startOffline } from '../host';
 import { startKeys } from './keys';
+import { startLeaveWarning } from './leave';
 import { startLoader } from './loader';
 import { Shell } from './Shell';
 
@@ -28,6 +29,7 @@ const root = document.getElementById('app');
 if (root) render(<Shell />, root);
 startLoader(); // F-001: paste, drop, open — listening before the ready signal (F-001.R9)
 startKeys(); // F-002: the View keys and the arrow-key pan (RULE-19)
+startLeaveWarning(); // F-014: ask before leaving with unexported changes (RULE-18)
 startHost();
 // Implements: F-017.R1 — offline after first render; the seed waits for both typeface subsets (ADR-0011).
 startOffline(loadFonts());

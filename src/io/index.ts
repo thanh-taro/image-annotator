@@ -2,7 +2,7 @@
 // (specs/40-technical/modules/MOD-IO.md, ADR-0005, ADR-0007, ADR-0018, ADR-0019, ADR-0021, ADR-0022).
 // Only this module touches the clipboard, the file input, downloads and `beforeunload` (lint-enforced).
 // Input (paste, drop, pick) and decode are built (F-001: ./input.ts, ./decode.ts), and the export (F-012:
-// ./export.ts); the leave-page warning throws until F-014 is built.
+// ./export.ts), and the leave-page warning (F-014: ./leave.ts).
 
 export {
   decodeInput,
@@ -16,7 +16,7 @@ export {
   type Refusal,
   type Size,
 } from './decode';
-export { feedEffects } from './effects';
+export { feedEffects, releaseEffects } from './effects';
 export {
   droppedFiles,
   isEditing,
@@ -30,10 +30,4 @@ export {
 
 export { copyResult, downloadResult, EXPORT_WAIT_MS, renderPng, REVOKE_DELAY_MS, type ExportResult } from './export';
 
-const notImplemented = (name: string): never => {
-  throw new Error(`not implemented: MOD-IO ${name}`);
-};
-
-export function setLeaveWarning(_enabled: boolean): void {
-  notImplemented('setLeaveWarning');
-}
+export { setLeaveWarning } from './leave';

@@ -5,13 +5,19 @@
 // keeping keyboard users in the tool.
 // Implements: CMP-ConfirmDialog and CMP-ShortcutHelp "Accessibility", NFR-06.
 
+/**
+ * Where focus goes when the opener is gone: the canvas region while it is focusable (an image is shown),
+ * else the empty state's COPY-action.open (CMP-EmptyState), e.g. after starting over (F-014).
+ */
+const fallback = (): HTMLElement | null =>
+  document.querySelector<HTMLElement>('.tk-work-area[tabindex]') ??
+  document.querySelector<HTMLElement>('.tk-empty button');
+
 /** Returns focus to `opener` (else the canvas region) once the current render has finished. */
 export function returnFocusLater(opener: Element | null): void {
   queueMicrotask(() => {
     const target =
-      opener instanceof HTMLElement && opener.isConnected && !opener.closest('[inert]')
-        ? opener
-        : document.querySelector<HTMLElement>('.tk-work-area');
+      opener instanceof HTMLElement && opener.isConnected && !opener.closest('[inert]') ? opener : fallback();
     target?.focus({ preventScroll: true });
   });
 }

@@ -89,13 +89,13 @@ describe('MOD-App COPY-action.more and showShortcuts', () => {
   const labels = (narrow: boolean, image = true) => moreItems(narrow, image).map((g) => g.map((i) => i.label));
 
   it('CMP-Toolbar wide and compact: COPY-action.more holds COPY-action.shortcuts; narrow also COPY-action.download first', () => {
-    expect(labels(false)).toEqual([['Keyboard shortcuts']]);
-    expect(labels(true)).toEqual([['Download', 'Keyboard shortcuts']]);
+    expect(labels(false)).toEqual([['Keyboard shortcuts'], ['Start over']]);
+    expect(labels(true)).toEqual([['Download', 'Keyboard shortcuts'], ['Start over']]);
   });
 
-  it('CMP-Toolbar with no image the download item is unavailable and the shortcuts item is not', () => {
-    const [items = []] = moreItems(true, false);
-    expect(items.map((i) => !!i.disabled)).toEqual([true, false]);
+  it('CMP-Toolbar with no image the download and clear items are unavailable and the shortcuts item is not', () => {
+    const items = moreItems(true, false).flat();
+    expect(items.map((i) => !!i.disabled || !!i.unavailable)).toEqual([true, false, true]);
   });
 
   it('F-013.R3 COPY-action.shortcuts opens CMP-ShortcutHelp; not while a confirm dialog is open', () => {

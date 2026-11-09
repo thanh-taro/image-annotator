@@ -9,8 +9,8 @@ import type { ImageInput } from '../io';
 import { loadFile, noImageNotice, refusalNotice, type LoadPorts } from './load';
 import {
   announcePolite,
+  askConfirm,
   clearPolite,
-  dialog,
   dragging,
   modalOpen,
   moreOpen,
@@ -39,17 +39,7 @@ const ports: LoadPorts = {
   decode: ({ file, sourceName }) => decodeInput(file, sourceName),
   scaleDown: (image) => scaleDown(image),
   discard,
-  confirm: (kind, size) =>
-    new Promise((resolve) => {
-      dialog.value = {
-        kind,
-        ...(size ? { size } : {}),
-        answer(ok) {
-          dialog.value = null;
-          resolve(ok);
-        },
-      };
-    }),
+  confirm: askConfirm,
   unexported: () => unexported.value,
   replace(image) {
     startNewSession(image);
