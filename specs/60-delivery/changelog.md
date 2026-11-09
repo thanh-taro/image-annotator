@@ -70,3 +70,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - F-009 gaps and review: CMP-Toolbar tools name their shortcut, other controls state it as keyboard shortcuts; focus moves to the other history button when the clicked one becomes disabled; F-009 edge case for the history buttons while editing text.
 - F-009 review fixes: edge case for a new text before any step exists.
 - F-010 gaps and review: a drag inside a whole-image frame draws a new frame (D-033, owner; F-010.R1, new AC); RULE-11 frame nudges and resizes coalesce; RULE-12 keeps the frame's place within the pan limits; CMP-Canvas crop view dims annotations outside the frame and hides selection handles; CMP-StatusBar shows the size once the canvas differs from the image (D-017).
+- F-011 review: CMP-StylePanel lays the 9 background choices in 2 rows of 5 on narrow widths or a coarse pointer; the narrow summary bar shows a palette background's colour (none when transparent).
