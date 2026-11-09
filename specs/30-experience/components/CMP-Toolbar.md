@@ -12,7 +12,8 @@ Load, pick a tool, undo/redo and export.
 COPY-action.open; tool group (COPY-tool.select … COPY-tool.crop, one active); COPY-action.undo,
 COPY-action.redo; the live redaction count (COPY-export.redaction_count, RULE-20, hidden at 0);
 COPY-action.copy (primary), COPY-action.download; COPY-action.more overflow holding
-COPY-action.clear and COPY-action.shortcuts.
+COPY-action.shortcuts and, after a separator, COPY-action.clear (unavailable while no image is
+loaded, F-014.R3).
 
 ## Variants & states
 | Variant / state | Description |

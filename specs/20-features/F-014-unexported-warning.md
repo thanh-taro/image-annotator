@@ -43,7 +43,7 @@ there is something to lose (D-004).
 
 ## UX notes
 The leave-page warning text is the browser's own and can't be changed. COPY-action.clear lives
-in the toolbar's overflow.
+in the toolbar's overflow and is unavailable while no image is loaded (there is nothing to clear).
 
 ## Edge cases
 - Undo back to the loaded state → still counts as changed until exported (RULE-18).

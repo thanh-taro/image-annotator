@@ -156,6 +156,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-a11y.text_annotation** | Text “{text}” at {x}, {y} | Chữ “{text}” tại {x}, {y} | Used instead of COPY-a11y.annotation for text annotations |
 | **COPY-a11y.tool_active** | {tool} tool | Công cụ {tool} | |
 | **COPY-a11y.loaded** | Image opened, {width} × {height} px | Đã mở ảnh, {width} × {height} px | Announced when an image loads |
+| **COPY-a11y.cleared** | Image cleared. Open, paste or drop an image to start | Đã xoá ảnh. Mở, dán hoặc thả ảnh để bắt đầu | Announced after starting over (F-014.R3) |
 | **COPY-a11y.annotations_list** | Annotations | Chú thích | Name of the list of annotations inside the canvas |
 | **COPY-a11y.annotations_hint** | Tab moves to the next annotation; arrow keys move the selected one. | Tab để chuyển sang chú thích tiếp theo; phím mũi tên di chuyển chú thích đang chọn. | Description of the annotations list |
 | **COPY-a11y.placed** | {kind} added | Đã thêm {kind} | |
