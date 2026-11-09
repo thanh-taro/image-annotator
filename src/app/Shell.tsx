@@ -63,7 +63,7 @@ function keepEditorFocus(e: MouseEvent): void {
 }
 
 function screenState(): string {
-  if (dialog.value) return dialog.value.kind === 'replace' ? 'confirm-replace' : 'confirm-scale-down';
+  if (dialog.value) return `confirm-${dialog.value.kind}`; // replace, scale-down, clear (F-014)
   if (shortcutsOpen.value) return 'shortcut-help'; // F-013 (SCR-Annotator overlay CMP-ShortcutHelp)
   if (dragging.value) return 'dragging-file';
   if (notice.value?.kind === 'progress') return 'loading';

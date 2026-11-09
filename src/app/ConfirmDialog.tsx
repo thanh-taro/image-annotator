@@ -1,4 +1,5 @@
-// CMP-ConfirmDialog, variants "replace" (F-001.R7) and "scale-down" (F-001.R5, RULE-02). Modal: focus
+// CMP-ConfirmDialog, variants "replace" (F-001.R7), "scale-down" (F-001.R5, RULE-02) and "clear"
+// (F-014.R3; its primary action is the danger style, as on the artboard). Modal: focus
 // moves to the safe choice (cancel), stays inside and returns on close; Esc and cancel keep everything;
 // clicking outside does nothing. The rest of the tool is made inert by the shell. The text is rendered
 // from COPY IDs, so a language switch changes it without changing the pending choice.
@@ -10,6 +11,10 @@ import type { DialogRequest } from './state';
 function texts(request: DialogRequest) {
   if (request.kind === 'replace') {
     return { title: t('confirm.replace_title'), message: t('confirm.replace'), action: t('action.replace') };
+  }
+  // F-014.R3: the "clear" variant (COPY-action.clear while there are unexported changes).
+  if (request.kind === 'clear') {
+    return { title: t('confirm.clear_title'), message: t('confirm.clear'), action: t('action.clear') };
   }
   const { width, height } = request.size ?? { width: 0, height: 0 };
   return {
@@ -73,7 +78,7 @@ export function ConfirmDialog({ request }: { request: DialogRequest }) {
           </button>
           <button
             type="button"
-            class={`tk-button ${request.kind === 'replace' ? 'tk-button--danger' : 'tk-button--primary'}`}
+            class={`tk-button ${request.kind === 'scale-down' ? 'tk-button--primary' : 'tk-button--danger'}`}
             onClick={() => request.answer(true)}
           >
             {action}

@@ -532,23 +532,23 @@ test.describe('F-013 work from the keyboard', () => {
     await expect.poll(redInView).toBe(true);
   });
 
-  test('CMP-Toolbar COPY-action.more on wide and compact holds the shortcuts; on narrow the download and the shortcuts', async ({
+  test('CMP-Toolbar COPY-action.more on wide and compact holds the shortcuts and the clear; on narrow the download first', async ({
     page,
   }) => {
     await open(page);
     await more(page).click();
-    await expect(menu(page).getByRole('menuitem')).toHaveText(['Keyboard shortcuts']);
+    await expect(menu(page).getByRole('menuitem')).toHaveText(['Keyboard shortcuts', 'Start over']);
     await expect(menu(page).getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(menu(page)).toHaveCount(0);
     await expect(more(page)).toBeFocused();
     await page.setViewportSize({ width: 900, height: VIEWPORT.height });
     await more(page).click();
-    await expect(menu(page).getByRole('menuitem')).toHaveText(['Keyboard shortcuts']);
+    await expect(menu(page).getByRole('menuitem')).toHaveText(['Keyboard shortcuts', 'Start over']);
     await page.keyboard.press('Escape');
     await page.setViewportSize({ width: 390, height: 760 });
     await more(page).click();
-    await expect(menu(page).getByRole('menuitem')).toHaveText(['Download', 'Keyboard shortcuts']);
+    await expect(menu(page).getByRole('menuitem')).toHaveText(['Download', 'Keyboard shortcuts', 'Start over']);
     await page.keyboard.press('ArrowDown');
     await expect(menu(page).getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
     await page.keyboard.press('Enter');
@@ -566,22 +566,23 @@ test.describe('F-013 work from the keyboard', () => {
     await expect(menu(page).getByRole('menuitem', { name: 'Download' })).toBeFocused();
     await expect(more(page)).toHaveAttribute('aria-controls', (await menu(page).getAttribute('id')) ?? 'missing');
     await page.keyboard.press('End');
-    await expect(menu(page).getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
+    await expect(menu(page).getByRole('menuitem', { name: 'Start over' })).toBeFocused();
     await page.keyboard.press('Home');
     await expect(menu(page).getByRole('menuitem', { name: 'Download' })).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(more(page)).toBeFocused();
     await page.keyboard.press('ArrowUp');
-    await expect(menu(page).getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
+    await expect(menu(page).getByRole('menuitem', { name: 'Start over' })).toBeFocused();
   });
 
-  test('CMP-Toolbar COPY-action.more works before an image is loaded (shortcuts available, download not)', async ({
+  test('CMP-Toolbar COPY-action.more works before an image is loaded (shortcuts available, download and clear not)', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 760 });
     await page.goto('/');
     await more(page).click();
     await expect(menu(page).getByRole('menuitem', { name: 'Download' })).toBeDisabled();
+    await expect(menu(page).getByRole('menuitem', { name: 'Start over' })).toBeDisabled();
     await expect(menu(page).getByRole('menuitem', { name: 'Keyboard shortcuts' })).toBeFocused();
   });
 
@@ -611,7 +612,7 @@ test.describe('F-013 work from the keyboard', () => {
       await page.keyboard.press('Escape');
       await page.setViewportSize({ width: 390, height: 760 });
       await more(page).click();
-      await expect(menu(page).getByRole('menuitem')).toHaveCount(2);
+      await expect(menu(page).getByRole('menuitem')).toHaveCount(3);
       expect((await new AxeBuilder({ page }).withTags(TAGS).analyze()).violations).toEqual([]);
     });
   }

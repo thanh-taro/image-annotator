@@ -1,14 +1,15 @@
 // CMP-Toolbar's COPY-action.more overflow: a menu button at the end of the toolbar row on every layout
 // (since F-013; F-012 showed it on narrow widths only). Its items come in groups with a line between them,
-// so a feature adds its own (F-014 adds COPY-action.clear as a group of its own after the shortcuts):
+// so a feature adds its own (F-014: COPY-action.clear as a group of its own after the shortcuts):
 // on narrow widths COPY-action.download, then COPY-action.shortcuts. The first enabled item takes focus when
 // it opens (the last with ArrowUp on the button; ArrowDown opens at the first); Up, Down, Home and End move
 // between items, Esc closes it and returns focus to the button, Tab or a press
 // outside closes it. Choosing an item closes the menu (focus back on the button) before it runs.
 // Implements: CMP-Toolbar (anatomy: COPY-action.more; variant narrow), F-013.R3 (COPY-action.shortcuts),
-// F-012.R2 (download on narrow widths), adapters/design.md "COPY-action.more".
+// F-012.R2 (download on narrow widths), F-014.R3 (COPY-action.clear), adapters/design.md "COPY-action.more".
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
+import { clearImage } from './clear';
 import { downloadNow } from './exporter';
 import { Icon } from './icons';
 import { modShortcut } from './platform';
@@ -31,7 +32,7 @@ export interface MenuItem {
   readonly run: () => void;
 }
 
-/** The items per layout, in groups (CMP-Toolbar anatomy and "narrow"; the Clear group joins with F-014). */
+/** The items per layout, in groups (CMP-Toolbar anatomy and "narrow"; the Clear group last, F-014). */
 export function moreItems(narrow: boolean, hasImage: boolean): readonly (readonly MenuItem[])[] {
   const download: MenuItem = {
     id: 'download',
@@ -46,7 +47,15 @@ export function moreItems(narrow: boolean, hasImage: boolean): readonly (readonl
     // No aria-keyshortcuts: ? works only while the canvas has focus (RULE-19), not from the menu.
     run: showShortcuts,
   };
-  return [narrow ? [download, shortcuts] : [shortcuts]];
+  // F-014.R3: COPY-action.clear, a group of its own after the shortcuts (CMP-Toolbar "overflow open"
+  // artboards); no image, nothing to clear. No shortcut (RULE-19 has none).
+  const clear: MenuItem = {
+    id: 'clear',
+    label: t('action.clear'),
+    disabled: !hasImage,
+    run: () => void clearImage(),
+  };
+  return [narrow ? [download, shortcuts] : [shortcuts], [clear]];
 }
 
 /** COPY-action.more: the menu button and, while open, its menu. */
