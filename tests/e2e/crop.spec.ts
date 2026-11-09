@@ -114,7 +114,10 @@ test.describe('F-010 crop the export frame', () => {
     await frameIs(page, 200, 0, 1720, 1080);
     await expect(chip(page)).toHaveText('1,720 × 1,080 px');
     await expect(panel(page).locator('.tk-crop__size')).toHaveText('1,720 × 1,080 px');
-    await expect(page.locator('[role="status"]')).toContainText('1,720 × 1,080 px'); // announced once
+    // COPY-crop.size announced once, exactly, when the change is made (not per drag frame).
+    const announced = page.locator('[role="status"] > div').filter({ hasText: /^1,720 × 1,080 px$/ });
+    await expect(announced).toHaveCount(1);
+    await expect(page.locator('[role="status"] > div').filter({ hasText: /^[\d,]+ × [\d,]+ px$/ })).toHaveCount(1);
     await expect.poll(() => dimmed(page, 100, 540)).toBe(true);
     expect(await dimmed(page, 190, 540)).toBe(true);
     expect(near(await canvasPixel(page, ...fit(400, 540)), GREY)).toBe(true);
@@ -188,6 +191,20 @@ test.describe('F-010 crop the export frame', () => {
     await workArea(page).focus();
     await page.keyboard.press('ControlOrMeta+Z');
     await frameIs(page, 200, 0, 1720, 1080);
+  });
+
+  test('F-010.AC11 D-033 dragging inside a whole-image frame draws a new 800 × 600 frame, as one undo step', async ({
+    page,
+  }) => {
+    await open(page, HD);
+    await tool(page, 'crop').click();
+    await frameIs(page, 0, 0, 1920, 1080);
+    await drag(page, fit(400, 300), fit(1200, 900));
+    await frameIs(page, 400, 300, 800, 600);
+    await expect(chip(page)).toHaveText('800 × 600 px');
+    await workArea(page).focus();
+    await page.keyboard.press('ControlOrMeta+Z');
+    await frameIs(page, 0, 0, 1920, 1080);
   });
 
   test('F-010.AC6 dragging a corner towards 5 × 5 stops at 16 × 16', async ({ page }) => {
@@ -290,6 +307,34 @@ test.describe('F-010 crop the export frame', () => {
     const ref = referenceBlur(
       { data: pixels, width: 1000, height: 500 },
       F,
+      { x: 250, y: 170, width: 150, height: 80 },
+      10,
+      [],
+    );
+    expect(ref && [ref.x, ref.y, ref.width, ref.height]).toEqual([300, 170, 100, 80]);
+    expect(maxDiff(pngRegion(png, 0, 20, 100, 80), ref?.data ?? [])).toBeLessThanOrEqual(1);
+  });
+
+  test('F-010.R5 F-007.R3 RULE-10 a blur drawn before the crop is recomputed for the new frame (review m4)', async ({
+    page,
+  }) => {
+    const pixels = await open(page, { width: 1000, height: 500 }, { noise: true });
+    // The 1000 × 500 image at 100 %, centred: image (x, y) at (100 + x, 150 + y).
+    await tool(page, 'redact').click();
+    await panel(page).getByRole('group', { name: 'Redaction type' }).getByRole('radio', { name: /^Blur/ }).check();
+    await drag(page, [350, 320], [500, 400]); // image box 250…400 × 170…250
+    await expect(summary(page)).toHaveText('1,000 × 500 px canvas, 1 annotation');
+    await tool(page, 'crop').click();
+    await setField(page, 'width', 400);
+    await setField(page, 'height', 200);
+    await setField(page, 'x', 300);
+    await setField(page, 'y', 150);
+    await expect(summary(page)).toHaveText('400 × 200 px canvas, 1 annotation');
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    expect([png.width, png.height]).toEqual([400, 200]);
+    const ref = referenceBlur(
+      { data: pixels, width: 1000, height: 500 },
+      { x: 300, y: 150, width: 400, height: 200 },
       { x: 250, y: 170, width: 150, height: 80 },
       10,
       [],

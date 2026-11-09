@@ -208,6 +208,37 @@ describe('MOD-Canvas view controller (F-002)', () => {
   });
 });
 
+describe('MOD-Canvas view across the crop view (RULE-12, F-010)', () => {
+  const frame = { x: 200, y: 0, width: 1720, height: 1080 };
+  const image = box(1920, 1080);
+
+  it('RULE-12 F-010 at 200 % with a cropped frame, switching to crop and back keeps zoom and position', () => {
+    const c = new ViewController(() => undefined);
+    c.setArea(AREA, 24);
+    c.setContent(frame, true);
+    c.zoomAt(200, { x: 600, y: 400 });
+    const before = view(c);
+    expect(before).toMatchObject({ zoom: 200, fitted: false });
+    c.setContent(image, false); // the crop tool shows the whole image
+    expect(view(c)).toEqual(before);
+    c.setContent(frame, false); // back to the canvas
+    expect(view(c)).toEqual(before);
+  });
+
+  it('RULE-12 F-002.R4 back from the crop view, the pan limits of the canvas clamp the position', () => {
+    const c = new ViewController(() => undefined);
+    c.setArea(AREA, 24);
+    c.setContent(frame, true);
+    c.zoomAt(200, { x: 600, y: 400 });
+    c.setContent(image, false);
+    c.panBy(10000, 0); // the image's left edge at the margin
+    expect(toScreen(view(c), { x: 0, y: 0 }).x).toBe(24);
+    c.setContent(frame, false);
+    expect(view(c).zoom).toBe(200);
+    expect(toScreen(view(c), { x: 200, y: 0 }).x).toBe(24); // the frame's left edge at the margin
+  });
+});
+
 describe('MOD-Canvas view centre (F-003.R5, RULE-19 Enter)', () => {
   it('F-003.AC8 the centre of the view follows a pan and leaves out the bottom inset (D-019)', () => {
     const { c } = controller(2000, 1600, AREA, 0);

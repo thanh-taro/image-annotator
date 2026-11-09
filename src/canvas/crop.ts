@@ -1,6 +1,6 @@
 // MOD-Canvas — the crop tool's part of the tool state machine (F-010), DOM-free: a `ToolInput` that turns
 // one pointer gesture of the crop tool into a frame change. A press on an edge or corner resizes the frame,
-// inside it moves it, outside it draws a new one (MOD-Core `frameGripAt`, `dragFrame`). Transient drag
+// inside it moves it (D-033: inside a whole-image frame it draws a new one), outside it draws a new one (MOD-Core `frameGripAt`, `dragFrame`). Transient drag
 // state stays here (MOD-Canvas); `preview` holds the frame as it is now, which <Canvas> paints over the
 // cached drag layer (ADR-0022, prepared at the press, NFR-02); only the released frame leaves, and MOD-App
 // records it as one undo step (RULE-11).
@@ -17,6 +17,7 @@ import {
   type Point,
   type ToolName,
 } from '../core';
+import { cropView, type Scene } from '../render';
 import type { PointerInput, ToolInput } from './input';
 
 /** What the crop tool reads when a gesture starts. */
@@ -71,7 +72,7 @@ export class CropTool implements ToolInput {
   gripAt(p: Point): FrameGrip | null {
     const s = this.setup();
     if (!s || s.tool !== 'crop') return null;
-    return frameGripAt(s.frame, s.toImage(p), s.gripHalf);
+    return frameGripAt(s.frame, s.toImage(p), s.gripHalf, s.image);
   }
 
   down(input: PointerInput): boolean {
@@ -81,7 +82,7 @@ export class CropTool implements ToolInput {
     const from = s.toImage(input.point);
     this.gesture = {
       id: input.id,
-      grip: frameGripAt(s.frame, from, s.gripHalf),
+      grip: frameGripAt(s.frame, from, s.gripHalf, s.image),
       start: input.point,
       from,
       frame: s.frame,
@@ -138,5 +139,31 @@ export class CropTool implements ToolInput {
     this.preview = null;
     this.callbacks.preview();
     return true;
+  }
+}
+
+/**
+ * F-010.R2 / NFR-02 (review m3): the crop view of a scene (MOD-Render `cropView`) kept as the same objects
+ * while its inputs are. Its frame and padding stay the same while the image and the background do, so the
+ * image layer (which compares them, ADR-0016) is not rebuilt for an annotation edit; the whole scene stays
+ * the same while the scene it shows does, so a frame drag builds the drag layers once (ADR-0022).
+ */
+export class CropScenes {
+  private base: { image: object; background: unknown; scene: Scene } | null = null;
+  private last: { from: Scene; scene: Scene } | null = null;
+
+  get<S extends Scene>(scene: S, image: ImageSize & object): S {
+    const background = scene.padding.background;
+    const base = this.base;
+    if (!base || base.image !== image || base.background !== background) {
+      this.base = { image, background, scene: cropView(scene, image) };
+      this.last = null;
+    }
+    const last = this.last;
+    if (last && last.from === scene) return last.scene as S;
+    const { frame, padding } = (this.base as { scene: Scene }).scene;
+    const shown = { ...scene, frame, padding };
+    this.last = { from: scene, scene: shown };
+    return shown;
   }
 }

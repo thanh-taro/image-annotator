@@ -52,7 +52,6 @@ import {
 import type { Doc } from '../document';
 import { effects } from '../effects';
 import {
-  cropView,
   measureWith,
   paint as paintScene,
   paintOverlays,
@@ -60,10 +59,9 @@ import {
   type BaseView,
   type OverlayLook,
   type Patches,
-  type Scene,
   type Transform,
 } from '../render';
-import { CropTool } from './crop';
+import { CropScenes, CropTool } from './crop';
 import { DragLayers, dragRange, movePatches } from './drag';
 import { DRAFT_ID, DrawTool } from './draw';
 import { SelectTool } from './select';
@@ -447,32 +445,38 @@ export function Canvas({
       cancel: () => text.cancel() || crop.cancel() || select.cancel() || draw.cancel(),
     };
 
-    // F-010.R2 / RULE-12: the crop view's frame and padding objects stay the same while the image and the
-    // background do, so the image layer (which compares them, ADR-0016) is not rebuilt for other edits.
-    let cropBase: { img: ImageBitmap; background: string; scene: Scene } | null = null;
-    const cropScene = (scene: Doc, img: ImageBitmap): Doc => {
-      const background = scene.padding.background;
-      if (!cropBase || cropBase.img !== img || cropBase.background !== background)
-        cropBase = { img, background, scene: cropView(scene, img) };
-      return { annotations: scene.annotations, frame: cropBase.scene.frame, padding: cropBase.scene.padding };
-    };
+    // F-010.R2 / NFR-02: the crop view's scenes, kept as the same objects while their inputs are (./crop.ts).
+    const crops = new CropScenes();
+    const cropScene = (scene: Doc, img: ImageBitmap): Doc => crops.get(scene, img);
 
-    /** CMP-Canvas "cropping": COPY-crop.size in a chip centred below the shown frame (CSSOM, ./crop.css). */
+    /**
+     * CMP-Canvas "cropping": COPY-crop.size in a chip centred below the shown frame (CSSOM, ./crop.css).
+     * NFR-02 (review m6): the chip is measured only when its text changes (or it reopens), never on a
+     * drag frame that only moves it, so a frame move forces no layout.
+     */
+    const chipState = { text: '', width: 0, height: 0, gap: cssPx(el, '--tk-space-3') };
     const placeChip = (frame: Frame | null) => {
       const v = view.view;
       if (!frame || !v) {
-        delete chip.dataset['open'];
+        if (chipState.text) delete chip.dataset['open'];
+        chipState.text = '';
         return;
       }
       const z = v.zoom / 100;
-      chip.textContent = t('crop.size', { width: frame.width, height: frame.height });
-      chip.dataset['open'] = '';
-      const gap = cssPx(el, '--tk-space-3');
-      const left = v.x + (frame.x + frame.width / 2) * z - chip.offsetWidth / 2;
+      const label = t('crop.size', { width: frame.width, height: frame.height });
+      if (label !== chipState.text) {
+        chip.textContent = label;
+        chip.dataset['open'] = '';
+        chipState.text = label;
+        chipState.width = chip.offsetWidth;
+        chipState.height = chip.offsetHeight;
+      }
+      const { gap, width, height } = chipState;
+      const left = v.x + (frame.x + frame.width / 2) * z - width / 2;
       const below = v.y + (frame.y + frame.height) * z + gap;
       // Kept inside the work area: above the frame's bottom edge when there is no room below it.
-      const top = below + chip.offsetHeight > box.height - inset ? below - 2 * gap - chip.offsetHeight : below;
-      chip.style.left = `${Math.round(Math.max(0, Math.min(box.width - chip.offsetWidth, left)))}px`;
+      const top = below + height > box.height - inset ? below - 2 * gap - height : below;
+      chip.style.left = `${Math.round(Math.max(0, Math.min(box.width - width, left)))}px`;
       chip.style.top = `${Math.round(Math.max(0, top))}px`;
     };
 
@@ -486,7 +490,8 @@ export function Canvas({
       const docScene = withText(shown, edited, text.edit?.id === null);
       const scene = cropping ? cropScene(docScene, img) : docScene;
       const shownFrame = cropping ? (crop.preview ?? shown.frame) : null;
-      const selected = text.edit?.id ? chosen.filter((id) => id !== text.edit?.id) : chosen;
+      // CMP-Canvas "cropping" (review m1): only the frame's handles show; the selection is kept, not drawn.
+      const selected = cropping ? [] : text.edit?.id ? chosen.filter((id) => id !== text.edit?.id) : chosen;
       const v = view.view;
       // The previous image's bitmap is closed when a new one loads (NFR-04); a closed (0 × 0) one is skipped.
       if (!v || img.width === 0) return;
@@ -503,7 +508,7 @@ export function Canvas({
       const source = layer.get(
         {
           image: img,
-          doc: cropping ? cropScene(shown, img) : shown,
+          doc: cropping ? scene : shown,
           transform: viewTransform(v, ratio),
           width,
           height,

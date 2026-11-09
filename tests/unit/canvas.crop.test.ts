@@ -109,4 +109,11 @@ describe('MOD-Canvas crop tool', () => {
     expect(tool.gripAt({ x: 350, y: 350 })).toBe('move');
     expect(tool.gripAt({ x: 50, y: 50 })).toBe('new');
   });
+
+  it('F-010.AC11 D-033 dragging inside a whole-image frame draws a new 800 × 600 frame, as one step', () => {
+    const { tool, state } = setup();
+    expect(tool.gripAt({ x: 400, y: 300 })).toBe('new');
+    drag(tool, { x: 400, y: 300 }, { x: 1200, y: 900 });
+    expect(state.commits).toEqual([{ x: 400, y: 300, width: 800, height: 600 }]);
+  });
 });

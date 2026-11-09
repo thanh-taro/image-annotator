@@ -53,9 +53,10 @@ export type FrameGrip = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'mov
 /**
  * F-010.R1: what a press at `p` (image pixels) grabs on `frame`. An edge is grabbed anywhere along it
  * within `half` image pixels (corners first, where two edges meet); inside the frame moves it; outside
- * draws a new one.
+ * draws a new one. D-033: while the frame covers the whole `image`, a press inside it draws a new frame
+ * too (moving it could do nothing).
  */
-export function frameGripAt(frame: Frame, p: Point, half: number): FrameGrip {
+export function frameGripAt(frame: Frame, p: Point, half: number, image?: ImageSize): FrameGrip {
   const left = frame.x;
   const right = frame.x + frame.width;
   const top = frame.y;
@@ -72,7 +73,8 @@ export function frameGripAt(frame: Frame, p: Point, half: number): FrameGrip {
   const v = onN ? 'n' : onS ? 's' : '';
   const h = onW ? 'w' : onE ? 'e' : '';
   if (v || h) return `${v}${h}` as FrameGrip;
-  return p.x > left && p.x < right && p.y > top && p.y < bottom ? 'move' : 'new';
+  const inside = p.x > left && p.x < right && p.y > top && p.y < bottom;
+  return inside && !(image && isWholeFrame(frame, image)) ? 'move' : 'new';
 }
 
 /**

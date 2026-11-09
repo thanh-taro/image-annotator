@@ -95,6 +95,14 @@ describe('MOD-Core frame (RULE-13)', () => {
     expect(frameGripAt(thin, { x: 102, y: 250 }, 8)).toBe('w');
     expect(frameGripAt(thin, { x: 109, y: 250 }, 8)).toBe('e');
   });
+
+  it('F-010.AC11 D-033 inside a frame that covers the whole image, a press draws a new frame', () => {
+    const image = { width: 1920, height: 1080 };
+    const whole = { x: 0, y: 0, ...image };
+    expect(frameGripAt(whole, { x: 400, y: 300 }, 8, image)).toBe('new');
+    expect(frameGripAt(whole, { x: 0, y: 300 }, 8, image)).toBe('w');
+    expect(frameGripAt({ x: 1, y: 0, width: 1919, height: 1080 }, { x: 400, y: 300 }, 8, image)).toBe('move');
+  });
 });
 
 describe('MOD-Core padding sizes (RULE-14)', () => {
