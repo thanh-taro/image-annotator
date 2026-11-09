@@ -1,13 +1,14 @@
 // MOD-Host — theme, language, origin-checked messaging, ready signal, offline service worker
 // (specs/40-technical/modules/MOD-Host.md, ADR-0010, ADR-0011, ADR-0015, ADR-0021). Only this module
 // reaches the parent window or the service worker (lint-enforced).
-// Implements: F-015.R1/R2/R4/R5 (RULE-16), F-018.R1/R2/R4/R7 (RULE-17, ADR-0015). Offline (F-017)
-// still throws until it is built.
+// Implements: F-015.R1/R2/R4/R5 (RULE-16), F-018.R1/R2/R4/R7 (RULE-17, ADR-0015), F-017.R1/R2/R3
+// (offline service worker, ./offline.ts and ./sw.ts, ADR-0011).
 import { signal } from '@preact/signals';
 import { language, t, type Language } from '../copy';
 import { acceptSettings, READY_MESSAGE, readyTargets, type Settings, type Theme } from './messages';
 
 export { loadFonts } from './fonts';
+export { startOffline } from './offline';
 export { matchLanguage, resolveLanguage } from './language';
 export type { Theme } from './messages';
 
@@ -91,9 +92,4 @@ export function startHost(): void {
 
   // Implements: F-015.R5 (one ready signal, no content, never to '*').
   for (const origin of readyTargets(HOST_ORIGINS)) window.parent.postMessage(READY_MESSAGE, origin);
-}
-
-/** Registers and seeds the offline service worker after first render (ADR-0011, F-017). */
-export function startOffline(_ready: Promise<unknown>): void {
-  throw new Error('not implemented: MOD-Host startOffline');
 }

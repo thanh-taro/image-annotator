@@ -17,6 +17,7 @@ import { HOST_ALLOWED, PORTS } from './urls';
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const DIST_ALLOWED = path.join(ROOT, 'dist-e2e', 'allowed');
 const DIST_EMPTY = path.join(ROOT, 'dist-e2e', 'empty');
+const DIST_ALLOWED_V2 = path.join(ROOT, 'dist-e2e', 'allowed-v2');
 
 function headersFile(origins: string[]): string {
   // Mirrors scripts/gen-headers.mjs genHeaders(), with frame-ancestors / allow-list from `origins`.
@@ -49,12 +50,36 @@ function buildVariant(outDir: string, hostOrigins: string, origins: string[]): v
   fs.writeFileSync(path.join(outDir, '_headers'), headersFile(origins));
 }
 
+/**
+ * A newly published version of the allowed build (F-017.AC3): the same build with a new hashed
+ * stylesheet (a different name, as a real change gives) and a version marker in the page.
+ */
+function publishVersion2(from: string, to: string): void {
+  fs.rmSync(to, { recursive: true, force: true });
+  fs.cpSync(from, to, { recursive: true });
+  const html = path.join(to, 'index.html');
+  let page = fs.readFileSync(html, 'utf8');
+  const css = /\/assets\/(index-[\w-]+)\.css/.exec(page);
+  if (!css) throw new Error('global-setup: no stylesheet in index.html');
+  const renamed = `${css[1]}v2.css`;
+  fs.writeFileSync(
+    path.join(to, 'assets', renamed),
+    fs.readFileSync(path.join(to, 'assets', `${css[1]}.css`), 'utf8') + '\n/* e2e version 2 */\n',
+  );
+  fs.rmSync(path.join(to, 'assets', `${css[1]}.css`));
+  page = page
+    .replaceAll(`${css[1]}.css`, renamed)
+    .replace('</head>', '<meta name="tk-e2e-version" content="2" /></head>');
+  fs.writeFileSync(html, page);
+}
+
 async function globalSetup(): Promise<void> {
   buildVariant(DIST_ALLOWED, HOST_ALLOWED, [HOST_ALLOWED]);
   buildVariant(DIST_EMPTY, '', []);
+  publishVersion2(DIST_ALLOWED, DIST_ALLOWED_V2);
 
   const servers = await Promise.all([
-    staticServer({ root: DIST_ALLOWED, port: PORTS.toolAllowed }),
+    staticServer({ root: DIST_ALLOWED, port: PORTS.toolAllowed, versions: { 2: DIST_ALLOWED_V2 } }),
     staticServer({ root: DIST_EMPTY, port: PORTS.toolEmpty }),
     hostServer({ port: PORTS.hostAllowed }),
     hostServer({ port: PORTS.hostOther }),

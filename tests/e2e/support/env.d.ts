@@ -9,6 +9,7 @@ declare module 'node:child_process' {
 }
 declare module 'node:fs' {
   export function rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
+  export function cpSync(from: string, to: string, options?: { recursive?: boolean }): void;
   export function writeFileSync(path: string, data: string): void;
   export function existsSync(path: string): boolean;
   export function statSync(path: string): { isDirectory(): boolean };

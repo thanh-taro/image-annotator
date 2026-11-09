@@ -1,7 +1,7 @@
 // F-018 Use the portal's language (RULE-16, RULE-17, ADR-0015) on the multi-origin harness: the
 // language from the address before first display, live taro:language messages, the browser
 // fallback, the origin/source/value checks, 320 px and the Vietnamese faces in the initial load.
-// Deferred ACs (need later features): AC7 (every SCR-Annotator state), AC10's offline half (F-017). AC5 (export) is in tests/e2e/export.spec.ts.
+// Deferred ACs (need later features): AC7 (every SCR-Annotator state). AC5 (export) is in tests/e2e/export.spec.ts.
 import { expect, test, type Page } from '@playwright/test';
 import { CATALOG } from '../../../src/copy/messages.gen';
 import { download, expectCleanPng, pngRegion } from '../support/export';
@@ -216,7 +216,8 @@ test('F-018.R7 the Vietnamese faces are part of the initial load, in every langu
   await expect
     .poll(async () => {
       const log = (await (await page.request.get(`${TOOL_ALLOWED}/__log/dump`)).json()) as { path: string }[];
-      return log.map((r) => r.path).filter((p) => /vietnamese.*\.woff2$/.test(p)).length;
+      // Distinct files: WebKit's offline worker (F-017) fetches each again into its cache.
+      return new Set(log.map((r) => r.path).filter((p) => /vietnamese.*\.woff2$/.test(p))).size;
     })
     .toBe(2);
 });
@@ -275,6 +276,47 @@ test.describe('F-018.AC10 download', () => {
     await page.goto(`${TOOL_ALLOWED}/?theme=dark&lang=vi-VN`);
     await expect(page.locator(SHELL)).toBeVisible();
     await page.waitForLoadState('networkidle');
+    await typeAndDownload(page);
+  });
+
+  // The offline half (F-017): first opened online in en-US, then reopened with no connection (the tool
+  // server down, ADR-0021) in vi-VN; both typefaces and their Vietnamese subsets come from the offline cache.
+  test('F-018.AC10 F-017.R1 first opened online in en-US, reopened offline in vi-VN: the download has every diacritic and no font request (offline half)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1472, height: 868 });
+    await page.goto(`${TOOL_ALLOWED}/?theme=dark&lang=en-US`);
+    await expect(page.locator(SHELL)).toBeVisible();
+    await expect
+      .poll(
+        () =>
+          page.evaluate(async () => {
+            const files = (document.querySelector<HTMLMetaElement>('meta[name="tk-assets"]')?.content ?? '')
+              .split(/\s+/)
+              .filter(Boolean);
+            const cache = await caches.open('image-annotator-v1');
+            const keys = new Set((await cache.keys()).map((r) => new URL(r.url).pathname));
+            return files.some((f) => f.endsWith('.woff2')) && keys.has('/') && files.every((f) => keys.has(f));
+          }),
+        { timeout: 30_000 },
+      )
+      .toBe(true);
+    await page.request.get(`${TOOL_ALLOWED}/__ctl/down?on=1`);
+    try {
+      await page.goto(`${TOOL_ALLOWED}/?theme=dark&lang=vi-VN`);
+      await expect(page.locator(SHELL)).toBeVisible();
+      await expect(page.locator('html')).toHaveAttribute('lang', 'vi-VN');
+      await typeAndDownload(page);
+    } finally {
+      await page.request.get(`${TOOL_ALLOWED}/__ctl/down?on=0`);
+    }
+  });
+
+  /**
+   * In vi-VN: adds "Đường dẫn lỗi", downloads, and checks every diacritic is drawn in the export as on
+   * screen (in the tool's face) and that the server was asked for no font meanwhile.
+   */
+  async function typeAndDownload(page: Page): Promise<void> {
     await page.request.get(`${TOOL_ALLOWED}/__log/reset`);
     await page.evaluate(async () => {
       const c = new OffscreenCanvas(400, 300);
@@ -322,7 +364,5 @@ test.describe('F-018.AC10 download', () => {
     expect(diff.mean).toBeLessThan(1.5);
     const log = (await (await page.request.get(`${TOOL_ALLOWED}/__log/dump`)).json()) as { path: string }[];
     expect(log.map((r) => r.path).filter((p) => /\.woff2?$/.test(p))).toEqual([]);
-  });
-
-  test.fixme('F-018.AC10 reopened offline in vi-VN, the download has every diacritic and no font request (offline half, needs F-017)', async () => {});
+  }
 });

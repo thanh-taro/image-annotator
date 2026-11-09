@@ -41,8 +41,10 @@ test('smoke: standalone under the production headers, the boot script runs and n
   expect(errors).toEqual([]);
   const paths = (await requestLog(page, TOOL_ALLOWED)).map((r) => r.path);
   expect(paths[0]).toBe('/');
-  // The page, its hashed assets, and the browser's own favicon probe — all the tool's own origin.
-  for (const p of paths.slice(1)) expect(p).toMatch(/^\/(assets\/[\w.-]+|favicon\.ico)$/);
+  // The page, its hashed assets, the offline worker and the files it caches (F-017; WebKit's worker
+  // fetches them again rather than from the page's HTTP cache), and the browser's own favicon probe —
+  // all the tool's own origin.
+  for (const p of paths.slice(1)) expect(p).toMatch(/^\/(assets\/[\w.-]+|sw\.js|favicon\.ico)?$/);
 });
 
 test('smoke: the stub host on a second origin embeds the allowed build', async ({ page }) => {
