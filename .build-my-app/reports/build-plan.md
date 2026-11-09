@@ -22,8 +22,6 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 ## Deferred acceptance criteria (each gets its test when the named feature lands)
 | AC | Needs |
 |---|---|
-| F-015.AC6, AC7 | every M-1 feature (end of M-1) |
-| F-018.AC7 | every screen state (end of M-1) |
 
 ## Manual checks collected so far
 - Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
@@ -36,6 +34,7 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - WebKit IME and Safari Telex Vietnamese input, real drop of text into the editor (F-005)
 
 ## Notes for later features
+- Flaky under load (~127): F-017.AC3 offline update (Chromium) failed once at the end of M-1, passed 8/8 alone; WebKit smoke and F-006.AC4 timed out together in the same spike, passed 9/9 on rerun. Watch in QA.
 - QA/design: narrow artboards stop at 390 px; at 320–385 px the swatches take 2 rows of 4, shortcut key cells wrap and the Copy label wraps beside the redaction count (F-018.AC7 fixes). Consider a 320 px artboard.
 - F-008: a straight (Shift) highlight has a zero-height bounding box; decide how its selection box and handles show (F-004 review m3).
 - Flaky: F-003.AC8 pixel check failed once in F-006's run (passed 16/16 on rerun); watch it.
