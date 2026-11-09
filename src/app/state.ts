@@ -122,6 +122,18 @@ export interface DialogRequest {
 /** CMP-ConfirmDialog, while open. */
 export const dialog = signal<DialogRequest | null>(null);
 
+/** CMP-ShortcutHelp, while open (F-013.R3): a modal dialog, so the rest of the tool is inert. */
+export const shortcutsOpen = signal(false);
+
+/** CMP-Toolbar's COPY-action.more menu, while open (RULE-19: while a menu is open only Esc acts). */
+export const moreOpen = signal(false);
+
+/**
+ * A modal dialog is open (CMP-ConfirmDialog or CMP-ShortcutHelp): the rest of the tool is inert, and
+ * input that would act behind it (paste, drop, open) is ignored (F-001 edge case, F-013 review M2).
+ */
+export const modalOpen = (): boolean => !!dialog.value || shortcutsOpen.value;
+
 /** CMP-DropOverlay: a file is dragged over the tool. */
 export const dragging = signal(false);
 

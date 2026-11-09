@@ -5,8 +5,9 @@
 // Esc; F-005 the keys while a text annotation is edited and Enter on a selected text; F-012 the Export
 // keys (Mod+C copy, Mod+S download); F-008 the Edit keys (Delete/Backspace, Mod+D, Mod+A, ] and [,
 // arrow-key moves and Alt+arrow resizes of the selection); F-009 the History keys (Mod+Z, Mod+Shift+Z,
-// Ctrl+Y off macOS); F-010 the arrow keys on the crop frame; the other groups
-// resolve to nothing (and are not yet kept from the browser) until F-013.
+// Ctrl+Y off macOS); F-010 the arrow keys on the crop frame; F-013 completes the map (Tab / Shift+Tab
+// through the annotations, ? for the shortcut list, Mod+O open, Mod+V left to the paste event) and the
+// shortcut list CMP-ShortcutHelp shows (`shortcutList`).
 
 /** What the adapter reads from a keyboard event (platform-mapping.md "Letter keys by layout"). */
 export interface KeyInfo {
@@ -90,15 +91,39 @@ export interface Resolution {
   readonly preventDefault: boolean;
 }
 
-/** One row of CMP-ShortcutHelp: key labels plus the COPY ID of its description. */
+/**
+ * A piece of a key cell: a key label as printed (never translated, e.g. "Ctrl+", "⌘", "← ↑ → ↓"), or a
+ * COPY ID that MOD-App translates (COPY-key.drag, COPY-key.wheel, COPY-key.or, COPY-key.spoken_*).
+ */
+export type KeyText = string | { readonly copyId: string };
+
+/**
+ * One row of CMP-ShortcutHelp: the COPY ID of what it does, its keys as printed (pieces joined with
+ * nothing; aliases separated by " / "), and the same keys spoken for screen readers (pieces joined with
+ * spaces): the printed labels spelled as words, with COPY-key.* for everything else (MOD-Keys holds no copy).
+ */
 export interface ShortcutRow {
-  readonly keys: readonly string[];
   readonly copyId: string;
+  readonly printed: readonly KeyText[];
+  readonly spoken: readonly KeyText[];
 }
 
-const notImplemented = (name: string): never => {
-  throw new Error(`not implemented: MOD-Keys ${name}`);
-};
+/** A group of CMP-ShortcutHelp (COPY-shortcuts.*), in RULE-19 order. */
+export interface ShortcutGroup {
+  readonly copyId: string;
+  readonly rows: readonly ShortcutRow[];
+}
+
+/** A key cell's text with its COPY IDs translated by `tr`: printed (joined) or spoken (spaced). */
+export function keyText(pieces: readonly KeyText[], tr: (copyId: string) => string, spoken = false): string {
+  const parts = pieces.map((p) => (typeof p === 'string' ? p : tr(p.copyId)));
+  return spoken
+    ? parts
+        .filter((p) => p !== '')
+        .join(' ')
+        .replace(/ ,/g, ',')
+    : parts.join('');
+}
 
 const NONE: Resolution = { preventDefault: false };
 /** Kept from the browser with nothing to do (RULE-19: every key in scope is kept). */
@@ -154,7 +179,9 @@ const ARROWS: Readonly<Record<string, readonly [number, number]>> = {
  * edited, or while a dialog or menu is open (Esc there is the dialog's or menu's own).
  */
 export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
-  if (scope.focus === 'dialog') return NONE;
+  // A dialog or menu is open: nothing acts (Esc is the dialog's own). Mod+O is still kept, so the
+  // browser's own open-file never replaces the page behind the dialog (F-001: kept since the loader).
+  if (scope.focus === 'dialog') return key.mod && !key.alt && !key.shift && letterOf(key) === 'o' ? KEEP : NONE;
   // F-012 / RULE-19 Export: Mod+S downloads wherever focus is in the tool, also while text is edited
   // (a text annotation, or a text or number field: the one key besides Esc that keeps its meaning there).
   const exportKey = key.mod && !key.alt && !key.shift ? letterOf(key) : undefined;
@@ -164,6 +191,10 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
   if (scope.focus === 'textAnnotation')
     return !key.mod && !key.alt && key.key === 'Escape' ? act('edit', 'escape') : NONE;
   if (scope.focus === 'text') return NONE;
+  // RULE-19 Load: Mod+V is never kept, so the browser fires the paste event (MOD-IO loads from it);
+  // Mod+O opens a file wherever focus is in the tool.
+  if (exportKey === 'v') return NONE;
+  if (exportKey === 'o') return act('load', 'open');
   // F-009.R1 / RULE-19 History: Mod+Z undo, Mod+Shift+Z redo, Ctrl+Y redo on Windows/Linux — wherever
   // focus is in the tool (not in a text field, above), kept from the browser even with nothing to undo.
   if (key.mod && !key.alt) {
@@ -180,6 +211,11 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
     if (key.key === '-' && !key.shift) return act('view', 'zoomOut');
   }
   if (scope.focus !== 'canvas') return NONE;
+  // F-013.R3 / RULE-19 Help: ? (by the typed character) shows the shortcut list.
+  if (plain && key.key === '?') return act('help', 'shortcuts');
+  // F-013.R4 / RULE-19 Canvas: Tab / Shift+Tab select the next / previous annotation in drawing order;
+  // MOD-Canvas moves focus out of the canvas after the last (or before the first), so the key is kept.
+  if (plain && key.key === 'Tab') return act('canvas', key.shift ? 'previous' : 'next');
   // F-003: Tools — a plain letter picks its tool; Enter places; Esc runs the RULE-19 Esc chain.
   if (plain && !key.shift) {
     const letter = letterOf(key);
@@ -238,6 +274,93 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
   return NONE;
 }
 
-export function shortcutList(): readonly ShortcutRow[] {
-  return notImplemented('shortcutList');
+/**
+ * CMP-ShortcutHelp: every RULE-19 key with its action, grouped as RULE-19 groups them, with Ctrl or ⌘
+ * for the platform (`mac`). Key labels are printed as on the keyboard and never translated; arrow keys
+ * as ← ↑ → ↓; pointer actions with COPY-key.drag and COPY-key.wheel. Aliases (Backspace for Delete,
+ * Mod++ for Mod+=, Ctrl+Y for redo off macOS) are listed with the main key; the move, resize and pan
+ * rows also show Shift for the larger step, and the crop keys share the move and resize rows.
+ * Implements: F-013.R3, CMP-ShortcutHelp "Behavior" and "Accessibility" (spoken key names).
+ */
+export function shortcutList(mac: boolean): readonly ShortcutGroup[] {
+  const key = (id: string) => ({ copyId: `key.${id}` });
+  const OR = key('or');
+  const ARROWS = '← ↑ → ↓';
+  const SAY_ARROWS = key('spoken_arrows');
+  // Modifiers as printed (macOS symbols take no "+") and as spoken (the label on the key).
+  const M = mac ? '⌘' : 'Ctrl+';
+  const S = mac ? '⇧' : 'Shift+';
+  const A = mac ? '⌥' : 'Alt+';
+  const sayM = mac ? 'Command' : 'Ctrl';
+  const sayA = mac ? 'Option' : 'Alt';
+  // Before a pointer word the macOS symbols take a space: "⌥ drag", "⌘ wheel".
+  const Mw = mac ? '⌘ ' : 'Ctrl+';
+  const Aw = mac ? '⌥ ' : 'Alt+';
+  const row = (copyId: string, printed: readonly KeyText[], spoken: readonly KeyText[] = printed): ShortcutRow => ({
+    copyId,
+    printed,
+    spoken,
+  });
+  /** Mod plus a letter: "Ctrl+D" / "⌘D", spoken "Ctrl D" / "Command D". */
+  const mod = (copyId: string, letter: string) => row(copyId, [`${M}${letter}`], [sayM, letter]);
+  const tools = Object.entries(TOOL_LETTERS).map(([letter, tool]) => row(`tool.${tool}`, [letter.toUpperCase()]));
+  return [
+    { copyId: 'shortcuts.tools', rows: tools },
+    {
+      copyId: 'shortcuts.canvas',
+      rows: [
+        row('shortcut.place', ['Enter']),
+        row('shortcut.edit_text', ['Enter']),
+        row('shortcut.next', [`Tab / ${S}Tab`], ['Tab,', OR, 'Shift Tab']),
+      ],
+    },
+    {
+      copyId: 'shortcuts.edit',
+      rows: [
+        row('action.delete', ['Delete / Backspace'], ['Delete,', OR, 'Backspace']),
+        mod('action.duplicate', 'D'),
+        mod('shortcut.select_all', 'A'),
+        row('action.bring_forward', [']']),
+        row('action.send_backward', ['[']),
+        row('shortcut.move', [`${ARROWS} / ${S}${ARROWS}`], [SAY_ARROWS, ',', OR, 'Shift', SAY_ARROWS]),
+        row(
+          'shortcut.resize',
+          [`${A}${ARROWS} / ${A}${S}${ARROWS}`],
+          [sayA, SAY_ARROWS, ',', OR, sayA, 'Shift', SAY_ARROWS],
+        ),
+        row('shortcut.cancel', ['Esc'], ['Escape']),
+      ],
+    },
+    {
+      copyId: 'shortcuts.history',
+      rows: [
+        mod('action.undo', 'Z'),
+        mac
+          ? row('action.redo', ['⌘⇧Z'], ['Command Shift Z'])
+          : row('action.redo', ['Ctrl+Shift+Z / Ctrl+Y'], ['Ctrl Shift Z,', OR, 'Ctrl Y']),
+      ],
+    },
+    {
+      copyId: 'shortcuts.view',
+      rows: [
+        row('action.zoom_in', [`${M}= / ${M}+`], [sayM, key('spoken_equals'), ',', OR, sayM, key('spoken_plus')]),
+        row('action.zoom_out', [`${M}-`], [sayM, key('spoken_minus')]),
+        row('action.zoom_fit', [`${S}1`], ['Shift 1']),
+        row('action.zoom_actual', [`${S}0`], ['Shift 0']),
+        row(
+          'shortcut.pan',
+          ['Space+', key('drag'), ` / ${ARROWS} / ${S}${ARROWS}`],
+          ['Space', key('spoken_plus'), key('drag'), ',', OR, SAY_ARROWS, ',', OR, 'Shift', SAY_ARROWS],
+        ),
+        row('shortcut.zoom_pointer', [Mw, key('wheel')], [sayM, key('spoken_plus'), key('wheel')]),
+      ],
+    },
+    {
+      copyId: 'shortcuts.pointer',
+      rows: [row('shortcut.move_while_drawing', [Aw, key('drag')], [sayA, key('spoken_plus'), key('drag')])],
+    },
+    { copyId: 'shortcuts.load', rows: [mod('shortcut.paste', 'V'), mod('action.open', 'O')] },
+    { copyId: 'shortcuts.export', rows: [mod('action.copy', 'C'), mod('action.download', 'S')] },
+    { copyId: 'shortcuts.help', rows: [row('action.shortcuts', ['?'], [key('spoken_question')])] },
+  ];
 }

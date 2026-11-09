@@ -6,7 +6,8 @@
 // narrow widths, the overflow holding the download are F-012's (./ExportActions.tsx). COPY-action.undo and
 // COPY-action.redo (F-009) are icons named by their labels with their shortcuts, after the tools on one
 // row and after COPY-action.open on the narrow actions row, each disabled while there is nothing to undo
-// or redo (and with no image); focus moves to the other when the clicked one becomes disabled. The overflow's other items (F-013, F-014) are added in the slot marked below.
+// or redo (and with no image); focus moves to the other when the clicked one becomes disabled. COPY-action.more
+// (./MoreMenu.tsx, F-013) ends the row on every layout; F-014 adds its Clear item there.
 // Implements: CMP-Toolbar (tool group, undo/redo, variants no image, compact and narrow; behaviour),
 // F-003 UX notes, F-009.R1, F-009 UX notes.
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
@@ -14,6 +15,7 @@ import { t } from '../copy';
 import { TOOL_KEYS, type ToolName } from '../core';
 import { BUILT_TOOLS, setTool, toolLabel } from './drawing';
 import { ExportActions } from './ExportActions';
+import { MoreMenu } from './MoreMenu';
 import { Icon, type IconName } from './icons';
 import { redo, undo } from './history';
 import { openImage } from './loader';
@@ -230,8 +232,9 @@ export function Toolbar() {
           <OpenButton icon />
           <HistoryButtons />
           <div class="tk-toolbar__spacer" />
-          {/* F-012: redaction count, copy, and the overflow holding the download. */}
+          {/* F-012: redaction count and copy; the overflow holds the download (and the shortcuts, F-013). */}
           <ExportActions />
+          <MoreMenu />
         </div>
         <div class="tk-toolbar__row tk-toolbar__row--tools">
           <ToolGroup narrow />
@@ -248,8 +251,9 @@ export function Toolbar() {
       <span class="tk-toolbar__sep" aria-hidden="true" />
       <HistoryButtons />
       <div class="tk-toolbar__spacer" />
-      {/* F-012: redaction count, copy, download. Slot: the overflow with clear and shortcuts (F-013, F-014). */}
+      {/* F-012: redaction count, copy, download; then COPY-action.more (F-013 shortcuts, F-014 clear). */}
       <ExportActions />
+      <MoreMenu />
     </div>
   );
 }

@@ -17,8 +17,9 @@
 // The select tool (F-008, ./select.ts) selects by click, Shift+click and marquee, and moves the selection
 // or drags a single selection's handles (also Alt+drag with a drawing tool); each frame of a move paints
 // the split drag layers with lo and hi from `dragRange`, so blur and pixelate above a dragged solid are
-// drawn live (ADR-0022), then the selection overlay of the moved annotations. The accessible list arrives
-// with F-013.
+// drawn live (ADR-0022), then the selection overlay of the moved annotations. The accessible list
+// (./list.tsx, F-013) exposes the annotations in drawing order inside the region; Tab and Shift+Tab select
+// the next and previous one, focus its option and keep it in view (RULE-19).
 // The crop tool (F-010, ./crop.ts) shows the crop view: the whole image as the content (RULE-12: Fit shows
 // the whole image; entering or leaving keeps the view, a fitted view is fitted again), no padding, the
 // annotations over the whole image, the outside of the frame dimmed with the frame's handles and its size
@@ -27,10 +28,11 @@
 // Implements: F-001.R6, F-002.R1/R3/R4, F-003.R1/R5/R6, F-004.R1/R2/R4, F-006.R1/R4, ADR-0009 §4, RULE-12, CMP-Canvas "Behavior" (two fingers pan
 // and zoom) and "drawing" / "selected", architecture A5 (crisp from 200 %), ADR-0016, ADR-0022;
 // F-005.R1/R2/R3/R4, CMP-TextEditor, ADR-0009, ADR-0020; F-007.R1/R3, ADR-0006, ADR-0017; F-008.R1/R2/R3/R6,
-// RULE-05, RULE-06; F-010.R1/R2/R4, CMP-Canvas "cropping".
+// RULE-05, RULE-06; F-010.R1/R2/R4, CMP-Canvas "cropping"; F-013.R4, CMP-Canvas "Accessibility", RULE-19 (Tab).
 import { useEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
 import {
+  boundsOf,
   canvasRect,
   CRISP_ZOOM,
   EDITOR_CARET_ROOM_PX,
@@ -70,6 +72,7 @@ import { connectFontGate, fontGate } from './fonts';
 import { InputController, pointerInput, type ToolInput } from './input';
 import { TextTool, type TextEdit, type TextEndReason } from './text';
 import { ImageLayer } from './layer';
+import { AnnotationList, leaveRegion, nextIndex } from './list';
 import { ViewController } from './view';
 
 export interface CanvasProps {
@@ -94,8 +97,15 @@ export interface CanvasProps {
   readonly onTextEnd?: (edit: TextEdit, text: TextAnnotation | null, reason: TextEndReason) => void;
   /** Focus may move to this element while a text is edited without ending the edit (the style panel). */
   readonly keepsTextEdit?: (target: Element) => boolean;
-  /** F-008.R1: the select tool changed the selection (a click, Shift+click or marquee; not an undo step). */
-  readonly onSelect?: (ids: readonly string[]) => void;
+  /**
+   * F-008.R1: the select tool changed the selection (a click, Shift+click or marquee; not an undo step);
+   * `via` is 'keyboard' for Tab / Shift+Tab (F-013), whose option then has focus and is read out itself.
+   */
+  readonly onSelect?: (ids: readonly string[], via?: 'pointer' | 'keyboard') => void;
+  /** F-013: the accessible name of an annotation's option (CMP-Canvas "Accessibility"; MOD-App). */
+  readonly annotationName?: (a: Annotation) => string;
+  /** CMP-TextEditor is open (SCR-Annotator "editing-text"): the annotation list has no Tab stop. */
+  readonly editingText?: boolean;
   /** F-008.R2/R3: a finished move or resize; MOD-App records it as one undo step (RULE-11). */
   readonly onEdit?: (changes: readonly Annotation[]) => void;
   /** F-010.R1: a finished crop drag; MOD-App records it as one undo step (RULE-11). */
@@ -119,6 +129,10 @@ export interface ActiveCanvas {
   beginTextEdit(id: string): boolean;
   /** RULE-19 Esc: ends the text edit, keeping the text, and returns focus to the canvas; true if one was open. */
   endTextEdit(): boolean;
+  /** RULE-19 Tab (1) / Shift+Tab (−1) through the annotations (./list.tsx); false when nothing was done. */
+  selectStep(dir: 1 | -1): boolean;
+  /** RULE-19: pans the view so these annotations (newly placed or selected) are visible. */
+  reveal(annotations: readonly Annotation[]): void;
 }
 
 let active: ActiveCanvas | null = null;
@@ -194,6 +208,8 @@ export function Canvas({
   onSelect,
   onEdit,
   onFrame,
+  annotationName = (a) => a.kind,
+  editingText = false,
 }: CanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
   const chipRef = useRef<HTMLSpanElement>(null);
@@ -237,6 +253,8 @@ export function Canvas({
     onFrame,
   });
   const controller = useRef<ViewController | null>(null);
+  /** RULE-19: activating an option (a screen reader's click) selects it alone and keeps it in view. */
+  const pickOption = useRef<(id: string) => void>(() => {});
   controller.current ??= new ViewController((v) => {
     live.current.onView?.(v);
     live.current.onViewChanged();
@@ -757,6 +775,24 @@ export function Canvas({
       if (text.editAtScreen(local(e))) e.preventDefault();
     };
 
+    // RULE-19: the view scrolls to keep a newly placed or selected annotation visible (their joint box).
+    const reveal = (annotations: readonly Annotation[]) => {
+      const short = Math.min(live.current.image.width, live.current.image.height);
+      const boxes = annotations.map((a) => boundsOf(a, short, measureLine));
+      if (!boxes.length) return;
+      const x = Math.min(...boxes.map((b) => b.x));
+      const y = Math.min(...boxes.map((b) => b.y));
+      const right = Math.max(...boxes.map((b) => b.x + b.width));
+      const bottom = Math.max(...boxes.map((b) => b.y + b.height));
+      view.reveal({ x, y, width: right - x, height: bottom - y });
+    };
+    pickOption.current = (id) => {
+      const a = live.current.doc.annotations.find((n) => n.id === id);
+      if (!a) return;
+      live.current.onSelect?.([id], 'keyboard');
+      reveal([a]);
+    };
+
     active = {
       controller: view,
       holdSpace: (held) => input.holdSpace(held),
@@ -776,6 +812,34 @@ export function Canvas({
         if (ended) region()?.focus({ preventScroll: true });
         return ended;
       },
+      selectStep: (dir) => {
+        const area = region();
+        if (!area) return false;
+        const { doc: scene, selection: picked } = live.current;
+        const focused = document.activeElement;
+        const focusedId =
+          focused instanceof HTMLElement && area.contains(focused) ? (focused.dataset['annotation'] ?? null) : null;
+        const i = nextIndex(
+          scene.annotations.map((a) => a.id),
+          picked,
+          focusedId,
+          dir,
+        );
+        // RULE-19: after the last (or before the first) annotation, focus leaves the canvas. The browser
+        // moves it (radio groups, notices and the host page keep their own Tab order), except forward from
+        // the region itself while an option holds the Tab stop: the browser would move into that option.
+        if (i === null) {
+          const stop = area.querySelector('.tk-annotation[tabindex="0"]');
+          return dir > 0 && focused === area && !!stop && leaveRegion(area, true);
+        }
+        const a = scene.annotations[i];
+        if (!a) return false;
+        live.current.onSelect?.([a.id], 'keyboard');
+        reveal([a]);
+        area.querySelector<HTMLElement>(`[data-annotation="${CSS.escape(a.id)}"]`)?.focus({ preventScroll: true });
+        return true;
+      },
+      reveal: (annotations) => reveal(annotations),
     };
 
     measure();
@@ -857,6 +921,13 @@ export function Canvas({
         autocapitalize="off"
       />
       <span ref={chipRef} class="tk-crop-chip" aria-hidden="true" />
+      <AnnotationList
+        annotations={doc.annotations}
+        selection={selection}
+        name={annotationName}
+        editing={editingText}
+        onPick={(id) => pickOption.current(id)}
+      />
     </>
   );
 }

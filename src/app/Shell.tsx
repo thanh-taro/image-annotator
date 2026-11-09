@@ -9,6 +9,8 @@
 // padding and background; the status bar shows the canvas size once padding exists too.
 // Implements: SCR-Annotator states empty, default (image fitted), canvas-settings, selecting, editing-text, cropping, dragging-file,
 // loading, error; F-001.R6, F-001.R8; CMP-ConfirmDialog "the rest of the tool is inert"; D-014 layout widths.
+// F-013: CMP-ShortcutHelp over the tool (modal, the rest inert); the canvas region is the Tab stop only
+// while nothing is selected (CMP-Canvas "Accessibility"), and the canvas names its annotation options.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
 import { Canvas } from '../canvas';
@@ -18,7 +20,8 @@ import { DropOverlay } from './DropOverlay';
 import { EmptyState } from './EmptyState';
 import { NoticeView } from './NoticeView';
 import { PrivacyStatus } from './PrivacyStatus'; // F-016
-import { createAnnotation, select, textEditEnded, textEditStarted } from './drawing';
+import { annotationName, createAnnotation, pick, textEditEnded, textEditStarted } from './drawing';
+import { ShortcutHelp } from './ShortcutHelp'; // F-013
 import { commitDrag } from './editing'; // F-008
 import { commitFrame, shownCanvasSize } from './crop'; // F-010
 import { viewChanged } from './history'; // F-009: a zoom or pan ends a nudge chain (RULE-11)
@@ -36,6 +39,7 @@ import {
   notice,
   polite,
   selection,
+  shortcutsOpen,
   textEditing,
   tool,
   type Layout,
@@ -60,6 +64,7 @@ function keepEditorFocus(e: MouseEvent): void {
 
 function screenState(): string {
   if (dialog.value) return dialog.value.kind === 'replace' ? 'confirm-replace' : 'confirm-scale-down';
+  if (shortcutsOpen.value) return 'shortcut-help'; // F-013 (SCR-Annotator overlay CMP-ShortcutHelp)
   if (dragging.value) return 'dragging-file';
   if (notice.value?.kind === 'progress') return 'loading';
   if (notice.value?.kind === 'error') return 'error';
@@ -74,7 +79,9 @@ export function Shell() {
   const current = loaded.value;
   const scene = doc.value;
   const modal = dialog.value;
-  const inert = modal ? true : undefined;
+  // CMP-ConfirmDialog and CMP-ShortcutHelp are modal: the rest of the tool is inert while one is open.
+  const help = shortcutsOpen.value && !modal;
+  const inert = modal || help ? true : undefined;
   const info = current?.image.info;
   const active = tool.value;
   // CMP-StatusBar / D-017: the canvas size once a crop or padding exists (RULE-15: the export size); the
@@ -115,9 +122,10 @@ export function Shell() {
           class="tk-work-area"
           aria-label={t('a11y.canvas')}
           aria-describedby={info ? 'tk-canvas-summary' : undefined}
-          // CMP-Canvas: one focusable region while an image is shown (RULE-19 canvas keys, F-002.R4); its
-          // role becomes the annotation list's with F-013. While CMP-TextEditor is open it has no Tab stop.
-          tabIndex={current ? (textEditing.value ? -1 : 0) : undefined}
+          // CMP-Canvas: one focusable region while an image is shown (RULE-19 canvas keys, F-002.R4). It is the
+          // Tab stop while nothing is selected; else the selected annotation's option is (F-013, roving focus).
+          // While CMP-TextEditor is open neither has a Tab stop.
+          tabIndex={current ? (textEditing.value || selection.value.length ? -1 : 0) : undefined}
           inert={inert}
         >
           {current && info && scene ? (
@@ -135,7 +143,9 @@ export function Shell() {
                 onTextEdit={textEditStarted}
                 onTextEnd={textEditEnded}
                 keepsTextEdit={inPanel}
-                onSelect={select}
+                onSelect={pick}
+                annotationName={annotationName}
+                editingText={!!textEditing.value}
                 onEdit={commitDrag}
                 onFrame={commitFrame}
               />
@@ -171,6 +181,7 @@ export function Shell() {
       </footer>
       {dragging.value && <DropOverlay />}
       {modal && <ConfirmDialog request={modal} />}
+      {help && <ShortcutHelp />}
     </div>
   );
 }

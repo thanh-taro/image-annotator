@@ -7,10 +7,11 @@
 // resize a single selection), F-008.R5 (delete, duplicate offset 10 px right and down and selected,
 // reorder), F-008.R7 (one undo step each), F-008.R8 (position and size fields), F-006.R2/R5 (steps
 // renumbered on delete, a duplicated step gets the next number, RULE-07), RULE-11, RULE-19 Edit.
+import { canvasCommands } from '../canvas';
 import { t } from '../copy';
 import { altResized, moved, withGeometry, type Annotation, type GeometryField } from '../core';
 import { duplicate, edit, remove, reorder, type Op, type Selection } from '../document';
-import { select } from './drawing';
+import { announceSelection, select } from './drawing';
 import { announcePolite, commit, doc, loaded, selection } from './state';
 
 /** The selected annotations, in drawing order. */
@@ -43,13 +44,18 @@ export function duplicateSelection(): void {
   if (!l || !ids.length) return;
   const copies = ids.map(() => l.session.newId());
   apply(duplicate(ids, copies), copies);
+  // RULE-19: the newly placed copies are kept in view (F-013 review m1).
+  const placed = new Set(copies);
+  canvasCommands.reveal((doc.value?.annotations ?? []).filter((a) => placed.has(a.id)));
   announcePolite(t('a11y.duplicated_count', { count: copies.length }));
 }
 
 /** F-008.R1 / RULE-19 Mod+A: selects every annotation, in drawing order (not an undo step). */
 export function selectAll(): void {
   const all = (doc.value?.annotations ?? []).map((a) => a.id);
-  if (all.length) select(all);
+  if (!all.length) return;
+  select(all);
+  announceSelection(all); // CMP-Canvas "Accessibility": COPY-a11y.selected_count (F-013)
 }
 
 /** F-008.R5 / RULE-19 ] and [: brings the selection forward or sends it backward one place (one step). */

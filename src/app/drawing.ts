@@ -9,7 +9,8 @@
 // to solid gives it the current solid colour (F-007.AC8).
 // Implements: F-003.R3/R6, F-004.R1/R2 (the pen and highlight tools), F-006.R1 (the step tool), F-005.R1/R3/R4/R6
 // (the text tool), F-007.R1/R2/R4/R6 (the redaction tool and its choices), RULE-04, RULE-10, RULE-08, RULE-11, RULE-19 (Esc chain, Enter on a text), CMP-Toolbar "Behavior",
-// CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed, deleted_count).
+// CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed, deleted_count;
+// F-013: the annotation options' names and the selection announcements).
 import { canvasCommands, type TextEdit, type TextEndReason } from '../canvas';
 import { t, type MessageId } from '../copy';
 import {
@@ -83,6 +84,39 @@ export function setTool(next: ToolName): void {
 export function select(ids: Selection): void {
   selection.value = ids;
   loaded.value?.session.history.noteSelection(ids);
+}
+
+/**
+ * CMP-Canvas "Accessibility": an annotation's name in the annotation list and in announcements —
+ * COPY-a11y.step_annotation for steps (their label, plain digits, RULE-07), COPY-a11y.text_annotation for
+ * text, else COPY-a11y.annotation with the tool's name (a redaction: its kind's). The position is the
+ * first two position fields (F-008.R8): a box's top-left, a line's start, a text's anchor, a step's centre.
+ */
+export function annotationName(a: Annotation): string {
+  const [[, x] = ['x', 0], [, y] = ['y', 0]] = geometryOf(a);
+  if (a.kind === 'step') return t('a11y.step_annotation', { number: String(Math.trunc(a.number)), x, y });
+  if (a.kind === 'text') return t('a11y.text_annotation', { text: a.text, x, y });
+  const kind = a.kind === 'redaction' ? kindLabel(a.style.redactionKind) : toolLabel(toolOf(a.kind));
+  return t('a11y.annotation', { kind, x, y });
+}
+
+/**
+ * CMP-Canvas "Accessibility": a new selection is announced politely — one annotation with its name,
+ * several with COPY-a11y.selected_count. Not for Tab (its option takes focus and is read out itself).
+ */
+export function announceSelection(ids: Selection): void {
+  if (!ids.length) return;
+  const [id] = ids;
+  const one = ids.length === 1 ? doc.value?.annotations.find((a) => a.id === id) : undefined;
+  announcePolite(one ? annotationName(one) : t('a11y.selected_count', { count: ids.length }));
+}
+
+/** F-008.R1 / F-013: the canvas changed the selection — by pointer (announced) or by Tab (focus shows it). */
+export function pick(ids: Selection, via: 'pointer' | 'keyboard' = 'pointer'): void {
+  const before = selection.value;
+  select(ids);
+  const same = before.length === ids.length && before.every((x, i) => x === ids[i]);
+  if (via === 'pointer' && !same) announceSelection(ids);
 }
 
 /**

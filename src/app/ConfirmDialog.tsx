@@ -4,6 +4,7 @@
 // from COPY IDs, so a language switch changes it without changing the pending choice.
 import { useLayoutEffect, useRef } from 'preact/hooks';
 import { t } from '../copy';
+import { returnFocusLater } from './focus';
 import type { DialogRequest } from './state';
 
 function texts(request: DialogRequest) {
@@ -43,7 +44,8 @@ export function ConfirmDialog({ request }: { request: DialogRequest }) {
     document.addEventListener('keydown', onKeyDown, true);
     return () => {
       document.removeEventListener('keydown', onKeyDown, true);
-      if (returnTo instanceof HTMLElement && returnTo.isConnected) returnTo.focus();
+      // F-013 (review M3): after the render that clears `inert` from the rest of the tool (./focus.ts).
+      returnFocusLater(returnTo);
     };
   }, [request]);
 
