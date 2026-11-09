@@ -24,7 +24,6 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 |---|---|
 | F-015.AC6, AC7 | every M-1 feature (end of M-1) |
 | F-018.AC7 | every screen state (end of M-1) |
-| F-014.AC5 (leave warning after undo) | F-014; unexported half unit-tested |
 
 ## Manual checks collected so far
 - Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
