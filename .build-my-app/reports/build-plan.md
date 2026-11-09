@@ -31,6 +31,9 @@ Gate (end of M-1): all 18 `shipped`; `pnpm check:full` green; AC coverage 100%, 
 - Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
 - Real Mod+V paste on WebKit (F-001)
 - NFR-04 memory with blur/pixelate at the RULE-02 limit (F-007; measure in QA)
+- Screen readers (VoiceOver, NVDA), 400 % reflow, forced colours, notices and touch (a11y F-013)
+- Firefox: embedded and standalone offline copies kept apart; real Chrome partitioning (F-017)
+- Real Safari: second download of the offline files on a first visit (ADR-0024)
 - WebKit IME and Safari Telex Vietnamese input, real drop of text into the editor (F-005)
 
 ## Notes for later features
