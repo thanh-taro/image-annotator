@@ -48,5 +48,6 @@ in the toolbar's overflow and is unavailable while no image is loaded (there is 
 ## Edge cases
 - Undo back to the loaded state → still counts as changed until exported (RULE-18).
 - Embedded in a browser that never shows leave-page dialogs from an embedded page (ADR-0021: WebKit-based) → no warning, even when the host allows dialogs. Accepted as a known gap for M-1 (D-028). Standalone, R1 applies (AC1).
+- A notice or the narrow style sheet is showing when the user starts over → both close; the empty state shows alone.
 
 ## Open questions
