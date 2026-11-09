@@ -2,7 +2,7 @@
 // style, or of the selection (only the choices every selected kind shares; a choice whose selected
 // annotations differ has nothing marked). Changes apply immediately (RULE-04). F-008 adds the position
 // and size fields of a single selection and the selection actions (not while a text is edited); canvas
-// settings (F-011) are added in the slot marked below; the crop tool shows the frame's (F-010). Redactions (F-007) show COPY-redact.kind first (solid with a check icon; blur and
+// settings (F-011: padding and background, with nothing selected and the select tool); the crop tool shows the frame's (F-010). Redactions (F-007) show COPY-redact.kind first (solid with a check icon; blur and
 // pixelate tagged COPY-redact.not_secure_short); blur and pixelate add the inline not-secure note
 // (COPY-redact.not_secure, not a dialog) with COPY-redact.use_solid, then COPY-style.strength; solid has
 // colour only — never opacity, fill or size (F-007.R2).
@@ -15,7 +15,9 @@
 // RULE-04, NFR-06 (colour choices named, not shown by colour alone); F-007.R2/R4/R6, RULE-10 (not-secure
 // labels wherever blur and pixelate are shown or chosen), style.md principle 5 (honest safety);
 // F-008.R4/R5/R8, D-008, NFR-06 (the position and size fields are the non-drag alternative); F-010.R3/R4/R6
-// (CMP-StylePanel "crop": frame size, position and size fields, reset).
+// (CMP-StylePanel "crop": frame size, position and size fields, reset); F-011.R1/R2/R5, RULE-14 (CMP-StylePanel
+// "canvas": the padding sizes, the unavailable ones disabled with COPY-canvas.padding_unavailable, and the
+// background, transparent or a palette colour).
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { viewCommands } from '../canvas';
 import { t, type MessageId } from '../copy';
@@ -27,11 +29,13 @@ import {
   type Frame,
   type FrameField,
   type GeometryField,
+  type PaddingSize,
   type RedactionKind,
   type Size,
 } from '../core';
 import { cropSizeText, resetFrame, setFrameField } from './crop';
-import { panelModel, setStyle, sizeLabel, summaryDetail, type PanelModel } from './drawing';
+import { paddingLabel, panelModel, setStyle, sizeLabel, summaryDetail, type PanelModel } from './drawing';
+import { setBackground, setPadding } from './padding';
 import { deleteSelection, duplicateSelection, reorderSelection, setGeometry } from './editing';
 import { Icon } from './icons';
 import { currentStyles, doc, layout, selection, sheetOpen, textEditing, tool } from './state';
@@ -62,6 +66,9 @@ const KIND_ICON = { solid: 'shieldCheck', blur: 'blur', pixelate: 'pixelate' } a
 const KINDS: readonly RedactionKind[] = ['solid', 'blur', 'pixelate'];
 
 const SIZES: readonly Size[] = ['S', 'M', 'L'];
+const PADDINGS: readonly PaddingSize[] = ['none', 'S', 'M', 'L'];
+/** F-011.R2: the background choices, transparent first, then the palette (CMP-StylePanel "canvas"). */
+const BACKGROUNDS: readonly ('transparent' | Colour)[] = ['transparent', ...PALETTE_NAMES];
 const FILLS: readonly Fill[] = ['none', 'solid', 'translucent'];
 
 /** A labelled group of native radio buttons (arrow keys move and choose, as in any radio group). */
@@ -75,13 +82,23 @@ function Choice<T extends string>(props: {
   swatches?: boolean;
   /** A vertical list of choices with their own content (the redaction kinds). */
   list?: (v: T) => ComponentChildren;
+  /** F-011.R5: choices that are shown but unavailable. */
+  disabled?: (v: T) => boolean;
+  /** The id of a note that describes the group. */
+  describedBy?: string | undefined;
   children?: ComponentChildren;
 }) {
-  const { name, legend, values, value, label, onPick, swatches, list, children } = props;
-  const group = swatches ? 'tk-swatches' : list ? 'tk-kinds' : 'tk-segmented';
+  const { name, legend, values, value, label, onPick, swatches, list, disabled, describedBy, children } = props;
+  const group = swatches
+    ? 'tk-swatches'
+    : list
+      ? 'tk-kinds'
+      : values.length === 4
+        ? 'tk-segmented tk-segmented--4'
+        : 'tk-segmented';
   const item = (v: T) => (swatches ? `tk-swatch tk-swatch--${v}` : list ? 'tk-kind' : 'tk-segment');
   return (
-    <fieldset class="tk-panel__section">
+    <fieldset class="tk-panel__section" aria-describedby={describedBy}>
       <legend class="tk-panel__heading">{legend}</legend>
       <div class={group}>
         {values.map((v) => (
@@ -92,6 +109,7 @@ function Choice<T extends string>(props: {
               name={name}
               value={v}
               checked={v === value}
+              disabled={disabled?.(v)}
               onChange={() => onPick(v)}
             />
             {list ? list(v) : <span class={swatches ? 'tk-sr' : 'tk-segment__text'}>{label(v)}</span>}
@@ -120,7 +138,7 @@ function KindLabel({ kind }: { kind: RedactionKind }) {
 }
 
 function Sections({ model }: { model: PanelModel }) {
-  if (model.variant === 'canvas') return null; // Slot: padding and background (F-011).
+  if (model.canvas) return <CanvasSettings canvas={model.canvas} />;
   if (model.frame) return <Crop frame={model.frame} />;
   return (
     <>
@@ -338,6 +356,47 @@ function Crop({ frame }: { frame: Frame }) {
           {t('action.crop_reset')}
         </button>
       </div>
+    </>
+  );
+}
+
+const UNAVAILABLE_NOTE = 'tk-padding-unavailable';
+
+/**
+ * CMP-StylePanel "canvas" (F-011.R1/R2/R5, RULE-14): COPY-canvas.padding — COPY-canvas.padding_none, then
+ * COPY-style.size_s/m/l, the sizes whose canvas would exceed RULE-02 disabled and, when there are any,
+ * COPY-canvas.padding_unavailable below them (describing the group) — and COPY-canvas.background:
+ * COPY-canvas.transparent (the checkerboard), then the palette, named by colour (NFR-06). One step each.
+ */
+function CanvasSettings({ canvas }: { canvas: NonNullable<PanelModel['canvas']> }) {
+  const unavailable = PADDINGS.some((p) => !canvas.available.includes(p));
+  return (
+    <>
+      <Choice
+        name="tk-canvas-padding"
+        legend={t('canvas.padding')}
+        values={PADDINGS}
+        value={canvas.padding}
+        label={paddingLabel}
+        onPick={setPadding}
+        disabled={(p) => !canvas.available.includes(p)}
+        describedBy={unavailable ? UNAVAILABLE_NOTE : undefined}
+      >
+        {unavailable && (
+          <p id={UNAVAILABLE_NOTE} class="tk-panel__note">
+            {t('canvas.padding_unavailable')}
+          </p>
+        )}
+      </Choice>
+      <Choice
+        name="tk-canvas-background"
+        legend={t('canvas.background')}
+        values={BACKGROUNDS}
+        value={canvas.background}
+        label={(b) => (b === 'transparent' ? t('canvas.transparent') : t(COLOUR_COPY[b]))}
+        onPick={setBackground}
+        swatches
+      />
     </>
   );
 }

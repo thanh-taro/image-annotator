@@ -3,9 +3,10 @@
 // The session, its history and the RULE-18 change epoch are built (F-001); `add` and `restyle` (F-003);
 // step numbering in `add`, `remove` and `duplicate` (F-006, RULE-07); `update`, `edit` and `reorder`
 // (F-008, wired with `remove` and `duplicate` to the keys and the panel by MOD-App); the text commit rules
-// in `commitText` (F-005); `setFrame` with the padding step-down (F-010, F-011.R6); the padding operations
-// throw until F-011 builds them.
+// in `commitText` (F-005); `setFrame` with the padding step-down (F-010, F-011.R6); `setPadding` and
+// `setBackground` (F-011).
 import {
+  availablePaddings,
   DUPLICATE_OFFSET,
   HISTORY_STEPS,
   isBlankText,
@@ -34,10 +35,6 @@ export type Selection = readonly string[];
 
 /** One pure edit operation: a function from a document to a new document. */
 export type Op = (doc: Doc) => Doc;
-
-const notImplemented = (name: string): never => {
-  throw new Error(`not implemented: MOD-Document ${name}`);
-};
 
 const freezeAnnotation = (a: Annotation): Annotation => {
   const out = { ...a, style: Object.freeze({ ...a.style }) } as Annotation;
@@ -183,8 +180,28 @@ export const setFrame =
     const padding = stepDownPadding(next, doc.padding);
     return freeze({ ...doc, frame: next, padding: padding === doc.padding ? padding : freeze({ ...padding }) });
   };
-export const setPadding = (_size: PaddingSize): Op => notImplemented('setPadding');
-export const setBackground = (_background: 'transparent' | Colour): Op => notImplemented('setBackground');
+/**
+ * F-011.R1/R4/R5 / RULE-14: sets the padding size as one step (RULE-11); the frame is never touched
+ * (RULE-13). A size whose canvas would exceed RULE-02's limits is unavailable, so it changes nothing, and
+ * the size the document already has is no step (ADR-0008).
+ */
+export const setPadding =
+  (size: PaddingSize): Op =>
+  (doc) => {
+    if (doc.padding.size === size || !availablePaddings(doc.frame).includes(size)) return doc;
+    return freeze({ ...doc, padding: freeze({ ...doc.padding, size }) });
+  };
+
+/**
+ * F-011.R2 / RULE-14: sets the background of the whole canvas — transparent or a palette colour — as one
+ * step (RULE-11); the same background is no step.
+ */
+export const setBackground =
+  (background: 'transparent' | Colour): Op =>
+  (doc) => {
+    if (doc.padding.background === background) return doc;
+    return freeze({ ...doc, padding: freeze({ ...doc.padding, background }) });
+  };
 
 /**
  * F-005.R6 / RULE-11 / RULE-08 text commit rules (MOD-Document "Responsibility"): `text` is the edited

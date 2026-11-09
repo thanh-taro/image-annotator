@@ -62,7 +62,8 @@ test.describe('F-001 load an image', () => {
     await open(page);
     await paste(page, [PNG_WIDE]);
     await expectLoaded(page, 2000, 1000);
-    await expect(state(page)).toHaveAttribute('data-state', 'default');
+    // The select tool with nothing selected: SCR-Annotator "canvas-settings" (F-011).
+    await expect(state(page)).toHaveAttribute('data-state', 'canvas-settings');
     await expect(page.locator('[role="status"]')).toHaveText('Image opened, 2,000 × 1,000 px');
 
     // Fit (RULE-12): the whole image is visible, centred, inside the work area's margin, below 100 %.

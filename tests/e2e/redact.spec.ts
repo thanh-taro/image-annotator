@@ -5,8 +5,8 @@
 // export uses (ADR-0004, NFR-08). The blur is compared with the slow reference of ADR-0006
 // (src/effects/reference.ts) computed here in Node from the image's own pixels.
 // The exported file (F-012) is checked too: downloaded, decoded in Node (ADR-0019) and compared with the
-// same reference. AC9's "sent behind" and AC10's "brought to front" use the order controls (F-008). Still
-// waiting: AC13's padding half (F-011) — the named `test.fixme` placeholder at the end; its crop half is in crop.spec.ts.
+// same reference. AC9's "sent behind" and AC10's "brought to front" use the order controls (F-008). AC13's
+// padding half (F-011) is at the end; its crop half is in crop.spec.ts.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { referenceBlur, referencePixelate } from '../../src/effects/reference';
@@ -583,5 +583,51 @@ test.describe('F-007 redact', () => {
       await expect(tag).toBeVisible();
     }
   });
-  test.fixme('F-007.AC13 (padding) the part of a blur box in padding M on white exports white (needs F-011; the crop part is in crop.spec.ts)', async () => {});
+  test('F-007.AC13 (padding) a blur across the frame’s left edge in padding M on white: its padding part exports white', async ({
+    page,
+  }) => {
+    const { pixels } = await open(page, 1000, 500);
+    // A 400 × 200 frame at (300, 150) (F-010), padding M (24 px) on white (F-011).
+    await toolButton(page, 'Crop (C)').click();
+    const fields = panel(page).locator('.tk-geometry__input');
+    for (const [i, value] of [
+      [2, 400],
+      [3, 200],
+      [0, 300],
+      [1, 150],
+    ] as const) {
+      await fields.nth(i).fill(String(value));
+      await fields.nth(i).press('Enter');
+      await expect(fields.nth(i)).toHaveValue(String(value));
+    }
+    await toolButton(page, 'Select (V)').click();
+    await panel(page).getByRole('group', { name: 'Padding' }).getByRole('radio', { name: 'Medium' }).check();
+    await panel(page).getByRole('group', { name: 'Background' }).getByRole('radio', { name: 'White' }).check();
+    await expect(summary(page)).toHaveText('448 × 248 px canvas, 0 annotations');
+    await toolButton(page, 'Redact (X)').click();
+    await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
+    // The 448 × 248 canvas at 100 %, centred: image (x, y) at (400 + x − 300, 300 + y − 150). The box is
+    // image 250…400 × 170…250: 250…276 outside the canvas, 276…300 in the padding, 300…400 in the frame.
+    const shot: Shot = { width: 1000, height: 500, at: { x: 100, y: 150 } };
+    await dragImage(page, shot, [250, 170], [400, 250]);
+    await page.mouse.up();
+    await expect(summary(page)).toHaveText('448 × 248 px canvas, 1 annotation');
+    const png = expectCleanPng((await download(page, () => downloadButton(page).click())).bytes);
+    expect([png.width, png.height]).toEqual([448, 248]);
+    // RULE-10 / RULE-14: the part in the padding shows the background (export x 0…24, rows 44…124).
+    expect(pngRegion(png, 0, 44, 24, 80)).toEqual(Array.from({ length: 24 * 80 }, () => [255, 255, 255, 255]).flat());
+    // The part in the frame equals the reference, which reads only image pixels inside the frame.
+    const ref = referenceBlur(
+      { data: pixels, width: 1000, height: 500 },
+      { x: 300, y: 150, width: 400, height: 200 },
+      { x: 250, y: 170, width: 150, height: 80 },
+      10,
+      [],
+    );
+    expect(ref && [ref.x, ref.y, ref.width, ref.height]).toEqual([300, 170, 100, 80]);
+    const got = pngRegion(png, 24, 44, 100, 80);
+    let worst = 0;
+    for (let i = 0; i < got.length; i++) worst = Math.max(worst, Math.abs((got[i] ?? 0) - (ref?.data[i] ?? 0)));
+    expect(worst).toBeLessThanOrEqual(1);
+  });
 });
