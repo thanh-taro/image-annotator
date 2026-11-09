@@ -204,15 +204,15 @@ Rows marked with an audit are left for the performance, accessibility and securi
 
 | NFR | Method (specs/50-quality/nfr.md) | Evidence so far | Owner / last result |
 |---|---|---|---|
-| NFR-01 | Network log during a full M-1 session; policy header present; cross-origin request refused | tests/e2e/host (request log), tests/e2e/privacy.spec.ts, export.spec.ts F-012.AC9 | automated: pass; security audit to confirm |
-| NFR-02 | Interaction traces on both reference images | not yet run (before release) | perf audit |
-| NFR-03 | Timed runs on the reference machine (14.7 MP open 1 s, export 1.5 s; 5.2 MP 0.5 s) | not yet run | perf audit |
-| NFR-04 | Memory snapshots after load, edit and replace at the RULE-02 limit with 200 annotations | not yet run (manual item: blur/pixelate at the limit) | perf audit |
-| NFR-05 | Lighthouse with throttling (`pnpm lhci`), `pnpm check:size` | check:size passes; lhci not run by QA phase 5 | perf audit |
-| NFR-06 | Automated axe audit (every state, both themes) + manual screen-reader pass | axe tests in e2e: pass; screen-reader pass is manual | a11y audit |
-| NFR-07 | E2E on Chromium and WebKit; Gecko and tablet touch manual; 320 px layout | e2e pass; tests/e2e/host/narrow-states.spec.ts (320 px) pass; Gecko/touch manual | a11y/QA |
-| NFR-08 | Pixel-comparison and file-inspection tests incl. wide-gamut | export.spec.ts, redact.spec.ts, flows: pass | pending audit sign-off |
-| NFR-09 | Header check + message-origin tests | tests/e2e/host/host-integration.spec.ts: pass | security audit |
+| NFR-01 | Network log during a full M-1 session; policy header present; cross-origin request refused | tests/e2e/qa/security-network.spec.ts (full session, first-visit paste), host request log, privacy.spec.ts | **pass** (qa-security.md; worker seeded early per ADR-0025) |
+| NFR-02 | Interaction traces on both reference images | tests/perf: 57–61 fps drawing/moving/resizing, p95 frame 16.8 ms, feedback ~50 ms (headless, software GL) | **pass** (qa-perf.md); GPU Chromium manual |
+| NFR-03 | Timed runs on the reference machine (14.7 MP open 1 s, export 1.5 s; 5.2 MP 0.5 s) | open 110/51 ms, export ~390/160 ms | **pass** (qa-perf.md); reference laptop manual |
+| NFR-04 | Memory snapshots after load, edit and replace at the RULE-02 limit with 200 annotations | peak 281 MB of 1 GB; replace within 8 % | **pass** (qa-perf.md); WebKit manual |
+| NFR-05 | Lab measurement with throttling (10 Mbit/s, 40 ms) | cold 267 ms, cached 67 ms, 110 KB transfer; check:size passes | **pass** (qa-perf.md); production host manual |
+| NFR-06 | Automated axe audit (every state, both themes) + manual screen-reader pass | tests/e2e/qa/a11y-matrix.spec.ts: 0 violations (h1 rule now on); keyboard probes pass | **pass automated** (qa-a11y.md); screen-reader pass manual |
+| NFR-07 | E2E on Chromium and WebKit; Gecko and tablet touch manual; 320 px layout | full e2e both engines; narrow-states 320 px pass | **pass automated**; Gecko and tablet touch manual |
+| NFR-08 | Pixel-comparison and file-inspection tests incl. wide-gamut | export.spec.ts, redact.spec.ts, flows, qa/security-content.spec.ts (metadata stripped, solids fully replaced) | **pass** |
+| NFR-09 | Header check + message-origin tests | host-integration.spec.ts, smoke-host.spec.ts, m1-embedded.spec.ts (only the ready signal) | **pass** (qa-security.md) |
 
 ## Flows
 
@@ -223,13 +223,26 @@ Rows marked with an audit are left for the performance, accessibility and securi
 
 ## Manual checks awaiting the user's sign-off
 
-From `.build-my-app/reports/build-plan.md` ("Manual checks collected so far"). None is done.
+Collected from the build plan and the QA audits. Automated checks cover everything else. Step-by-step
+screen-reader steps are in `qa-a11y.md` ("Manual checklist").
 
-- [ ] Safari trackpad pinch zoom (F-002.R3; e2e uses synthetic gesture events)
-- [ ] Real Mod+V paste on WebKit (F-001)
-- [ ] NFR-04 memory with blur/pixelate at the RULE-02 limit (F-007)
-- [ ] Screen readers (VoiceOver, NVDA), 400 % reflow, forced colours, notices and touch (a11y F-013)
-- [ ] Firefox: embedded and standalone offline copies kept apart; real Chrome partitioning (F-017)
-- [ ] Real Safari: second download of the offline files on a first visit (ADR-0024)
-- [ ] Security review F-017 m3: on a first visit, work pasted before the offline copy is saved; confirm no image data reaches the network and the copy still completes
-- [ ] WebKit IME and Safari Telex Vietnamese input, real drop of text into the editor (F-005)
+Browsers and input
+- [ ] Safari: trackpad pinch zoom (F-002.R3)
+- [ ] Safari: real ⌘V paste (F-001)
+- [ ] Safari: Vietnamese Telex typing and a real text drop into the editor (F-005)
+- [ ] Safari: on a first visit, add a blur, then copy and download (security M1, ADR-0025; not reproducible in Playwright)
+- [ ] Safari: the offline files download a second time on a first visit, once only (ADR-0024)
+- [ ] Firefox (latest two): a quick pass of FLOW-01 and FLOW-02, embedded and standalone; offline copies kept apart (NFR-07, F-017)
+- [ ] Chrome (real, headed): offline copies kept apart embedded vs standalone (F-017); drag smoothness at 60 fps on the 14.7 MP image (NFR-02, ADR-0022)
+- [ ] Tablets: single-finger drawing on one iPad (Safari) and one Android tablet (Chrome) (NFR-07)
+
+Accessibility (qa-a11y.md)
+- [ ] VoiceOver (Safari) and NVDA (Firefox or Chrome): load, draw, select, edit, redact, export, with announcements as CMP-Canvas lists
+- [ ] Windows high contrast (forced colours), 400 % zoom, text spacing
+
+Performance on real hardware (qa-perf.md)
+- [ ] NFR-04 memory with blur/pixelate at the RULE-02 limit, Safari included
+- [ ] 5.2 MP export within 0.5 s on the reference laptop; startup on the real production host (phase 7)
+
+Done by QA automation
+- [x] Security review F-017 m3: paste before the offline copy is saved sends no image data and the copy still completes (tests/e2e/qa/security-network.spec.ts)
