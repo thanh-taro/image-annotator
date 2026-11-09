@@ -19,3 +19,4 @@ src/host/boot.js
 *.md
 design/
 scripts/release-build
+tests/perf/out/
