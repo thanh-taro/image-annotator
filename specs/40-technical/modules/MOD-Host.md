@@ -16,8 +16,9 @@ render and never sends anything else; it never takes focus from the host (F-001.
 allow-list, delivered as the `frame-ancestors` directive, governs both who may embed the tool and
 whose messages are accepted; an empty list means standalone only. It reports `embedded` /
 `standalone` and whether the tool has focus (for the click-to-paste hint). It registers the
-offline service worker after first render and seeds it, once fonts and the effects worker have
-loaded, with every same-origin file the page used, so every feature works with no network and
+offline service worker after first render (not on `load`), posts the build's `tk-assets` list
+as soon as the service worker is ready and the page's own entries once the fonts have settled
+(ADR-0024, ADR-0025), so every feature works with no network and
 nothing is fetched on first use (ADR-0011).
 
 ## Not responsible for

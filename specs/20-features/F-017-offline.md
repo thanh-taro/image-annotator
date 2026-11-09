@@ -39,5 +39,6 @@ No visible UI.
 ## Edge cases
 - First visit offline → the browser's own offline page; nothing the tool can do.
 - Opened standalone once, then embedded offline for the first time (or the reverse) → not available offline; browsers keep a separate copy for each way (ADR-0021).
+- Offline, COPY-privacy.notices opens in a new tab, which is a top-level page: it opens when the tool was opened standalone, but not from an embedded copy, whose offline files are kept apart from top-level pages (ADR-0021).
 
 ## Open questions

@@ -82,3 +82,4 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - ADR-0025 (amends ADR-0001, ADR-0010, ADR-0024): `/sw.js` policy adds `worker-src 'self'` (WebKit refused the effects worker through the offline copy); a worker error is fatal at any time; `img-src 'self'`; the notices ship as a hashed file in the offline copy; the seed list is posted as soon as the service worker is ready. architecture.md "Security headers" updated.
 - RULE-15: the download name replaces `/ \ : * ? " < > |` with `_` and trims surrounding spaces, so the notice names the saved file.
 - dependencies.md: DEP-07 pinned to portal `27ea733`; stale notes corrected; test fixtures recorded as own work.
+- QA fix round 1 gaps: F-017 edge case (offline, the notices open only from a standalone copy; embedded copies are partitioned, ADR-0021); architecture.md and MOD-Host: the service worker is registered after first render, not on `load`, with the early seed per ADR-0025.

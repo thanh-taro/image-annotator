@@ -164,8 +164,8 @@ MOD-App announces the result with the redaction count (RULE-20). Failure → COP
 ### Host and offline
 An inline CSP-hashed boot script sets the theme and page language before first paint; MOD-Host
 accepts only allow-listed, parent-sourced theme and language messages and posts exactly one ready
-signal (RULE-16). After first render it registers `sw.js`; once fonts and the worker have loaded it
-seeds every same-origin URL the page used; later openings serve the page network-first and hashed
+signal (RULE-16). After first render (not on `load`, which waits for the fonts) it registers `sw.js`, posts the
+`tk-assets` list as soon as the worker is ready, and the page's own entries once the fonts have settled (ADR-0024, ADR-0025); later openings serve the page network-first and hashed
 assets cache-first, adopting a new version only on a later open (ADR-0011, F-017).
 
 ## Security headers (generated, ADR-0010, ADR-0025)
