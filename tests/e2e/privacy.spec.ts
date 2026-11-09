@@ -83,11 +83,14 @@ for (const theme of ['dark', 'light'] as const) {
     await expect(details(page)).toContainText(DETAILS_START);
     await expect(details(page)).toContainText('use solid redaction for secrets.');
     const notices = details(page).getByRole('link', { name: /^Open-source notices/ });
-    await expect(notices).toHaveAttribute('href', '/third-party-notices.txt');
+    // ADR-0025.3: the notices are a hashed file under /assets/, named in the page's tk-assets list.
+    const href = (await notices.getAttribute('href'))!;
+    expect(href).toMatch(/^\/assets\/third-party-notices-[\w-]+\.txt$/);
+    expect(await page.locator('meta[name="tk-assets"]').getAttribute('content')).toContain(href);
     await expect(notices).toHaveAttribute('target', '_blank');
     await expect(notices).toHaveAttribute('rel', 'noopener noreferrer');
     // The notices file the link points to is shipped with the tool.
-    const served = await page.request.get('/third-party-notices.txt');
+    const served = await page.request.get(href);
     expect(served.ok()).toBe(true);
     expect(await served.text()).toContain('lucide-static');
     // The popover stays inside the tool.

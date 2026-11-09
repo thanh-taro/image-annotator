@@ -97,8 +97,23 @@ describe('RULE-15 download name', () => {
     expect(downloadName(`${'😀'.repeat(120)}.png`, at)).toBe(`${'😀'.repeat(100)}-annotated.png`);
   });
 
+  it('RULE-15 each of / \\ : * ? " < > | is replaced with _, so the notice names the file as saved', () => {
+    expect(downloadName('a:b?.png', at)).toBe('a_b_-annotated.png');
+    expect(downloadName('x/y\\z*"q"<1>|2.jpg', at)).toBe('x_y_z__q__1__2-annotated.png');
+    expect(downloadName('C:\\shots\\bug.png', at)).toBe('C__shots_bug-annotated.png');
+    expect(downloadName('|.png', at)).toBe('_-annotated.png');
+  });
+
+  it('RULE-15 surrounding spaces are trimmed (also before a leading dot and after the cut)', () => {
+    expect(downloadName('  login bug  .png', at)).toBe('login bug-annotated.png');
+    expect(downloadName(' .env.png', at)).toBe('env-annotated.png');
+    expect(downloadName('\u202E  hidden .png', at)).toBe('hidden-annotated.png');
+    expect(downloadName(`${'a'.repeat(99)}  b.png`, at)).toBe(`${'a'.repeat(99)}-annotated.png`);
+    expect(downloadName('my  shot.png', at)).toBe('my  shot-annotated.png'); // inner spaces stay
+  });
+
   it('RULE-15 a source name with nothing left uses the pasted-image name', () => {
-    for (const name of ['', '....', '\u202E\u0000', '\u0000.'])
+    for (const name of ['', '....', '\u202E\u0000', '\u0000.', '   ', ' . ', ' \u00A0.'])
       expect(downloadName(name, at)).toBe('annotated-20261027-140509.png');
   });
 });

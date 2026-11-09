@@ -5,7 +5,9 @@ import copyMd from '../../specs/30-experience/copy.md?raw';
 // @ts-expect-error -- plain ESM build script without type declarations
 import { parseCopy, pluralCategories } from '../../scripts/gen-copy.mjs';
 // @ts-expect-error -- plain ESM build script without type declarations
-import { pageCsp, parseHostOrigins } from '../../scripts/gen-headers.mjs';
+import { pageCsp, parseHostOrigins, SW_CSP } from '../../scripts/gen-headers.mjs';
+// @ts-expect-error -- plain ESM build script without type declarations
+import { cleanLicense } from '../../scripts/gen-notices.mjs';
 
 const table = (row: string) => `| ID | en-US | vi-VN | Notes |\n|---|---|---|---|\n${row}\n`;
 
@@ -55,5 +57,25 @@ describe('MOD-Build codegen', () => {
   it("NFR-09 an empty allow-list makes frame-ancestors 'none'", () => {
     expect(pageCsp([])).toMatch(/frame-ancestors 'none'$/);
     expect(pageCsp(['https://tarokit.app'])).toMatch(/connect-src 'none'/);
+  });
+
+  it("ADR-0025.1 the /sw.js policy allows the tool's own worker script", () => {
+    expect(SW_CSP.split('; ')).toEqual(["default-src 'none'", "connect-src 'self'", "worker-src 'self'"]);
+  });
+
+  it("ADR-0025.2 the page policy allows only the tool's own images (no data:)", () => {
+    expect(pageCsp([])).toContain("img-src 'self';");
+    expect(pageCsp([])).not.toMatch(/data:/);
+  });
+
+  it('ADR-0001 a font licence copyright line that repeats itself for another font file keeps its first statement', () => {
+    const raw =
+      'Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) JetBrainsMono-Italic[wght].ttf: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)\r\n\r\nThis Font Software is licensed under the SIL Open Font License, Version 1.1.\r\n';
+    expect(cleanLicense(raw)).toBe(
+      'Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)\n\nThis Font Software is licensed under the SIL Open Font License, Version 1.1.',
+    );
+    expect(cleanLicense('Copyright (c) 2015-present Jason Miller\n\nPermission is hereby granted')).toBe(
+      'Copyright (c) 2015-present Jason Miller\n\nPermission is hereby granted',
+    );
   });
 });

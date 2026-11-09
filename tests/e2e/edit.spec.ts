@@ -114,6 +114,35 @@ test.describe('F-008 select and edit', () => {
     expect(near(await pixel(page, 100, 130), GREY), 'the first is gone').toBe(true);
   });
 
+  test('D-035 CMP-StylePanel with several selected the wide panel starts with the heading "2 annotations selected"', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [200, 160]);
+    // One selected: no count heading.
+    await expect(panel(page).getByRole('heading')).toHaveCount(0);
+    await rectangle(page, [300, 100], [400, 160]);
+    await toolButton(page, 'Select (V)').click();
+    await deselect(page);
+    await dragImage(page, [60, 60], [450, 200]);
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    // D-036: the h1 is COPY-app.title, so the panel's heading is level 2; it comes first in the panel.
+    const heading = panel(page).getByRole('heading', { level: 2, name: '2 annotations selected' });
+    await expect(heading).toBeVisible();
+    expect(
+      await panel(page).evaluate((el) => {
+        const first = el.querySelector('.tk-panel__body > *');
+        return first?.tagName;
+      }),
+    ).toBe('H2');
+    // The sections follow below it, inside the panel.
+    const head = await heading.boundingBox();
+    const colour = await panel(page).locator('.tk-panel__section').first().boundingBox();
+    expect(head && colour && head.y + head.height <= colour.y).toBe(true);
+    await deselect(page);
+    await expect(panel(page).getByRole('heading')).toHaveCount(0);
+  });
+
   test('F-008.AC17 RULE-05 a press moved 3 px selects without moving; moved 10 px it moves 10 px', async ({ page }) => {
     await open(page);
     await rectangle(page, [100, 100], [300, 200]);

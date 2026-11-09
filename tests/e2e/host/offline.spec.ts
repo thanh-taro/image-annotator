@@ -36,14 +36,21 @@ test.afterEach(async ({ request }) => {
 });
 
 /** Opens the tool online or offline, standalone or in the stub portal; returns its frame. */
-async function openTool(page: Page, way: Way, query = 'theme=dark&lang=en-US'): Promise<Frame> {
+async function openTool(
+  page: Page,
+  way: Way,
+  query = 'theme=dark&lang=en-US',
+  waitUntil: 'load' | 'commit' = 'load',
+): Promise<Frame> {
   if (way === 'standalone') {
-    await page.goto(`${TOOL_ALLOWED}/?${query}`);
+    await page.goto(`${TOOL_ALLOWED}/?${query}`, { waitUntil });
     await expect(page.locator(SHELL)).toBeVisible();
     return page.mainFrame();
   }
   const q = new URLSearchParams(query);
-  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, q.get('theme') as 'dark', q.get('lang') ?? undefined));
+  await page.goto(hostPageUrl(HOST_ALLOWED, TOOL_ALLOWED, q.get('theme') as 'dark', q.get('lang') ?? undefined), {
+    waitUntil,
+  });
   return toolFrame(page);
 }
 
@@ -196,6 +203,84 @@ test.describe('F-017 offline', () => {
       expect(Array.from(png.data.slice(i, i + 4))).toEqual([0, 0, 0, 255]);
     });
   }
+
+  for (const way of WAYS) {
+    test(`ADR-0025.4 NFR-01 first visit, paste before the fonts have loaded: the effects worker comes from the early seed, not fetched on first use (${way})`, async ({
+      page,
+      request,
+    }) => {
+      // The typefaces are held back until released, so the fonts have not settled when the image arrives.
+      let release = () => {};
+      const held = new Promise<void>((r) => (release = r));
+      await page.route(/\/assets\/[^/]+\.woff2$/, async (route) => {
+        await held;
+        await route.continue();
+      });
+      await resetLog(request);
+      // The load event waits for the typefaces, so the tool is opened without waiting for it.
+      const frame = await openTool(page, way, undefined, 'commit');
+      await frame.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+      // ADR-0025.4: the build's files are posted as soon as the worker is ready, so the effects worker is
+      // stored while the fonts are still loading (before, the seed waited for them, up to 3 s).
+      await expect
+        .poll(async () => (await cached(frame)).some((k) => /^\/assets\/worker-[\w-]+\.js$/.test(k)), {
+          timeout: 2_500,
+        })
+        .toBe(true);
+      expect(await frame.evaluate(() => document.fonts.status)).toBe('loading');
+
+      // The image starts the effects worker (ADR-0022) while the fonts are still loading.
+      await pasteGrey(frame);
+      await expect(summary(page, way)).toHaveText('400 × 300 px canvas, 0 annotations');
+      expect(await frame.evaluate(() => document.fonts.status)).toBe('loading');
+      // ADR-0009 §4: drawing waits for the typefaces; then a blur is exported with its exact patch.
+      release();
+      await expect(ui(page, way).locator('.tk-canvas[data-fonts]')).toHaveCount(0);
+      await toolButton(page, way, 'Redact (X)').click();
+      const kinds = ui(page, way).getByRole('complementary', { name: 'Style' }).getByRole('group', {
+        name: 'Redaction type',
+      });
+      await kinds.getByRole('radio', { name: /^Blur/ }).check();
+      await drag(page, way, [-180, -130], [-20, -60]);
+      await expect(summary(page, way)).toHaveText('400 × 300 px canvas, 1 annotation');
+      const file = await download(page, () =>
+        ui(page, way).getByRole('button', { name: 'Download', exact: true }).click(),
+      );
+      expectCleanPng(file.bytes);
+      // The effects worker script was fetched once, by the seed (dest `empty`), never by the page starting
+      // the worker for the first image (dest `worker`).
+      const worker = (await requestLog(request)).filter((r) => /^\/assets\/worker-/.test(r.path));
+      expect(worker.map((r) => r.dest)).toEqual(['empty']);
+    });
+  }
+
+  test('ADR-0025.3 F-017.R1 F-016 the open-source notices open with no connection (standalone)', async ({
+    page,
+    request,
+  }) => {
+    const online = await openTool(page, 'standalone');
+    const files = await offlineReady(online);
+    expect(files.some((f) => /^\/assets\/third-party-notices-[\w-]+\.txt$/.test(f))).toBe(true);
+
+    await serverDown(request, true);
+    await resetLog(request);
+    await openTool(page, 'standalone');
+    await page.getByRole('button', { name: 'Runs locally, nothing uploaded' }).click();
+    const [tab] = await Promise.all([
+      page.context().waitForEvent('page'),
+      page
+        .getByRole('dialog')
+        .getByRole('link', { name: /^Open-source notices/ })
+        .click(),
+    ]);
+    await tab.waitForLoadState();
+    expect(new URL(tab.url()).pathname).toMatch(/^\/assets\/third-party-notices-[\w-]+\.txt$/);
+    await expect(tab.locator('body')).toContainText('Image Annotator — third-party notices');
+    await expect(tab.locator('body')).toContainText('lucide-static');
+    // Everything came from the offline copy: the server refused all it was asked.
+    expect((await requestLog(request)).every((r) => r.refused)).toBe(true);
+    await tab.close();
+  });
 
   test('F-017 edge case: a copy made standalone does not open the embedded tool offline (ADR-0021)', async ({
     page,

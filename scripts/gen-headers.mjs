@@ -56,7 +56,7 @@ export function pageCsp(origins = hostOrigins()) {
     "default-src 'none'",
     `script-src 'self' '${bootScriptHash()}'`,
     "style-src 'self'",
-    "img-src 'self' data:",
+    "img-src 'self'", // ADR-0025.2: no data: (nothing uses it)
     "font-src 'self'",
     "worker-src 'self'",
     "connect-src 'none'",
@@ -103,7 +103,9 @@ export const PERMISSIONS_POLICY = [
   'window-management=()',
 ].join(', ');
 
-export const SW_CSP = "default-src 'none'; connect-src 'self'";
+// ADR-0025.1: `worker-src 'self'`, since WebKit checks the effects worker script that /sw.js fetches on a
+// cache miss against this policy (QA security M1).
+export const SW_CSP = "default-src 'none'; connect-src 'self'; worker-src 'self'";
 // /sw.js is `no-cache` (F-017 security review m2, docs/offline.md): with `updateViaCache: 'all'` the
 // browser revalidates it each time the page opens online (a conditional request, ADR-0011's "check
 // for a new version while the page opens"), so a fixed or switched-off worker is picked up on the

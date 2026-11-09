@@ -189,16 +189,15 @@ async function grantClipboard(context: BrowserContext, browserName: string): Pro
 
 test.describe('QA security: network', () => {
   for (const way of WAYS) {
-    test(`F-017 security m3 NFR-01 INV-04 first visit: work pasted before the offline copy is saved sends no image data; the copy and the offline copy complete (${way})`, async ({
+    test(`F-017 security m3 ADR-0025.1 NFR-01 INV-04 first visit: work pasted before the offline copy is saved sends no image data; the copy and the offline copy complete (${way})`, async ({
       page,
       context,
       request,
       browserName,
     }) => {
-      // QA security M1 (.build-my-app/reports/qa-security.md): on WebKit the effects worker script, requested
-      // through the active /sw.js before the offline copy holds it, is refused by /sw.js's own CSP, so the
-      // blur never gets its exact patch and the copy fails (closed: nothing is exported). Remove when fixed.
-      test.fail(browserName === 'webkit', 'QA security M1: WebKit refuses the worker script fetched through /sw.js');
+      // ADR-0025.1 (QA security M1): on WebKit the effects worker script, requested through the active
+      // /sw.js before the offline copy holds it, falls under /sw.js's own policy, which allows it with
+      // `worker-src 'self'`; the blur gets its exact patch and the copy succeeds.
       await grantClipboard(context, browserName);
       await recordClipboard(page);
       await page.setViewportSize({ width: 1472, height: 868 });
@@ -206,7 +205,9 @@ test.describe('QA security: network', () => {
       await resetLogs(request);
 
       // The window F-017 security m3 is about: the offline worker is active (it answers this site's
-      // requests) but the offline copy is not saved yet, so the effects worker script is not in it.
+      // requests) but the offline copy is not saved yet. Since ADR-0025.4 the build's files are seeded as
+      // soon as the worker is ready, so the effects worker script may already be stored (the cache-miss
+      // case of QA security M1 is checked deterministically by the next test).
       const frame = await openTool(page, way, 'commit');
       const before = await frame.evaluate(async (name) => {
         await navigator.serviceWorker.ready;
@@ -218,7 +219,8 @@ test.describe('QA security: network', () => {
           workerStored: keys.some((k) => k.startsWith('/assets/worker-')),
         };
       }, CACHE);
-      expect(before).toEqual({ controlled: false, pageStored: false, workerStored: false });
+      expect(before.controlled).toBe(false);
+      test.info().annotations.push({ type: 'evidence', description: `before the paste: ${JSON.stringify(before)}` });
 
       await pasteNoise(frame);
       await expect(summary(page, way)).toHaveText('400 × 300 px canvas, 0 annotations');
@@ -265,6 +267,43 @@ test.describe('QA security: network', () => {
       const clip = expectCleanPng(clipBytes!);
       expect([clip.width, clip.height]).toEqual([400, 300]);
       expect(pngRegion(clip, 300, 80, 1, 1)).toEqual([0, 0, 0, 255]);
+    });
+  }
+
+  for (const way of WAYS) {
+    test(`ADR-0025.1 QA security M1 the effects worker script missing from the offline copy is fetched through /sw.js; blur exports (${way})`, async ({
+      page,
+      context,
+      request,
+      browserName,
+    }) => {
+      await grantClipboard(context, browserName);
+      await recordClipboard(page);
+      await page.setViewportSize({ width: 1472, height: 868 });
+      await resetLogs(request);
+      await offlineReady(await openTool(page, way));
+      // As after a new version or an eviction: the stored copy lacks the effects worker script.
+      const removed = await (
+        await openTool(page, way)
+      ).evaluate(async (name) => {
+        const cache = await caches.open(name);
+        let n = 0;
+        for (const r of await cache.keys())
+          if (new URL(r.url).pathname.startsWith('/assets/worker-')) n += Number(await cache.delete(r));
+        return { n, controlled: !!navigator.serviceWorker.controller };
+      }, CACHE);
+      expect(removed).toEqual({ n: 1, controlled: true });
+      const frame = await openTool(page, way);
+      await pasteNoise(frame);
+      await expect(summary(page, way)).toHaveText('400 × 300 px canvas, 0 annotations');
+      await redact(page, way, /^Blur/, [20, 20], [180, 140]);
+      await toolbar(page, way).getByRole('button', { name: 'Copy', exact: true }).click();
+      const notice = ui(page, way).locator('.tk-notice');
+      // Before ADR-0025.1 WebKit refused the script under /sw.js's own policy and the copy failed after 10 s.
+      await expect(notice).toContainText('Copied, with 1 redaction applied.', { timeout: 20_000 });
+      expect([...(await copied(frame))].length).toBeGreaterThan(0);
+      // The worker answered the miss and keeps the script for offline use again.
+      await expect.poll(async () => (await cachedKeys(frame)).some((k) => k.startsWith('/assets/worker-'))).toBe(true);
     });
   }
 

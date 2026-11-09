@@ -537,6 +537,11 @@ export function StylePanel() {
           </button>
         )}
         <div id="tk-style-sheet" class="tk-panel__body" hidden={narrow && !open}>
+          {/* Implements: D-035 — a multi-selection's count heads the wide panel (the narrow bar's summary
+              names it instead); level 2 under the tool's h1 (D-036). */}
+          {!narrow && model.variant === 'selection' && selection.value.length > 1 && (
+            <h2 class="tk-panel__count">{t('a11y.selected_count', { count: selection.value.length })}</h2>
+          )}
           <Sections model={model} />
         </div>
       </div>

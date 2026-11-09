@@ -5,7 +5,8 @@
 // exact patch is pending or while the redaction (or a solid it depends on) moves, and resolves a
 // promise once every exact patch of a document is ready (the export awaits it, ADR-0007), or rejects
 // when a job fails (MOD-Effects `exactPatches`, F-012.R7). A failed key is not asked for again until
-// the redaction's key changes (a worker error or a `failed` reply never stalls later jobs).
+// the redaction's key changes (a `failed` reply never stalls later jobs). A worker error is fatal at any
+// time (ADR-0025.1): every job of that image then fails at once.
 // Scheduling (ADR-0017): no exact job is sent while a redaction, or a solid it depends on, is moving;
 // one job is queued after 100 ms without movement (or once it no longer moves); the latest wins.
 // Worker lifetime (ADR-0022): the worker is terminated and a fresh one started for every new image.
@@ -64,7 +65,7 @@ export interface HeldPatches {
 export interface WorkerLike {
   postMessage(message: ToWorker, transfer?: Transferable[]): void;
   addEventListener(type: 'message', fn: (e: MessageEvent<FromWorker>) => void): void;
-  /** An uncaught worker error, or a reply that cannot be read: the job in flight failed. */
+  /** An uncaught worker error, or a reply that cannot be read: the worker is dead (ADR-0025.1). */
   addEventListener(type: 'error' | 'messageerror', fn: () => void): void;
   terminate(): void;
 }
@@ -129,6 +130,8 @@ export function hexRgb(hex: string): [number, number, number] {
 
 export class EffectsClient {
   private worker: WorkerLike | null = null;
+  /** The current worker raised an error (ADR-0025.1): no job is sent to it again. */
+  private dead = false;
   private source: SourceImage | null = null;
   private palette: Readonly<Record<Colour, readonly [number, number, number]>> | null = null;
   private shortSide = 0;
@@ -184,11 +187,18 @@ export class EffectsClient {
     >;
     const worker = this.deps.createWorker();
     worker.addEventListener('message', (e) => this.onMessage(worker, e.data));
+    // ADR-0025.1: a worker error is fatal at any time, not only during a job (WebKit refused the
+    // script before its first job, security M1). The job in flight and every queued one fail at once,
+    // and later requests fail without being sent, so an export is told at once (F-012.R7) instead of
+    // waiting out its bound; the next image gets a fresh worker (ADR-0022).
     const lost = () => {
-      if (worker !== this.worker || !this.inflight) return;
-      const { key } = this.inflight;
+      if (worker !== this.worker || this.dead) return;
+      this.dead = true;
+      if (this.inflight) this.failed.add(this.inflight.key);
       this.inflight = null;
-      this.fail(key);
+      for (const spec of this.pending.values()) this.failed.add(spec.key);
+      this.pending.clear();
+      for (const w of [...this.waiters]) w();
     };
     worker.addEventListener('error', lost);
     worker.addEventListener('messageerror', lost);
@@ -205,6 +215,7 @@ export class EffectsClient {
       this.worker.terminate();
     }
     this.worker = null;
+    this.dead = false;
     this.source = null;
     this.palette = null;
     this.shortSide = 0;
@@ -384,6 +395,7 @@ export class EffectsClient {
     if (this.exact.has(spec.key) || this.inflight?.key === spec.key) return;
     if (this.converting.has(spec.key) || this.failed.has(spec.key)) return;
     if (this.pending.get(id)?.key === spec.key) return;
+    if (this.dead) return void this.failed.add(spec.key); // ADR-0025.1: never sent to a dead worker
     this.pending.delete(id);
     this.pending.set(id, spec);
     this.pump();
@@ -391,7 +403,7 @@ export class EffectsClient {
 
   /** One job in flight; the next pending one (latest per redaction) is sent when it returns. */
   private pump(): void {
-    if (this.inflight || !this.worker) return;
+    if (this.inflight || !this.worker || this.dead) return;
     for (const [id, spec] of this.pending) {
       this.pending.delete(id);
       if (this.exact.has(spec.key) || this.converting.has(spec.key) || this.failed.has(spec.key)) continue;
@@ -511,6 +523,7 @@ export class EffectsClient {
           else {
             missing = true;
             this.request(a.id, spec);
+            if (this.failed.has(spec.key)) return stop('effects: the effects worker failed'); // ADR-0025.1
           }
         }
         if (missing) return false;

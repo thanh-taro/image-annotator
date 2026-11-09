@@ -178,7 +178,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 @fontsource-variable/jetbrains-mono 5.3.0 — OFL-1.1 (DEP-05, asset)
 Homepage: https://fontsource.org/fonts/jetbrains-mono
 
-Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) JetBrainsMono-Italic[wght].ttf: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

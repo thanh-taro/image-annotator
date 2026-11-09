@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ASSETS_META as BUILD_META, assetList } from '../../scripts/lib/offline.mjs';
 import { LANGUAGES } from '../../src/copy';
 import { matchLanguage } from '../../src/host/language';
-import { ASSETS_META as PAGE_META, seedList, settleWithin } from '../../src/host/offline';
+import { ASSETS_META as PAGE_META, buildSeedList, seedList, settleWithin } from '../../src/host/offline';
 import {
   ASSETS_META,
   CACHE_NAME,
@@ -58,6 +58,15 @@ describe('MOD-Host offline policy', () => {
     expect(routeOf({ method: 'GET', url: `${O}/other`, mode: 'navigate' }, O)).toBeNull();
     expect(routeOf({ method: 'GET', url: `https://github.com/x`, mode: 'navigate' }, O)).toBeNull();
     expect(routeOf({ method: 'GET', url: `${O}/`, mode: 'cors' }, O)).toBeNull();
+  });
+
+  it('ADR-0025.3 F-017.R1 opening the hashed notices file (a navigation) is answered like any hashed file', () => {
+    const notices = `${O}/assets/third-party-notices-AbC123.txt`;
+    expect(routeOf({ method: 'GET', url: notices, mode: 'navigate' }, O)).toBe('asset');
+    expect(cacheKey(new URL(notices), O)).toBe(notices);
+    // Other hashed files are never opened as a page through the worker.
+    expect(routeOf({ method: 'GET', url: `${O}/assets/a-1.js`, mode: 'navigate' }, O)).toBeNull();
+    expect(routeOf({ method: 'GET', url: `${notices}?x=1`, mode: 'navigate' }, O)).toBeNull();
   });
 
   it('RULE-16 RULE-17 the seeded page keeps only a supported theme and language query', () => {
@@ -191,6 +200,32 @@ describe('MOD-Host offline seed list (page side)', () => {
         'assets/a-0.css',
       ]),
     ).toEqual(['/assets/a-0.css', '/assets/f-2.woff2', '/assets/index-1.js']);
+  });
+
+  it('ADR-0025.4 the early seed names every file of the build, scripts first, and no page', () => {
+    expect(
+      buildSeedList(
+        [
+          '/assets/index-1.css',
+          '/assets/f-2.woff2',
+          '/assets/index-1.js',
+          '/assets/third-party-notices-4.txt',
+          '/assets/worker-3.js',
+          'https://evil.example/assets/x.js',
+          '/',
+        ],
+        O,
+      ),
+    ).toEqual([
+      '/assets/index-1.js',
+      '/assets/worker-3.js',
+      '/assets/index-1.css',
+      '/assets/f-2.woff2',
+      '/assets/third-party-notices-4.txt',
+    ]);
+    // The worker stores files only from it (no page to store).
+    const plan = seedPlan({ type: 'seed', urls: buildSeedList(['/assets/worker-3.js'], O) }, O);
+    expect(plan).toEqual({ assets: [{ href: `${O}/assets/worker-3.js`, key: `${O}/assets/worker-3.js` }], page: null });
   });
 
   it('ADR-0011 the seed waits for the fonts, but not forever', async () => {

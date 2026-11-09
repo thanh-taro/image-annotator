@@ -5,7 +5,7 @@ __pycache__/
 .env.*
 !.env.example
 
-# Build and tooling output (generated *.gen.* files, public/_headers, public/third-party-notices.txt
+# Build and tooling output (generated *.gen.* files, public/_headers, src/app/third-party-notices.txt
 # and pnpm-lock.yaml ARE committed)
 node_modules/
 dist/

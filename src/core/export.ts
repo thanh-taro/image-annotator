@@ -141,14 +141,21 @@ export const SOURCE_NAME_MAX = 100;
 /**
  * RULE-15 download name: `<source name without extension>-annotated.png` when the image was opened from
  * a file, else `annotated-<YYYYMMDD-HHMMSS>.png` in the local time the caller passes. The source name has
- * control and bidirectional formatting characters (Unicode Cc, Cf) and leading dots removed, then its
- * extension (the part after the last dot), and is cut to SOURCE_NAME_MAX characters; if nothing is left,
- * the pasted-image name is used.
+ * control and bidirectional formatting characters (Unicode Cc, Cf) and leading dots removed (with any
+ * spaces around them, so a dot after a space never hides the file), each of `/ \ : * ? " < > |`
+ * replaced with `_` (browsers replace them as they save, so the notice would name another file;
+ * QA security m5), then its extension (the part after the last dot), surrounding spaces trimmed, and is
+ * cut to SOURCE_NAME_MAX characters (trimmed again); if nothing is left, the pasted-image name is used.
+ * Implements: RULE-15.
  */
 export function downloadName(sourceName: string | null, localTime: Date): string {
-  const clean = (sourceName ?? '').replace(/[\p{Cc}\p{Cf}]/gu, '').replace(/^\.+/, '');
+  const clean = (sourceName ?? '')
+    .replace(/[\p{Cc}\p{Cf}]/gu, '')
+    .replace(/^[\s.]+/u, '')
+    .replace(/[/\\:*?"<>|]/g, '_');
   const dot = clean.lastIndexOf('.');
-  const base = [...(dot > 0 ? clean.slice(0, dot) : clean)].slice(0, SOURCE_NAME_MAX).join('');
+  const stem = (dot > 0 ? clean.slice(0, dot) : clean).trim();
+  const base = [...stem].slice(0, SOURCE_NAME_MAX).join('').trimEnd();
   if (base) return `${base}-annotated.png`;
   const d = localTime;
   const date = `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}`;

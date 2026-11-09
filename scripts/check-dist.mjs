@@ -104,7 +104,42 @@ export function scanDist(distDir, registry) {
     }
   }
 
+  problems.push(...noticesProblems(distDir, files, shipped));
   return { shipped, problems };
+}
+
+/** ADR-0025.3: the hashed notices file under assets/. */
+export const NOTICES_FILE = /^assets\/third-party-notices-[\w-]+\.txt$/;
+
+/**
+ * ADR-0001 rule 6 and ADR-0025.3: exactly one notices file ships, as a hashed file under /assets/ that
+ * the page's `tk-assets` list names (so the offline copy holds it, F-017.R1) and the page links to; it
+ * names every third-party package that ships. No unhashed copy at the old `/third-party-notices.txt`.
+ */
+export function noticesProblems(distDir, files, shipped) {
+  const problems = [];
+  const posix = files.map((f) => f.split(path.sep).join('/'));
+  if (posix.includes('third-party-notices.txt'))
+    problems.push('third-party-notices.txt ships unhashed (ADR-0025.3: only under assets/)');
+  const notices = posix.filter((f) => NOTICES_FILE.test(f));
+  if (notices.length !== 1) {
+    problems.push(`expected one assets/third-party-notices-<hash>.txt, found ${notices.length}`);
+    return problems;
+  }
+  const url = '/' + notices[0];
+  const html = fs.existsSync(path.join(distDir, 'index.html'))
+    ? fs.readFileSync(path.join(distDir, 'index.html'), 'utf8')
+    : '';
+  const listed = /<meta name="tk-assets" content="([^"]*)"/.exec(html)?.[1]?.split(/\s+/) ?? [];
+  if (!listed.includes(url)) problems.push(`${url} is not listed in the page's tk-assets (ADR-0025.3)`);
+  const linked = posix
+    .filter((f) => /^assets\/[^/]+\.js$/.test(f))
+    .some((f) => fs.readFileSync(path.join(distDir, f), 'utf8').includes(url));
+  if (!linked) problems.push(`no shipped script links to ${url} (F-016 privacy details)`);
+  const text = fs.readFileSync(path.join(distDir, notices[0]), 'utf8');
+  for (const [name] of shipped)
+    if (!text.includes(`${name} `)) problems.push(`${url} does not name ${name}, which ships (ADR-0001)`);
+  return problems;
 }
 
 // CLI: `pnpm check:dist` (after `pnpm build`).
