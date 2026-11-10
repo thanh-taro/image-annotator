@@ -45,3 +45,8 @@ of section 4 against `release/1.1.0-rc.1/dist.sha256`. Rollback: `wrangler rollb
 - Smoke checks passed: page and `/sw.js` policies, no-referrer, nosniff, COOP, HSTS, no-cache on the page,
   `/assets/*` immutable; `/nonexistent`, `/.vite/`, `/_headers` return 404; all 10 served files match
   `release/1.1.0-rc.1/dist.sha256`.
+
+## Portal
+- Owner reports the portal work done (2026-11-10). Checked read-only: the catalog lists Image Annotator
+  (embedded, `https://image-annotator.tarokit.app/`, offline) on the home page and on both the Developer and Media
+  category pages (D-042), with its tool page at `/t/image-annotator/`.
