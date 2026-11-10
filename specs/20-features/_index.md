@@ -20,4 +20,4 @@
 | F-016 | Show the privacy guarantee | M-1 | P1 | shipped |
 | F-017 | Work offline | M-1 | P2 | shipped |
 | F-018 | Use the portal's language | M-1 | P1 | shipped |
-| F-019 | Custom colour and size | M-1b | P1 | draft |
+| F-019 | Custom colour and size | M-1b | P1 | ready |

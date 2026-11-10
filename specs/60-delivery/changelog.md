@@ -2,7 +2,7 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
-## 2026-11-10 — M-1b custom colour and size (version 1.1, draft)
+## 2026-11-10 — M-1b custom colour and size (version 1.1)
 - Owner's change request after 1.0.0-rc.4 (D-048: ships as 1.1, after 1.0.0). New F-019 (draft) and RULE-21: a custom swatch opening the browser's colour picker for every annotation colour (not the background, D-049); a size field in pixels next to S, M and L, with a slider on the wide layout (D-050). RULE-04 palette and sizes, RULE-07 contrast pairing for a custom colour, RULE-10 solid colour, RULE-11 picker and slider steps, ENT-Style `color` and `strokeSize`, CMP-StylePanel anatomy and layout, copy COPY-style.color_custom, color_custom_value, size_px, size_value; roadmap milestone M-1b; platform mapping rows.
 - Spec review round 1 of F-019: the custom swatch is the ninth radio of the colour group (choosing applies the remembered colour; click, Enter or Space open the picker; arrows never do), live preview and cancel (R8), editing text keeps editing (R9), field applies only when changed, Esc restores; ACs 14–22. Shipped specs reworded for custom sizes: RULE-08, F-005 and F-006 scopes, F-008.R3. RULE-21 compares hex ignoring case and rounds the highlight width after the stroke size; glossary: custom colour, custom size, custom swatch.
 - Spec review round 2 of F-019: the colour group checks an option only when a colour applies (arrowing onto an unused custom swatch moves focus only); the swatch's apply and its picker session are one undo step, cancel returns to the colour before it (R8, RULE-11, new AC23); focus returns to the text only after Enter or the picker closes (R9); AC15 uses the redaction tool.
