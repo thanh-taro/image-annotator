@@ -1,7 +1,7 @@
 ---
 id: F-019
 title: Custom colour and size
-status: ready
+status: shipped
 milestone: M-1b
 priority: P1
 personas: [PER-01]

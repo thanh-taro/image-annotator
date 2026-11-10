@@ -2,6 +2,9 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
+## 1.1.0 — 2026-11-10 (milestone M-1b, release candidate 1.1.0-rc.1)
+Custom colour and size (F-019 `shipped`): a custom swatch opening the browser's colour picker and a size in pixels next to S, M and L. Fixes: clicking the active tool clears the selection on wide layouts (CMP-Toolbar, D-043); Esc in an unchanged panel field follows RULE-19 and focus moves to the canvas region (CMP-StylePanel).
+
 ## 2026-11-10 — M-1b custom colour and size (version 1.1)
 - Owner's change request after 1.0.0-rc.4 (D-048: ships as 1.1, after 1.0.0). New F-019 (draft) and RULE-21: a custom swatch opening the browser's colour picker for every annotation colour (not the background, D-049); a size field in pixels next to S, M and L, with a slider on the wide layout (D-050). RULE-04 palette and sizes, RULE-07 contrast pairing for a custom colour, RULE-10 solid colour, RULE-11 picker and slider steps, ENT-Style `color` and `strokeSize`, CMP-StylePanel anatomy and layout, copy COPY-style.color_custom, color_custom_value, size_px, size_value; roadmap milestone M-1b; platform mapping rows.
 - Spec review round 1 of F-019: the custom swatch is the ninth radio of the colour group (choosing applies the remembered colour; click, Enter or Space open the picker; arrows never do), live preview and cancel (R8), editing text keeps editing (R9), field applies only when changed, Esc restores; ACs 14–22. Shipped specs reworded for custom sizes: RULE-08, F-005 and F-006 scopes, F-008.R3. RULE-21 compares hex ignoring case and rounds the highlight width after the stroke size; glossary: custom colour, custom size, custom swatch.
