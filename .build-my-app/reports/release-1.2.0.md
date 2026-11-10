@@ -26,3 +26,12 @@ Branch `build/1.2`. Tagged locally `v1.2.0-rc.1` (not pushed). Production runs 1
 
 ## Deploy
 As 1.1.1: runbook section 3 with `v1.2.0-rc.1` and `release/1.2.0-rc.1`, then the smoke checks of section 4.
+
+## Deployed
+- Deploy authorised by the owner (2026-11-10, "deploy"). `v1.2.0-rc.1` archive verified against `SHA256SUMS` and
+  `dist.sha256`, deployed with wrangler 4.158.0. Cloudflare Version ID `e5e1b75d-8682-47b6-a7a4-6c11a848cac2`
+  (previous: 1.1.1 `e9d11729-e4f1-49cf-a8cf-8de37ca1b58d`, the rollback target).
+- Smoke checks passed: all page headers (CSP with `connect-src 'none'`, `img-src 'self'`,
+  `frame-ancestors https://tarokit.app`; Permissions-Policy, Referrer-Policy, nosniff, COOP, HSTS, no-cache);
+  `/sw.js` policy and no-cache; assets immutable; `/nonexistent`, `/.vite/manifest.json`, `/_headers` and `*.map`
+  return 404; all 10 served files match `release/1.2.0-rc.1/dist.sha256`.

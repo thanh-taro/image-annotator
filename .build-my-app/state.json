@@ -94,7 +94,7 @@
     "iterate": {
       "title": "8 Iterate",
       "status": "in_progress",
-      "step": "1.2.0-rc.1 release build",
+      "step": "1.2.0 live; awaiting further requests",
       "gate": {
         "status": "pending",
         "at": null,
@@ -949,22 +949,6 @@
   },
   "log": [
     {
-      "at": "2026-11-02T03:52:12+00:00",
-      "event": "decision D-024 answered: existing decode_failed message"
-    },
-    {
-      "at": "2026-11-02T03:52:12+00:00",
-      "event": "decision D-025 opened: Manrope latin-ext subset"
-    },
-    {
-      "at": "2026-11-02T03:52:12+00:00",
-      "event": "decision D-025 answered: skip"
-    },
-    {
-      "at": "2026-11-02T04:03:49+00:00",
-      "event": "architecture step: 3.1 technical specs written (ADR-0001..0015, MOD x11, registry); licence audit running"
-    },
-    {
       "at": "2026-11-02T04:03:49+00:00",
       "event": "40-technical written; RULE-10 clarified (blur box outside frame covers earlier annotations)"
     },
@@ -1747,9 +1731,25 @@
     {
       "at": "2026-11-10T11:51:14+00:00",
       "event": "F-020 merged into build/1.2 (19b1008) after code review round 2 clean; release prep 98dbc24"
+    },
+    {
+      "at": "2026-11-10T12:15:41+00:00",
+      "event": "iterate step: 1.2.0-rc.1 awaiting owner sign-off"
+    },
+    {
+      "at": "2026-11-10T12:15:41+00:00",
+      "event": "1.2.0-rc.1 built (98dbc24), reproducible, tagged locally"
+    },
+    {
+      "at": "2026-11-10T13:19:12+00:00",
+      "event": "1.2.0 deployed: Cloudflare version e5e1b75d, smoke checks passed"
+    },
+    {
+      "at": "2026-11-10T13:19:13+00:00",
+      "event": "iterate step: 1.2.0 live; awaiting further requests"
     }
   ],
-  "updated": "2026-11-10T11:51:14+00:00",
+  "updated": "2026-11-10T13:19:13+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
