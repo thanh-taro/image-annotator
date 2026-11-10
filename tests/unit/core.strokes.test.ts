@@ -133,7 +133,7 @@ describe('MOD-Core strokes and highlights', () => {
   it('F-008.R3 the geometry box of a path is the box of its points; its handles sit on that box', () => {
     expect(shapeBox(stroke(zigzag))).toEqual({ x: 100, y: 100, width: 200, height: 100 });
     expect(shapeBox(stroke([{ x: 7, y: 9 }]))).toEqual({ x: 7, y: 9, width: 0, height: 0 });
-    expect(handlesOf(highlight(zigzag)).map(([h]) => h)).toEqual(['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']);
+    expect(handlesOf(highlight(zigzag), 800).map(([h]) => h)).toEqual(['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']);
   });
 
   it('ADR-0004 §3 a pen stroke’s bounds are its points’ box grown by half the stroke (round caps)', () => {

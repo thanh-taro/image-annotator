@@ -14,6 +14,7 @@
 import {
   CLICK_THRESHOLD_PX,
   boxBetween,
+  handleBox,
   handlesOf,
   hitHandle,
   hitTest,
@@ -126,30 +127,39 @@ export class SelectTool implements ToolInput {
     if (!s || s.selection.length !== 1) return undefined;
     const a = s.annotations.find((x) => x.id === s.selection[0]);
     if (!a) return undefined;
-    const h = hitHandle(a, p, s.handleHalf);
+    const h = hitHandle(a, p, s.handleHalf, s.shortSide);
     return h && !this.smallBody(s, p) ? h : undefined;
   }
 
   /**
    * F-008 edge case: the single selected annotation when it is too small for its handles and its body to
    * be told apart (under two handle targets: a line's length, a box's shorter side, a stroke's or
-   * highlight's shorter extent among the axes it has) and `p` is on its body (on its mark, or inside a
-   * box annotation's box); else undefined. A press there moves it.
+   * highlight's shorter extent of its drawn mark's box among the axes its points have, D-044) and `p` is
+   * on its body (on its mark, or inside a box annotation's box); else undefined. A press there moves it.
+   * A stroke's or highlight's handles sit on its drawn mark's box edge (F-008.R3, D-044), so its body
+   * ends there: a press on or past that edge is a handle's, one inside it on the mark is the body's.
    */
+  // Implements: F-008 edge case (small box), F-008.R3 (D-044), F-008.AC18
   private smallBody(s: SelectSetup, p: Point): Annotation | undefined {
     if (s.selection.length !== 1) return undefined;
     const a = s.annotations.find((x) => x.id === s.selection[0]);
     // Text and steps have no handles (F-008.R3).
-    if (!a || !handlesOf(a).length) return undefined;
-    const b = shapeBox(a);
+    if (!a || !handlesOf(a, s.shortSide).length) return undefined;
+    const b = handleBox(a, s.shortSide);
+    const points = shapeBox(a);
     const extents = isLineAnnotation(a)
       ? [Math.hypot(b.width, b.height)]
       : isBoxAnnotation(a)
         ? [b.width, b.height]
-        : [b.width, b.height].filter((e) => e > 0);
+        : [points.width > 0 ? b.width : 0, points.height > 0 ? b.height : 0].filter((e) => e > 0);
     if (!extents.length || Math.min(...extents) >= 4 * s.handleHalf) return undefined;
-    const inBox = isBoxAnnotation(a) && p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
-    return inBox || hitTest(a, p, s.tolerance, s.shortSide, s.measure) ? a : undefined;
+    if (isBoxAnnotation(a)) {
+      const inBox = p.x >= b.x && p.x <= b.x + b.width && p.y >= b.y && p.y <= b.y + b.height;
+      return inBox || hitTest(a, p, s.tolerance, s.shortSide, s.measure) ? a : undefined;
+    }
+    if (!isLineAnnotation(a) && !(p.x > b.x && p.x < b.x + b.width && p.y > b.y && p.y < b.y + b.height))
+      return undefined;
+    return hitTest(a, p, s.tolerance, s.shortSide, s.measure) ? a : undefined;
   }
 
   down(input: PointerInput): boolean {
@@ -242,7 +252,7 @@ export class SelectTool implements ToolInput {
       this.marquee = boxBetween(g.from, to);
     } else if (g.mode === 'resize' && g.handle) {
       const handle = g.handle;
-      this.preview = new Map(g.dragged.map((a) => [a.id, resized(a, handle, dx, dy, g.shift)]));
+      this.preview = new Map(g.dragged.map((a) => [a.id, resized(a, handle, dx, dy, g.shortSide, g.shift)]));
     } else {
       this.preview = new Map(g.dragged.map((a) => [a.id, moved(a, dx, dy)]));
     }

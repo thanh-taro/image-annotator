@@ -71,11 +71,17 @@ const TOOL_COPY = {
 /** The tool's name (COPY-tool.*). */
 export const toolLabel = (name: ToolName): string => t(TOOL_COPY[name]);
 
-/** CMP-Toolbar: picks the active tool (clears nothing, the selection stays). Not an undo step (RULE-11). */
+/**
+ * CMP-Toolbar "Behavior" (D-043): picks the active tool, with the pointer or its key (RULE-19). Any tool
+ * other than select clears the selection, so CMP-StylePanel shows that tool's current style and a style
+ * choice changes only what is drawn next (RULE-04); select keeps it. Not an undo step (RULE-11).
+ */
+// Implements: CMP-Toolbar "Behavior" (D-043), F-008.AC19
 export function setTool(next: ToolName): void {
   const l = loaded.value;
   if (!l || !BUILT_TOOLS.includes(next) || tool.value === next) return;
   tool.value = next;
+  if (next !== 'select' && selection.value.length) select([]);
   l.session.history.breakChain(); // ADR-0008 §3: a tool change breaks the coalescing chain
   announcePolite(t('a11y.tool_active', { tool: toolLabel(next) }));
 }

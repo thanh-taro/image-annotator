@@ -246,6 +246,147 @@ test.describe('F-008 select and edit', () => {
     await expect(toolButton(page, 'Arrow (A)')).toHaveAttribute('aria-checked', 'true');
   });
 
+  test('F-008.AC19 CMP-Toolbar D-043 a selected rectangle, the ellipse tool picked, green: the rectangle stays red; the next ellipse is green', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [300, 200]);
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await toolButton(page, 'Ellipse (O)').click();
+    // Nothing is selected: the panel shows the ellipse tool's style.
+    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+    await expect(geometry(page)).toHaveCount(0);
+    await panel(page).getByRole('radio', { name: 'Green', exact: true }).check();
+    await frame(page);
+    expect(near(await pixel(page, 200, 100), RED), 'the rectangle keeps its colour').toBe(true);
+    await expect(summary(page)).toHaveText(count(1));
+    // Only the rectangle's step is in the history (a tool's style is no step, RULE-11).
+    const undo = page
+      .getByRole('toolbar', { name: 'Tools and actions' })
+      .getByRole('button', { name: 'Undo', exact: true });
+    await dragImage(page, [500, 300], [700, 500]);
+    await expect(summary(page)).toHaveText(count(2));
+    await deselect(page);
+    const green = await page.evaluate(() => {
+      const c = document.createElement('canvas').getContext('2d');
+      if (!c) throw new Error('no 2d context');
+      c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--tk-annotation-color-green').trim();
+      c.fillRect(0, 0, 1, 1);
+      return [...c.getImageData(0, 0, 1, 1).data];
+    });
+    expect(near(await pixel(page, 600, 300), green), 'the new ellipse is green').toBe(true);
+    expect(near(await pixel(page, 200, 100), RED), 'the rectangle is still red').toBe(true);
+    await undo.click();
+    await undo.click();
+    await expect(summary(page)).toHaveText(count(0));
+    await expect(undo).toBeDisabled();
+  });
+
+  test('CMP-Toolbar D-043 RULE-19 a tool picked with its key clears the selection; the select tool keeps it', async ({
+    page,
+  }) => {
+    await open(page);
+    await rectangle(page, [100, 100], [300, 200]);
+    await toolButton(page, 'Select (V)').click();
+    // Picking select keeps the selection.
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await expect(field(page, 'X')).toHaveValue('100');
+    await workArea(page).focus();
+    await page.keyboard.press('o');
+    await expect(toolButton(page, 'Ellipse (O)')).toHaveAttribute('aria-checked', 'true');
+    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+    await expect(page.locator('[role="status"]')).toContainText('Ellipse tool');
+    // With a drawing tool active, Tab, Alt+press and Enter still select (RULE-19, F-008.R6, RULE-05).
+    await workArea(page).focus();
+    await page.keyboard.press('Tab');
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await expect(field(page, 'X')).toHaveValue('100');
+    await deselect(page);
+    await clickImage(page, 200, 100, ['Alt']);
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await expect(summary(page)).toHaveText(count(1));
+    await workArea(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(summary(page)).toHaveText(count(2));
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await expect(toolButton(page, 'Ellipse (O)')).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('CMP-Toolbar D-043 CMP-StylePanel narrow: after picking another tool the summary bar shows that tool', async ({
+    page,
+  }) => {
+    await open(page);
+    await page.setViewportSize({ width: 390, height: 760 });
+    await toolButton(page, 'Rectangle (R)').click();
+    const box = await workArea(page).boundingBox();
+    if (!box) throw new Error('no work area');
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(summary(page)).toHaveText(count(1));
+    await page.getByRole('button', { name: 'Style options: Rectangle · Medium' }).waitFor();
+    await toolButton(page, 'Ellipse (O)').click();
+    await expect(page.getByRole('button', { name: /^Style options: / })).toHaveAccessibleName(
+      'Style options: Ellipse · Medium',
+    );
+  });
+
+  /** Reads X, Y, width and height of the single selection from its position and size fields. */
+  const boxFields = async (page: Page): Promise<[number, number, number, number]> => {
+    const read = async (n: 'X' | 'Y' | 'Width' | 'Height') => Number(await field(page, n).inputValue());
+    return [await read('X'), await read('Y'), await read('Width'), await read('Height')];
+  };
+
+  test('F-008.AC18 D-044 a thin highlight’s bottom-right handle dragged 60 right and 40 down scales it, not moves it', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Highlight (H)').click();
+    // Drawn left to right, rising 2 image pixels (under 3), freehand.
+    await dragImage(page, [200, 402], [400, 400]);
+    await toolButton(page, 'Select (V)').click();
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    const [x, y, w, h] = await boxFields(page);
+    expect(h).toBeLessThan(3);
+    // s = 800: the default highlight is 30 px wide, so the handle is at the drawn mark's corner, 15 px
+    // right of and below the points' box; pressed on its outer half.
+    const se: [number, number] = [x + w + 15 + 1, y + h + 15 + 1];
+    await dragImage(page, se, [se[0] + 60, se[1] + 40]);
+    await expect(field(page, 'Width')).toHaveValue(String(w + 60));
+    await expect(field(page, 'Height')).toHaveValue(String(h + 40));
+    await expect(field(page, 'X')).toHaveValue(String(x));
+    await expect(field(page, 'Y')).toHaveValue(String(y));
+  });
+
+  test('F-008.R3 D-044 a pen stroke’s handle sits on its drawn mark’s edge and scales it', async ({ page }) => {
+    await open(page);
+    await toolButton(page, 'Pen (P)').click();
+    await dragImage(page, [200, 200], [400, 300]);
+    await toolButton(page, 'Select (V)').click();
+    const [x, y, w, h] = await boxFields(page);
+    // The default pen is 5 px wide: its se handle is 2.5 px past the points' box.
+    const se: [number, number] = [x + w + 3, y + h + 3];
+    await dragImage(page, se, [se[0] + 50, se[1] + 30]);
+    await expect(field(page, 'Width')).toHaveValue(String(w + 50));
+    await expect(field(page, 'Height')).toHaveValue(String(h + 30));
+    await expect(field(page, 'X')).toHaveValue(String(x));
+  });
+
+  test('F-008.R3 D-044 F-008 edge case a vertical (Shift) highlight’s end handle lengthens it and never widens it', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Highlight (H)').click();
+    await dragImage(page, [600, 200], [602, 400], ['Shift']);
+    await toolButton(page, 'Select (V)').click();
+    const [x, y, w, h] = await boxFields(page);
+    expect(w).toBe(0);
+    // The s handle is at the end of the drawn mark, 15 px below the last point.
+    await dragImage(page, [x, y + h + 16], [x + 30, y + h + 56]);
+    await expect(field(page, 'Height')).toHaveValue(String(h + 40));
+    await expect(field(page, 'Width')).toHaveValue('0');
+    await expect(field(page, 'X')).toHaveValue(String(x));
+    await expect(field(page, 'Y')).toHaveValue(String(y));
+  });
+
   test('F-008.AC9 Shift+Right three times moves a selected text 30 image pixels right', async ({ page }) => {
     await open(page);
     await toolButton(page, 'Text (T)').click();

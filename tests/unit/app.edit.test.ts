@@ -108,9 +108,12 @@ describe('MOD-App edit commands', () => {
   });
 
   it('RULE-11 a nudge after another command is a new step', () => {
+    // D-043: only picking select keeps the selection, so the tool change here is to select.
+    setTool('rectangle');
     createAnnotation(rect());
     nudgeSelection(1, 0);
-    setTool('arrow');
+    setTool('select');
+    expect(selection.value).toHaveLength(1);
     nudgeSelection(1, 0);
     undo();
     expect(shapeBox(only())).toMatchObject({ x: 101 });

@@ -214,6 +214,61 @@ describe('MOD-Canvas select tool', () => {
     expect(t2.handleAt({ x: 298, y: 400 })).toBe('head');
   });
 
+  it('F-008.AC18 D-044 a thin highlight’s bottom-right handle sits at its mark’s corner and scales it, not moves it', () => {
+    // s = 800: the default highlight is 30 px wide; its points rise 2 px from left to right.
+    const thin: Annotation = {
+      id: 'h',
+      kind: 'highlight',
+      style: DEFAULT_STYLES.highlight,
+      points: [
+        { x: 100, y: 302 },
+        { x: 200, y: 301 },
+        { x: 300, y: 300 },
+      ],
+    };
+    const { tool, state } = setup([thin], { selection: ['h'] });
+    // The se handle is at the drawn mark's corner (315, 317); a press on it (on its edge) is the handle's.
+    expect(tool.handleAt({ x: 315, y: 317 })).toBe('se');
+    expect(tool.handleAt({ x: 318, y: 320 })).toBe('se');
+    // Inside the mark, the small body still moves (F-008 edge case).
+    expect(tool.handleAt({ x: 310, y: 312 })).toBeUndefined();
+    drag(tool, { x: 315, y: 317 }, { x: 375, y: 357 });
+    const b = shapeBox(state.commits[0]?.[0] as Annotation);
+    expect(b).toEqual({ x: 100, y: 300, width: 260, height: 42 });
+  });
+
+  it('F-008.R3 D-044 a selected pen stroke’s and a vertical highlight’s handles sit on their drawn mark’s edge', () => {
+    const pen: Annotation = {
+      id: 'p',
+      kind: 'stroke',
+      style: DEFAULT_STYLES.pen,
+      points: [
+        { x: 100, y: 100 },
+        { x: 200, y: 160 },
+      ],
+    };
+    // The default pen is 5 px wide: its se handle is at (202.5, 162.5).
+    const { tool, state } = setup([pen], { selection: ['p'] });
+    expect(tool.handleAt({ x: 203, y: 163 })).toBe('se');
+    drag(tool, { x: 203, y: 163 }, { x: 253, y: 183 });
+    expect(shapeBox(state.commits[0]?.[0] as Annotation)).toEqual({ x: 100, y: 100, width: 150, height: 80 });
+    const tall: Annotation = {
+      id: 'v',
+      kind: 'highlight',
+      style: DEFAULT_STYLES.highlight,
+      points: [
+        { x: 400, y: 100 },
+        { x: 400, y: 300 },
+      ],
+    };
+    const { tool: t2, state: s2 } = setup([tall], { selection: ['v'] });
+    // Only n and s, at the ends of the mark (15 px past the end points); never scaled across.
+    expect(t2.handleAt({ x: 400, y: 315 })).toBe('s');
+    expect(t2.handleAt({ x: 415, y: 200 })).toBeUndefined();
+    drag(t2, { x: 400, y: 316 }, { x: 430, y: 356 });
+    expect(shapeBox(s2.commits[0]?.[0] as Annotation)).toEqual({ x: 400, y: 100, width: 0, height: 240 });
+  });
+
   it('F-008.R6 RULE-19 (review m5) Alt+press with the crop tool is not the select tool’s', () => {
     const { tool } = setup([rect('r', 100, 100)], { tool: 'crop' });
     expect(tool.down(at(150, 120, { alt: true }))).toBe(false);

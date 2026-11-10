@@ -444,20 +444,40 @@ export function hitTopmost(
 export type Handle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'tail' | 'head';
 
 /**
- * F-008.R3: a box's eight handles on its box; a line's two end points; a stroke's or highlight's eight
- * on the box of its points. Text and steps have none (their size is S/M/L).
- * F-008 edge case: a stroke or highlight with no height (or width), such as a Shift highlight, cannot be
- * scaled across it; it shows only the handles along its length
- * (`e`, `w`, or `n`, `s`), so no two handles stack, and a dot shows none.
+ * F-008.R3 (D-044): half the width of a stroke's or highlight's drawn mark, by which its handle box
+ * grows past its points' box on each side; 0 for every other kind (their handles sit on their geometry).
  */
-export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] {
+const markHalf = (a: Annotation, shortSide: number): number => (isPathAnnotation(a) ? markWidth(a, shortSide) / 2 : 0);
+
+/**
+ * F-008.R3 (D-044): the box a single selection's handles sit on. A box annotation's box; a stroke's or
+ * highlight's drawn mark, its points' box grown by half its line width on each side, so the handles
+ * stay at the mark's edge and not inside its body. (Lines and arrows use their end points.)
+ */
+export function handleBox(a: Annotation, shortSide: number): Box {
+  const b = shapeBox(a);
+  const hw = markHalf(a, shortSide);
+  return hw ? { x: b.x - hw, y: b.y - hw, width: b.width + 2 * hw, height: b.height + 2 * hw } : b;
+}
+
+/**
+ * F-008.R3: a box's eight handles on its box; a line's two end points; a stroke's or highlight's eight
+ * on the box of its drawn mark (`handleBox`, D-044). Text and steps have none (their size is S/M/L).
+ * F-008 edge case: a stroke or highlight with no height (or width), such as a Shift highlight, cannot be
+ * scaled across it; it shows only the handles along its length (`e`, `w`, or `n`, `s`), at the ends of
+ * the drawn mark, so no two handles stack, and a dot shows none.
+ */
+// Implements: F-008.R3 (D-044), F-008.AC18, F-008 edge case (zero extent)
+export function handlesOf(a: Annotation, shortSide: number): readonly (readonly [Handle, Point])[] {
   if (isStepAnnotation(a) || isTextAnnotation(a)) return [];
   if (isLineAnnotation(a))
     return [
       ['tail', a.tail],
       ['head', a.head],
     ];
-  const b = shapeBox(a);
+  // Which handles show follows the points' box (the axes the path has); where they sit, the drawn mark's.
+  const points = shapeBox(a);
+  const b = handleBox(a, shortSide);
   const mx = b.x + b.width / 2;
   const my = b.y + b.height / 2;
   const r = b.x + b.width;
@@ -472,15 +492,16 @@ export function handlesOf(a: Annotation): readonly (readonly [Handle, Point])[] 
     ['sw', { x: b.x, y: d }],
     ['w', { x: b.x, y: my }],
   ];
-  if (!isPathAnnotation(a) || (b.width > 0 && b.height > 0)) return all;
-  if (b.width > 0) return all.filter(([h]) => h === 'e' || h === 'w');
-  if (b.height > 0) return all.filter(([h]) => h === 'n' || h === 's');
+  if (!isPathAnnotation(a) || (points.width > 0 && points.height > 0)) return all;
+  if (points.width > 0) return all.filter(([h]) => h === 'e' || h === 'w');
+  if (points.height > 0) return all.filter(([h]) => h === 'n' || h === 's');
   return [];
 }
 
 /** The handle within `half` image pixels of `p` (half the handle's hit area divided by the zoom). */
-export function hitHandle(a: Annotation, p: Point, half: number): Handle | undefined {
-  for (const [h, q] of handlesOf(a)) if (Math.abs(p.x - q.x) <= half && Math.abs(p.y - q.y) <= half) return h;
+export function hitHandle(a: Annotation, p: Point, half: number, shortSide: number): Handle | undefined {
+  for (const [h, q] of handlesOf(a, shortSide))
+    if (Math.abs(p.x - q.x) <= half && Math.abs(p.y - q.y) <= half) return h;
   return undefined;
 }
 
@@ -511,14 +532,24 @@ function scalePoints(a: PathAnnotation, b: Box, x1: number, y1: number, x2: numb
 /**
  * F-008.R3: `a` (as at the start of the drag) with handle `h` dragged by (dx, dy): a box is resized, a
  * line's end point moves, a stroke or highlight is scaled with its box. Text and steps have no handles
- * and are returned as is. The box never gets smaller than MIN_EDIT_SIZE on an axis it has (the same
+ * and are returned as is. A stroke's or highlight's handles sit on its drawn mark's box (D-044); the
+ * dragged mark box is mapped back onto its points' box (shrunk by half the line width on each side), so
+ * the line width stays and the scale applies to the points: while it does not flip, its points' edge
+ * moves by the drag, and once the dragged mark edge passes the opposite one, the points flip with it. The box never gets smaller than MIN_EDIT_SIZE on an axis it has (the same
  * limit as the fields and Alt+arrows, CMP-StylePanel; F-008 review m1); dragging a handle past the
  * opposite edge flips it.
  * `keepAspect` is RULE-06 Shift: a corner handle keeps the box's aspect ratio; an edge handle scales the
  * other axis by the same factor about its centre; a line's moved end snaps to 45° steps about the other
  * end (F-008 review m2).
  */
-export function resized(a: Annotation, h: Handle, dx: number, dy: number, keepAspect = false): Annotation {
+export function resized(
+  a: Annotation,
+  h: Handle,
+  dx: number,
+  dy: number,
+  shortSide: number,
+  keepAspect = false,
+): Annotation {
   if (isLineAnnotation(a)) {
     const end = h === 'tail' ? a.tail : h === 'head' ? a.head : null;
     if (!end) return a;
@@ -537,6 +568,10 @@ export function resized(a: Annotation, h: Handle, dx: number, dy: number, keepAs
   if (h.includes('e')) x2 += dx;
   if (h.includes('n')) y1 += dy;
   if (h.includes('s')) y2 += dy;
+  // D-044: a stroke's or highlight's mark box is 2 × half its width wider than its points' box.
+  const gap = 2 * markHalf(a, shortSide);
+  [x1, x2] = flipPast(b.x, b.x + b.width, x1, x2, h.includes('w'), gap);
+  [y1, y2] = flipPast(b.y, b.y + b.height, y1, y2, h.includes('n'), gap);
   if (keepAspect && b.width > 0 && b.height > 0) {
     if (h.length === 2) {
       const k = Math.max(Math.abs(x2 - x1) / b.width, Math.abs(y2 - y1) / b.height);
@@ -564,6 +599,18 @@ export function resized(a: Annotation, h: Handle, dx: number, dy: number, keepAs
   [y1, y2] = atLeast(y1, y2, h.includes('n'), !isPath || b.height > 0);
   if (isPathAnnotation(a)) return scalePoints(a, b, x1, y1, x2, y2);
   return { ...a, box: normalizeBox({ x: x1, y: y1, width: x2 - x1, height: y2 - y1 }) };
+}
+
+/**
+ * D-044: the dragged points' edge, from the drag of the mark box `gap` wider (lo0–hi0 the points' span at
+ * the start, lo–hi after moving one edge by the drag). Before the dragged mark edge passes the fixed mark
+ * edge the points' edge stops at the fixed one (MIN_EDIT_SIZE applies after); past it, the points flip.
+ */
+function flipPast(lo0: number, hi0: number, lo: number, hi: number, moveLo: boolean, gap: number): [number, number] {
+  if (!gap) return [lo, hi];
+  if (moveLo && lo > hi0) return [lo - gap > hi0 ? lo - gap : hi0, hi];
+  if (!moveLo && hi < lo0) return [lo, hi + gap < lo0 ? hi + gap : lo0];
+  return [lo, hi];
 }
 
 /** The span lo–hi widened to MIN_EDIT_SIZE (keeping its direction) by moving lo or hi, if the axis exists. */

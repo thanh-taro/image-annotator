@@ -124,11 +124,27 @@ describe('MOD-Render paint strokes and highlights', () => {
     expect(p).toContain('fill()');
   });
 
-  it('F-004.AC6 CMP-Canvas "selected" a selected path shows the outline of its points’ box and eight handles', () => {
+  it('F-008.R3 D-044 CMP-Canvas "selected" a selected path shows the outline of its drawn mark’s box and eight handles', () => {
     const { ctx, calls } = recorder();
     paint(ctx, scene([pen()]), image, T, new Map(), { selection: ['p'], look });
-    expect(calls).toContain('strokeRect(100,100,150,100)');
+    // The points' box (100, 100, 150 × 100) grown by half the pen's 5 px width.
+    expect(calls).toContain('strokeRect(97.5,97.5,155,105)');
     expect(calls.filter((c) => c === 'fillStyle=#6837e0')).toHaveLength(8);
+    expect(calls).toContain('fillRect(248,198,10,10)'); // se at (252.5, 202.5)
+  });
+
+  it('F-008.R3 D-044 F-008 edge case a straight highlight’s two handles sit at the ends of its drawn mark', () => {
+    const { ctx, calls } = recorder();
+    const straight = marker([
+      { x: 100, y: 100 },
+      { x: 300, y: 100 },
+    ]);
+    paint(ctx, scene([straight]), image, T, new Map(), { selection: ['h'], look });
+    // Half the highlight's 15 px width past each end; the outline is the band's edge.
+    expect(calls).toContain('strokeRect(85,85,230,30)');
+    expect(calls.filter((c) => c === 'fillStyle=#6837e0')).toHaveLength(2);
+    expect(calls).toContain('fillRect(310,95,10,10)'); // e at (315, 100)
+    expect(calls).toContain('fillRect(80,95,10,10)'); // w at (85, 100)
   });
 
   it('ADR-0022 NFR-02 a stroke being drawn is painted over the cached lower layer, built once per drag', () => {

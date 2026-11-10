@@ -105,12 +105,12 @@ describe('MOD-Core shapes', () => {
 
   it('F-008.R3 handles: eight on a box, end points on a line; Shift resize keeps the aspect ratio (RULE-06)', () => {
     const rect: Annotation = { id: 'r', kind: 'rectangle', style: red, box: { x: 0, y: 0, width: 200, height: 100 } };
-    expect(handlesOf(rect)).toHaveLength(8);
-    expect(hitHandle(rect, { x: 201, y: 99 }, 5)).toBe('se');
-    expect(resized(rect, 'se', 100, 0, true)).toMatchObject({ box: { width: 300, height: 150 } });
+    expect(handlesOf(rect, 800)).toHaveLength(8);
+    expect(hitHandle(rect, { x: 201, y: 99 }, 5, 800)).toBe('se');
+    expect(resized(rect, 'se', 100, 0, 800, true)).toMatchObject({ box: { width: 300, height: 150 } });
     expect(moved(rect, 10, 5)).toMatchObject({ box: { x: 10, y: 5 } });
     const line: Annotation = { id: 'l', kind: 'line', style: red, tail: { x: 0, y: 0 }, head: { x: 10, y: 0 } };
-    expect(handlesOf(line).map(([h]) => h)).toEqual(['tail', 'head']);
-    expect(resized(line, 'head', 5, 5)).toMatchObject({ tail: { x: 0, y: 0 }, head: { x: 15, y: 5 } });
+    expect(handlesOf(line, 800).map(([h]) => h)).toEqual(['tail', 'head']);
+    expect(resized(line, 'head', 5, 5, 800)).toMatchObject({ tail: { x: 0, y: 0 }, head: { x: 15, y: 5 } });
   });
 });

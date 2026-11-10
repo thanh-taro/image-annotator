@@ -122,7 +122,7 @@ describe('MOD-Core steps', () => {
 
   it('F-008.R3 a selected step has no handles; its outline is the badge box', () => {
     const a = step('a', 1, 100, 100);
-    expect(handlesOf(a)).toEqual([]);
+    expect(handlesOf(a, 800)).toEqual([]);
     expect(boundsOf(a, 800, noMeasure)).toEqual({ x: 68, y: 68, width: 64, height: 64 });
   });
 
