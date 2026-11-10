@@ -124,17 +124,22 @@ test.describe('F-009 undo and redo', () => {
     // F-020: the fill colour group shows too (fill solid), so the colour is taken from COPY-style.color.
     const colour = panel(page).getByRole('radiogroup', { name: 'Color', exact: true });
     await colour.getByRole('radio', { name: 'Blue', exact: true }).check();
-    await expect.poll(async () => near(await pixel(page, 200, 150), BLUE)).toBe(true);
     await workArea(page).focus();
     await page.keyboard.press('Escape'); // clear the selection (not a step)
     await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+    // The outlines (left edges) are blue; the fill colour stays red (F-020.R2, D-054).
+    await expect.poll(async () => near(await pixel(page, 100, 150), BLUE, 30)).toBe(true);
+    await expect.poll(async () => near(await pixel(page, 500, 150), BLUE, 30)).toBe(true);
     await undoButton(page).click();
-    await expect.poll(async () => near(await pixel(page, 200, 150), RED)).toBe(true);
-    await expect.poll(async () => near(await pixel(page, 600, 150), RED)).toBe(true);
     // Both are selected again: several selected (no position fields), sharing the red colour.
     await expect(state(page)).toHaveAttribute('data-state', 'selecting');
     await expect(geometry(page)).toHaveCount(0);
     await expect(colour.getByRole('radio', { name: 'Red', exact: true })).toBeChecked();
+    await workArea(page).focus();
+    await page.keyboard.press('Escape');
+    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+    await expect.poll(async () => near(await pixel(page, 100, 150), RED, 30)).toBe(true);
+    await expect.poll(async () => near(await pixel(page, 500, 150), RED, 30)).toBe(true);
   });
 
   test('F-009.AC5 with a new image undo and redo are disabled; after one change and one undo, undo is disabled and redo enabled', async ({

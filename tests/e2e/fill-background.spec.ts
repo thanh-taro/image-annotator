@@ -228,16 +228,18 @@ test.describe('F-020 fill colour', () => {
     await expectPixel(page, 100, 150, RED, 30, true, 'a red outline');
   });
 
-  test('F-020.AC3 an automatic translucent fill is the colour at 30 %; Yellow then Green: a green outline, a yellow fill', async ({
+  test('F-020.AC3 Translucent marks Red; Blue then draws a blue outline on a red fill at 30 %; Yellow then Green: a green outline, a yellow fill', async ({
     page,
   }) => {
     await open(page);
     await toolButton(page, 'Ellipse (O)').click();
     await choice(fillGroup(page), 'Translucent').check();
+    await expect(swatch(colourGroup(page, 'Fill color'), 'Red')).toHaveAttribute('aria-checked', 'true');
     await swatch(colourGroup(page, 'Color'), 'Blue').click();
+    await expect(swatch(colourGroup(page, 'Fill color'), 'Red')).toHaveAttribute('aria-checked', 'true');
     await dragImage(page, [100, 100], [300, 300]);
     await deselect(page);
-    await expectPixel(page, 200, 200, over(BLUE, 0.3), 3, true, 'a blue fill at 30 %');
+    await expectPixel(page, 200, 200, over(RED, 0.3), 3, true, 'a red fill at 30 % (copied once, D-054)');
     await expectPixel(page, 100, 200, BLUE, 40, true, 'a blue outline');
     await swatch(colourGroup(page, 'Fill color'), 'Yellow').click();
     await swatch(colourGroup(page, 'Color'), 'Green').click();
@@ -245,7 +247,7 @@ test.describe('F-020 fill colour', () => {
     await deselect(page);
     await expectPixel(page, 500, 200, over(YELLOW, 0.3), 3, true, 'a yellow fill at 30 %');
     await expectPixel(page, 400, 200, GREEN, 40, true, 'a green outline');
-    await expectPixel(page, 200, 200, over(BLUE, 0.3), 3, true, 'the first ellipse is unchanged');
+    await expectPixel(page, 200, 200, over(RED, 0.3), 3, true, 'the first ellipse is unchanged');
   });
 
   test('F-020.AC4 Black on a selected rectangle is one undo step and becomes the rectangle tool’s fill colour', async ({
@@ -260,7 +262,7 @@ test.describe('F-020 fill colour', () => {
     await expectPixel(page, 200, 150, BLACK, 2, true, 'the selected rectangle’s fill is black');
     await undoButton(page).click();
     await frame(page);
-    await expectPixel(page, 200, 150, RED, 2, true, 'one undo: its earlier (automatic) fill');
+    await expectPixel(page, 200, 150, RED, 2, true, 'one undo: its earlier fill colour (red)');
     await expect(summary(page)).toHaveText(count(1));
     await page.keyboard.press('ControlOrMeta+Shift+Z');
     await deselect(page);
@@ -290,7 +292,7 @@ test.describe('F-020 fill colour', () => {
     await expect(swatch(colourGroup(page, 'Background color'), 'White')).toHaveAttribute('aria-checked', 'true');
   });
 
-  test('F-020.AC6 White as the rectangle’s fill colour leaves the ellipse automatic: red, with Red marked', async ({
+  test('F-020.AC6 White as the rectangle’s fill colour; Solid for the ellipse takes the current colour: red, with Red marked', async ({
     page,
   }) => {
     await open(page);
@@ -305,7 +307,7 @@ test.describe('F-020 fill colour', () => {
     await expectPixel(page, 200, 200, RED, 2, true, 'the ellipse’s fill is red');
   });
 
-  test('F-020.AC17 Space on the marked Red fill swatch changes nothing and adds no step; Blue as the colour turns the fill blue', async ({
+  test('F-020.AC17 Space on the marked Red fill swatch changes nothing and adds no step; Blue as the colour leaves the fill red', async ({
     page,
   }) => {
     await open(page);
@@ -319,11 +321,11 @@ test.describe('F-020 fill colour', () => {
     await expect(red).toHaveAttribute('aria-checked', 'true');
     await swatch(colourGroup(page, 'Color'), 'Blue').click();
     await frame(page);
-    await expectPixel(page, 200, 150, BLUE, 2, true, 'the automatic fill follows the colour');
-    await expect(swatch(colourGroup(page, 'Fill color'), 'Blue')).toHaveAttribute('aria-checked', 'true');
+    await expectPixel(page, 200, 150, RED, 2, true, 'the fill stays red (D-054)');
+    await expect(swatch(colourGroup(page, 'Color'), 'Blue')).toHaveAttribute('aria-checked', 'true');
+    await expect(swatch(colourGroup(page, 'Fill color'), 'Red')).toHaveAttribute('aria-checked', 'true');
     await undoButton(page).click(); // the colour
-    await frame(page);
-    await expectPixel(page, 200, 150, RED, 2, true);
+    await expect(swatch(colourGroup(page, 'Color'), 'Red')).toHaveAttribute('aria-checked', 'true');
     await undoButton(page).click(); // the rectangle: Space added no step
     await expect(summary(page)).toHaveText(count(0));
   });
@@ -340,6 +342,105 @@ test.describe('F-020 fill colour', () => {
     await expect(swatch(colourGroup(page, 'Fill color'), 'White')).toHaveAttribute('aria-checked', 'true');
     await deselect(page);
     await expectPixel(page, 200, 150, WHITE, 2, true, 'the fill is white');
+  });
+
+  /** A blue and a green rectangle with fill none, both selected, with the shared current colour red. */
+  async function blueAndGreenSelected(page: Page) {
+    await toolButton(page, 'Rectangle (R)').click();
+    await swatch(colourGroup(page, 'Color'), 'Blue').click();
+    await dragImage(page, [100, 100], [300, 200]);
+    await deselect(page);
+    await swatch(colourGroup(page, 'Color'), 'Green').click();
+    await dragImage(page, [400, 100], [600, 200]);
+    await toolButton(page, 'Select (V)').click();
+    await deselect(page);
+    // D-047: the drawing colour in canvas settings is the shared current colour, red again.
+    await swatch(colourGroup(page, 'Color'), 'Red').click();
+    await workArea(page).focus();
+    await page.keyboard.press('ControlOrMeta+A');
+    await expect(panel(page).getByRole('heading', { name: '2 annotations selected' })).toBeVisible();
+    await expect(colourGroup(page, 'Fill color')).toHaveCount(0);
+  }
+
+  test('F-020.AC22 Solid on a blue and a green rectangle fills them blue and green as one step with no swatch marked; the next rectangle is filled red', async ({
+    page,
+  }) => {
+    await open(page);
+    await blueAndGreenSelected(page);
+    await choice(fillGroup(page), 'Solid').check();
+    const group = colourGroup(page, 'Fill color');
+    await expect(group).toBeVisible();
+    await expect(group.getByRole('radio', { checked: true })).toHaveCount(0);
+    await deselect(page);
+    await expectPixel(page, 200, 150, BLUE, 2, true, 'the blue rectangle’s fill is blue');
+    await expectPixel(page, 500, 150, GREEN, 2, true, 'the green rectangle’s fill is green');
+    await undoButton(page).click();
+    await frame(page);
+    await expectPixel(page, 200, 150, GREY, 2, true, 'one undo removes both fills');
+    await expectPixel(page, 500, 150, GREY, 2, true, 'one undo removes both fills');
+    await page.keyboard.press('ControlOrMeta+Shift+Z');
+    await toolButton(page, 'Rectangle (R)').click();
+    await expect(choice(fillGroup(page), 'Solid')).toBeChecked();
+    await expect(swatch(colourGroup(page, 'Fill color'), 'Red')).toHaveAttribute('aria-checked', 'true');
+    await dragImage(page, [100, 300], [300, 400]);
+    await deselect(page);
+    await expectPixel(page, 200, 350, RED, 2, true, 'the next rectangle has a solid red fill');
+  });
+
+  test('F-020.AC22 one undo removes both fills and their fill colours: Purple then Solid fills both purple', async ({
+    page,
+  }) => {
+    await open(page);
+    await blueAndGreenSelected(page);
+    await choice(fillGroup(page), 'Solid').check();
+    await expect(colourGroup(page, 'Fill color')).toBeVisible();
+    await undoButton(page).click();
+    await expect(panel(page).getByRole('heading', { name: '2 annotations selected' })).toBeVisible();
+    await expect(colourGroup(page, 'Fill color')).toHaveCount(0);
+    await swatch(colourGroup(page, 'Color'), 'Purple').click();
+    await choice(fillGroup(page), 'Solid').check();
+    await expect(swatch(colourGroup(page, 'Fill color'), 'Purple')).toHaveAttribute('aria-checked', 'true');
+    await deselect(page);
+    const purple = await pixel(page, 100, 150); // the outline
+    await expectPixel(page, 200, 150, purple, 2, true, 'the first fill is purple');
+    await expectPixel(page, 500, 150, purple, 2, true, 'the second fill is purple');
+  });
+
+  test('F-020.AC23 a selected red rectangle: None, Blue, then Solid gives a blue outline and a red fill', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await choice(fillGroup(page), 'Solid').check();
+    await dragImage(page, [100, 100], [300, 200]); // selected, fill colour Red
+    await choice(fillGroup(page), 'None').check();
+    await swatch(colourGroup(page, 'Color'), 'Blue').click();
+    await choice(fillGroup(page), 'Solid').check();
+    await expect(swatch(colourGroup(page, 'Fill color'), 'Red')).toHaveAttribute('aria-checked', 'true');
+    await deselect(page);
+    await expectPixel(page, 200, 150, RED, 2, true, 'the fill is red');
+    await expectPixel(page, 100, 150, BLUE, 30, true, 'the outline is blue');
+  });
+
+  test('F-020.AC24 fill colour White, then None: a rectangle drawn then set to Solid is filled white', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await choice(fillGroup(page), 'Solid').check();
+    await swatch(colourGroup(page, 'Fill color'), 'White').click();
+    await choice(fillGroup(page), 'None').check();
+    await dragImage(page, [100, 100], [300, 200]);
+    await deselect(page);
+    await expectPixel(page, 200, 150, GREY, 2, true, 'drawn with fill none');
+    await toolButton(page, 'Select (V)').click();
+    await clickImage(page, 100, 150); // its left edge
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await expect(choice(fillGroup(page), 'None')).toBeChecked();
+    await choice(fillGroup(page), 'Solid').check();
+    await expect(swatch(colourGroup(page, 'Fill color'), 'White')).toHaveAttribute('aria-checked', 'true');
+    await deselect(page);
+    await expectPixel(page, 200, 150, WHITE, 2, true, 'its fill is white');
   });
 });
 

@@ -1,11 +1,13 @@
 // MOD-App fill colour and text background (F-020, RULE-22): what CMP-StylePanel offers and marks (the
-// fill colour after a solid or translucent fill; for a text the text background and its colour; automatic
-// colours as drawn), the per-tool current style (RULE-04), restyling a selection as one undo step
+// fill colour after a solid or translucent fill, copied from the colour when the fill is turned on while
+// unset, D-054; for a text the text background and its colour; automatic text background colours as
+// drawn), the per-tool current style (RULE-04), restyling a selection as one undo step
 // (RULE-11), and the custom swatch with one remembered custom colour for every colour choice (F-019).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { beginCustomPick, customSwatch, endCustomPick, previewCustomColour } from '../../src/app/custom';
 import { createAnnotation, panelModel, select, setStyle, setTool } from '../../src/app/drawing';
 import { duplicateSelection } from '../../src/app/editing';
+import { undo } from '../../src/app/history';
 import {
   currentStyleModel,
   currentStyles,
@@ -69,8 +71,10 @@ describe('F-020 fill colour', () => {
     setTool('rectangle');
     expect(model().fill).toBe('none');
     expect(model().fillColor).toBeUndefined();
+    expect(currentStyles.value.rectangle.fillColor).toBe('unset');
     setStyle({ fill: 'solid' });
     expect(model().fillColor).toBe('red');
+    expect(currentStyles.value.rectangle.fillColor).toBe('red');
   });
 
   it('F-020.AC2 red, fill solid, White picked: the rectangle has a red outline and a white fill', () => {
@@ -81,13 +85,14 @@ describe('F-020 fill colour', () => {
     expect(byIndex(0)?.style).toMatchObject({ color: 'red', fill: 'solid', fillColor: 'white' });
   });
 
-  it('F-020.AC3 an automatic fill follows the colour; a picked fill colour no longer does', () => {
+  it('F-020.AC3 turning the fill on copies the colour once; it does not follow later colours', () => {
     setTool('ellipse');
     setStyle({ fill: 'translucent' });
+    expect(model().fillColor).toBe('red');
     setStyle({ color: 'blue' });
-    expect(model().fillColor).toBe('blue');
+    expect(model().fillColor).toBe('red');
     createAnnotation(shape('ellipse'));
-    expect(byIndex(0)?.style).toMatchObject({ color: 'blue', fill: 'translucent', fillColor: 'automatic' });
+    expect(byIndex(0)?.style).toMatchObject({ color: 'blue', fill: 'translucent', fillColor: 'red' });
     setTool('ellipse'); // clears the selection
     setStyle({ fillColor: 'yellow' });
     setStyle({ color: 'green' });
@@ -105,7 +110,7 @@ describe('F-020 fill colour', () => {
     expect(depth()).toBe(steps + 1);
     expect(currentStyles.value.rectangle.fillColor).toBe('black');
     const restore = history()?.undo();
-    expect(restore?.doc.annotations[0]?.style.fillColor).toBe('automatic');
+    expect(restore?.doc.annotations[0]?.style.fillColor).toBe('red');
   });
 
   it('F-020.AC5 F-020.R1 #1e90ff with the fill colour custom swatch keeps the outline; a text background shows it unmarked', () => {
@@ -123,25 +128,90 @@ describe('F-020 fill colour', () => {
     expect(customSwatch(model(), 'fill')).toEqual({ colour: '#1e90ff', checked: false });
   });
 
-  it('F-020.AC6 F-020.R6 the fill colour is per tool: White for rectangles leaves the ellipse automatic (red)', () => {
+  it('F-020.AC6 F-020.R6 the fill colour is per tool: White for rectangles; the ellipse takes the current colour (red)', () => {
     setTool('rectangle');
     setStyle({ fill: 'solid' });
     setStyle({ fillColor: 'white' });
     setTool('ellipse');
     setStyle({ fill: 'solid' });
     createAnnotation(shape('ellipse'));
-    expect(byIndex(0)?.style.fillColor).toBe('automatic');
+    expect(byIndex(0)?.style.fillColor).toBe('red');
+    expect(model().fillColor).toBe('red');
+    expect(currentStyles.value.rectangle.fillColor).toBe('white');
+  });
+
+  it('F-020.AC17 the marked Red fill colour applies nothing; Blue as the colour leaves the fill red', () => {
+    setTool('rectangle');
+    setStyle({ fill: 'solid' });
+    createAnnotation(shape('rectangle')); // selected (F-003.R6)
+    expect(model().fillColor).toBe('red');
+    const steps = depth();
+    setStyle({ fillColor: 'red' }); // the panel itself skips the checked swatch (StylePanel), no change here either
+    expect(depth()).toBe(steps);
+    setStyle({ color: 'blue' });
+    expect(byIndex(0)?.style).toMatchObject({ color: 'blue', fillColor: 'red' });
     expect(model().fillColor).toBe('red');
   });
 
-  it('F-020.AC17 an automatic fill shows its colour marked; Blue as the colour turns the fill blue too', () => {
+  it('F-020.AC22 F-020.R2 F-020.R6 F-020.R7 fill on for a blue and a green rectangle copies each colour as one step; the tool takes the current colour', () => {
+    createAnnotation(shape('rectangle', { color: 'blue' }));
+    createAnnotation(shape('rectangle', { color: 'green' }));
+    expect(doc.value?.annotations.map((a) => a.style.fillColor)).toEqual(['unset', 'unset']);
+    select(doc.value?.annotations.map((a) => a.id) ?? []);
+    const steps = depth();
+    setStyle({ fill: 'solid' });
+    expect(doc.value?.annotations.map((a) => a.style.fillColor)).toEqual(['blue', 'green']);
+    expect(depth()).toBe(steps + 1);
+    expect(model().fillColor).toBeNull();
+    // The rectangle tool's fill colour is the shared current colour (red), not a copied one.
+    expect(currentStyles.value.rectangle).toMatchObject({ color: 'red', fill: 'solid', fillColor: 'red' });
+    setTool('rectangle');
+    createAnnotation(shape('rectangle'));
+    expect(byIndex(2)?.style).toMatchObject({ fill: 'solid', fillColor: 'red' });
+  });
+
+  it('F-020.AC22 F-020.R2 RULE-11 one undo returns both fill colours to unset; then Purple and solid fill both purple', () => {
+    createAnnotation(shape('rectangle', { color: 'blue' }));
+    createAnnotation(shape('rectangle', { color: 'green' }));
+    select(doc.value?.annotations.map((a) => a.id) ?? []);
+    setStyle({ fill: 'solid' });
+    undo();
+    expect(selection.value).toHaveLength(2);
+    expect(doc.value?.annotations.map((a) => [a.style.fill, a.style.fillColor])).toEqual([
+      ['none', 'unset'],
+      ['none', 'unset'],
+    ]);
+    setStyle({ color: 'purple' });
+    setStyle({ fill: 'solid' });
+    expect(doc.value?.annotations.map((a) => a.style.fillColor)).toEqual(['purple', 'purple']);
+  });
+
+  it('F-020.AC23 F-020.R2 fill none, Blue, then solid: the outline is blue and the fill stays red', () => {
     setTool('rectangle');
     setStyle({ fill: 'solid' });
-    createAnnotation(shape('rectangle'));
-    expect(model().fillColor).toBe('red');
+    createAnnotation(shape('rectangle')); // selected, fill colour red
+    setStyle({ fill: 'none' });
     setStyle({ color: 'blue' });
-    expect(byIndex(0)?.style).toMatchObject({ color: 'blue', fillColor: 'automatic' });
-    expect(model().fillColor).toBe('blue');
+    setStyle({ fill: 'solid' });
+    expect(byIndex(0)?.style).toMatchObject({ color: 'blue', fill: 'solid', fillColor: 'red' });
+  });
+
+  it('F-020.AC24 F-020.R2 F-020.R6 RULE-22 a rectangle drawn with fill none takes the tool’s White; solid then fills it white', () => {
+    setTool('rectangle');
+    setStyle({ fill: 'solid' });
+    setStyle({ fillColor: 'white' });
+    setStyle({ fill: 'none' });
+    createAnnotation(shape('rectangle'));
+    expect(byIndex(0)?.style).toMatchObject({ color: 'red', fill: 'none', fillColor: 'white' });
+    select([byIndex(0)?.id ?? '']);
+    setStyle({ fill: 'solid' });
+    expect(byIndex(0)?.style).toMatchObject({ fill: 'solid', fillColor: 'white' });
+  });
+
+  it('F-020.AC24 RULE-22 a new rectangle takes an unset fill colour too', () => {
+    setTool('rectangle');
+    createAnnotation(shape('rectangle'));
+    expect(byIndex(0)?.style).toMatchObject({ fill: 'none', fillColor: 'unset' });
   });
 
   it('F-020.AC20 RULE-22 fill none and back to solid keeps the picked White', () => {
@@ -246,7 +316,7 @@ describe('F-020 text background', () => {
     setTool('rectangle');
     expect(model().fill).toBe('none');
     createAnnotation(shape('rectangle'));
-    expect(byIndex(0)?.style).toMatchObject({ fill: 'none', fillColor: 'automatic' });
+    expect(byIndex(0)?.style).toMatchObject({ fill: 'none', fillColor: 'unset' });
     setTool('text');
     expect(model().textBackground).toBe('solid');
     expect(model().textBackgroundColor).toBe('yellow');
@@ -263,6 +333,6 @@ describe('F-020 text background', () => {
   it('F-020.R6 a fill or background patch never reaches lines, arrows, steps or redactions', () => {
     tool.value = 'arrow';
     setStyle({ fill: 'solid', fillColor: 'yellow' });
-    expect(currentStyles.value.arrow).toMatchObject({ fill: 'none', fillColor: 'automatic' });
+    expect(currentStyles.value.arrow).toMatchObject({ fill: 'none', fillColor: 'unset' });
   });
 });

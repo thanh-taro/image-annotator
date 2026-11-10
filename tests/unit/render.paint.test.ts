@@ -2,7 +2,7 @@
 // canvas, fills, arrowheads, the selection overlay, and the split drag layers built once per drag.
 // Contexts are recording fakes; pixels are checked end to end in tests/e2e/draw-shapes.spec.ts.
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_STYLES, type Annotation, type BoxAnnotation } from '../../src/core';
+import { DEFAULT_STYLES, withFill, type Annotation, type BoxAnnotation } from '../../src/core';
 import { DragLayers, dragRange, movePatches, type Surface } from '../../src/canvas/drag';
 import { paint, paintAnnotations, PALETTE_HEX, type OverlayLook, type Scene, type SceneImage } from '../../src/render';
 
@@ -32,7 +32,7 @@ const style = DEFAULT_STYLES.rectangle;
 const rect = (fill: 'none' | 'solid' | 'translucent' = 'none'): Annotation => ({
   id: 'r',
   kind: 'rectangle',
-  style: { ...style, fill },
+  style: withFill(style, fill), // RULE-22: a fill turned on takes the colour as its fill colour
   box: { x: 100, y: 100, width: 200, height: 100 },
 });
 const arrow: Annotation = { id: 'a', kind: 'arrow', style, tail: { x: 0, y: 0 }, head: { x: 100, y: 0 } };
