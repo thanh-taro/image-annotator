@@ -762,7 +762,9 @@ test.describe('F-019 custom colour and size', () => {
     await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
   });
 
-  test('F-019.R5 RULE-19 Esc in an untouched position field clears the selection', async ({ page }) => {
+  test('F-019.R5 RULE-19 CMP-StylePanel Esc in an untouched position field clears the selection; focus moves to the canvas region', async ({
+    page,
+  }) => {
     await open(page);
     await toolButton(page, 'Rectangle (R)').click();
     await dragImage(page, [100, 100], [300, 200]);
@@ -772,6 +774,10 @@ test.describe('F-019 custom colour and size', () => {
     await panel(page).getByRole('textbox', { name: 'X', exact: true }).focus();
     await page.keyboard.press('Escape');
     await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+    await expect(panel(page).getByRole('textbox', { name: 'X', exact: true })).toHaveCount(0);
+    await expect(workArea(page)).toBeFocused();
+    await page.keyboard.press('r'); // the Tools keys work again (RULE-19: canvas focus)
+    await expect(toolButton(page, 'Rectangle (R)')).toBeChecked();
   });
 
   test('F-008.AC19 CMP-Toolbar D-043 clicking the active tool clears the selection (wide); on narrow it also toggles the sheet', async ({

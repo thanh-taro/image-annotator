@@ -219,11 +219,13 @@ function ColourGroup({
     if (!input) return;
     const onInput = () => previewCustomColour(input.value);
     const onChange = () => {
+      window.removeEventListener('focus', backToText); // the window-focus fallback is not needed now
       previewCustomColour(input.value);
       endCustomPick();
       backToText();
     };
     const onCancel = () => {
+      window.removeEventListener('focus', backToText);
       cancelCustomPick();
       backToText();
     };
@@ -792,6 +794,17 @@ export function StylePanel() {
   const ref = useRef<HTMLElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLButtonElement>(null);
+
+  // CMP-StylePanel "Accessibility": a key or action in the panel that removes the control with focus (Esc
+  // clearing the selection from a position field, say) moves focus to the canvas region (CMP-Canvas), as
+  // after the delete action. Whether the panel held focus is read before this render changes the DOM.
+  const hadFocus = !!ref.current && ref.current.contains(document.activeElement);
+  useLayoutEffect(() => {
+    if (!hadFocus) return;
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && focused.isConnected) return;
+    ref.current?.closest('.tk-body')?.querySelector<HTMLElement>('.tk-work-area')?.focus({ preventScroll: true });
+  });
 
   // D-019: the sheet is at most half the work area's height (including the bar); the canvas view moves
   // above it while it is open and comes back when it closes.
