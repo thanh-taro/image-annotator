@@ -1,16 +1,22 @@
-# Release report: Image Annotator 1.0.0-rc.3 (phase 6, local candidate)
+# Release report: Image Annotator 1.0.0-rc.4 (phase 6, local candidate)
 
-Branch `build/m1`. Nothing was uploaded, published, deployed or provisioned; no credentials were touched. Tagged locally `v1.0.0-rc.1`, `v1.0.0-rc.2` and `v1.0.0-rc.3` (not pushed). **Ship rc.3.**
+Branch `build/m1`. Nothing was uploaded, published, deployed or provisioned; no credentials were touched. Tagged locally `v1.0.0-rc.1`, `v1.0.0-rc.2`, `v1.0.0-rc.3` and `v1.0.0-rc.4` (not pushed). **Ship rc.4.**
 The owner signs off the manual checks below (D-038), reviews the drafts, then tags and ships (phase 7).
 
 ## Candidate
-- **rc.3 (current):** rc.2 plus the owner's hand-test changes (2026-11-10): picking a drawing tool clears the
+- **rc.4 (current):** rc.3 plus the owner's third hand-test change (2026-11-10): with the select tool and nothing
+  selected, the panel starts with the shared drawing colour, then the Canvas heading, padding and background, so a
+  colour picked there is the next shape's (D-047, F-003.AC12). Built and fully tested from a clean clone of
+  `2ab5b40` (results in `traceability.md`). Artifacts: `release/1.0.0-rc.4/` (archive
+  `dd7ce72fa82d7d7491be3fecbb92c2f3c952481507708bea656816ecfd930fa0`, 160,401 bytes; `dist.sha256`
+  `42b2612f01361396d48385b756b6bbb0f18d8889811f43956a0a62966a8692f8`). **The manual sign-off list below is for rc.4.**
+- **rc.3 (history):** rc.2 plus the owner's hand-test changes (2026-11-10): picking a drawing tool clears the
   selection (D-043); stroke and highlight handles on the drawn mark, so thin highlights resize (D-044); one drawing
   colour shared by the seven drawing tools, highlight and redaction keep theirs (D-045); a Canvas heading on canvas
   settings (D-046). Built and fully tested from a clean clone of `c3bc538` (results in `traceability.md`).
   Artifacts: `release/1.0.0-rc.3/` (archive `95fdf037c7310651258801cee14d31fa27b3d56f693c024dd5fbdc608a2488e3`,
   160,328 bytes; `dist.sha256` `57d7986ec47d8345c410a07779e73c03ab9201f956ebc2b41a9255c2bd8ec543`). The rc.1/rc.2
-  checksums below are kept for history. **The manual sign-off list below is for rc.3.**
+  checksums below are kept for history. 
 - **rc.2 (current):** rc.1 plus the source licence (D-041: `LICENSE`, PolyForm Strict 1.0.0 as the sibling tools,
   `package.json` "SEE LICENSE IN LICENSE", terms draft) and the catalog category note (D-042). The release build of
   rc.2 is **byte-identical** to rc.1 (same `SHA256SUMS`, archive `764ab1f4…`), so rc.1's verification against the
