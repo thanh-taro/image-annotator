@@ -95,3 +95,6 @@ First release. All 18 features of M-1 are `shipped`; nothing was added to the sp
 - RULE-15: the download name replaces `/ \ : * ? " < > |` with `_` and trims surrounding spaces, so the notice names the saved file.
 - dependencies.md: DEP-07 pinned to portal `27ea733`; stale notes corrected; test fixtures recorded as own work.
 - QA fix round 1 gaps: F-017 edge case (offline, the notices open only from a standalone copy; embedded copies are partitioned, ADR-0021); architecture.md and MOD-Host: the service worker is registered after first render, not on `load`, with the early seed per ADR-0025.
+
+## 2026-11-10 — Release candidate feedback
+- Owner's manual test of 1.0.0-rc.2: CMP-Toolbar picking any tool other than select clears the selection, so a style choice changes only what is drawn next (D-043; was "picking a tool clears nothing"); F-008.R3 stroke and highlight handles sit on the box of the drawn mark (points' box grown by half the line width), so a thin highlight can be scaled (D-044). New F-008.AC18, AC19.

@@ -28,7 +28,7 @@ not a redo (PRN-04).
 ## Requirements
 - **R1** With the select tool, clicking an annotation selects it; Shift+click adds or removes it; dragging on empty canvas selects every annotation the box touches (with Shift, they are added to the current selection, D-032); select all selects every annotation. Clicking empty canvas clears the selection.
 - **R2** Dragging a selected annotation moves the whole selection; arrow keys move it by 1 or 10 image pixels (RULE-19).
-- **R3** A single selected annotation shows handles to resize it (rectangle, ellipse, redaction), to move its end points (line, arrow), or to scale it (stroke, highlight); text and steps have no handles (their size is S/M/L). Shift keeps proportions while dragging a handle (RULE-06).
+- **R3** A single selected annotation shows handles to resize it (rectangle, ellipse, redaction), to move its end points (line, arrow), or to scale it (stroke, highlight: the handles sit on the box of the drawn mark, its points' box grown by half its line width, so they stay at the mark's edge, D-044); text and steps have no handles (their size is S/M/L). Shift keeps proportions while dragging a handle (RULE-06).
 - **R4** Changing a style while annotations are selected changes them all at once (RULE-04); only choices that apply to every selected annotation kind are shown.
 - **R5** The user can delete, duplicate (offset 10 image pixels right and down) and bring forward or send backward the selection.
 - **R6** With any drawing tool active, the user can move an existing annotation by dragging it with Alt held, or by switching to select; a plain drag always draws.
@@ -53,6 +53,8 @@ not a redo (PRN-04).
 - **AC15** Given a selected 100 × 40 highlight, when the user sets its width to 200, then its points are scaled so its bounding box is 200 × 40 with the same top-left corner. (R8)
 - **AC16** Given focus in the width field with a rectangle selected, when the user presses Backspace, Left arrow and Enter, then the field's text is edited and applied, and the rectangle is neither deleted nor moved before the value applies. (R8)
 - **AC17** Given the select tool and a rectangle at (100, 100) at 100 % zoom, when the user presses on it, moves the pointer 3 screen px and releases, then the rectangle is selected, still at (100, 100), and no undo step was added (one Undo removes the rectangle); when they press again and move 10 screen px right, then the rectangle ends at (110, 100). (R1, R2, R7)
+- **AC18** Given a selected highlight drawn left to right whose points rise less than 3 image pixels, when the user drags its bottom-right handle 40 screen px down and 60 right at 100 % zoom, then the highlight is scaled (wider and taller) and not moved. (R3)
+- **AC19** Given a selected rectangle and the ellipse tool picked, when the user picks green, then the rectangle keeps its colour, nothing is selected, and the next ellipse is green. (R4, CMP-Toolbar)
 
 ## UX notes
 COPY-tool.select in CMP-Toolbar. Selection actions in CMP-StylePanel: COPY-action.delete,
@@ -60,7 +62,7 @@ COPY-action.duplicate, COPY-action.bring_forward, COPY-action.send_backward; pos
 fields under COPY-geometry.title.
 
 ## Edge cases
-- A stroke or highlight with no height (or width), such as a Shift highlight → only the handles along its length show, and it cannot be scaled across it.
+- A stroke or highlight with no height (or width), such as a Shift highlight → only the handles along its length show, at the ends of the drawn mark, and it cannot be scaled across it.
 - A selected annotation too small for its handles and its body to be told apart → a press inside it moves it; its handles take only presses outside its body.
 - Moving a selection partly off the canvas → allowed; parts outside the frame aren't exported.
 - Selecting a step and changing its size → its number stays.
