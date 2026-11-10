@@ -94,7 +94,7 @@
     "iterate": {
       "title": "8 Iterate",
       "status": "in_progress",
-      "step": "F-020 spec review round 2",
+      "step": "F-020 code review round 1 + a11y audit",
       "gate": {
         "status": "pending",
         "at": null,
@@ -949,22 +949,6 @@
   },
   "log": [
     {
-      "at": "2026-11-02T03:52:06+00:00",
-      "event": "architecture step: 3.1 architecture: writing ADRs, modules, registry (stack approved D-022..D-025)"
-    },
-    {
-      "at": "2026-11-02T03:52:11+00:00",
-      "event": "decision D-022 opened: Rendering engine"
-    },
-    {
-      "at": "2026-11-02T03:52:12+00:00",
-      "event": "decision D-022 answered: own Canvas 2D"
-    },
-    {
-      "at": "2026-11-02T03:52:12+00:00",
-      "event": "decision D-023 opened: Blur and pixelate reference"
-    },
-    {
       "at": "2026-11-02T03:52:12+00:00",
       "event": "decision D-023 answered: own exact algorithm"
     },
@@ -1747,9 +1731,25 @@
     {
       "at": "2026-11-10T10:40:35+00:00",
       "event": "iterate step: F-020 spec review round 2"
+    },
+    {
+      "at": "2026-11-10T10:42:28+00:00",
+      "event": "iterate step: F-020 build (feature-builder)"
+    },
+    {
+      "at": "2026-11-10T10:42:28+00:00",
+      "event": "F-020 spec ready after 2 review rounds"
+    },
+    {
+      "at": "2026-11-10T11:23:12+00:00",
+      "event": "iterate step: F-020 code review round 1 + a11y audit"
+    },
+    {
+      "at": "2026-11-10T11:23:13+00:00",
+      "event": "F-020 built on feature/F-020 (bd32792): 21 ACs covered, check:full steps all pass"
     }
   ],
-  "updated": "2026-11-10T10:40:35+00:00",
+  "updated": "2026-11-10T11:23:13+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
