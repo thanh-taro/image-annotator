@@ -40,6 +40,7 @@ import {
   EDITOR_EXTRA_EM,
   HIT_TOLERANCE_PX,
   isEffectRedaction,
+  TEXT_BACKGROUND_MARGIN,
   textFont,
   textLayout,
   toImage,
@@ -346,12 +347,17 @@ export function Canvas({
       const z = v.zoom / 100;
       const ratio = dpr();
       const L = textLayout(a, Math.min(img.width, img.height), measureLine);
+      const s = ta.style;
+      // F-020.R8 / RULE-22 (CMP-TextEditor): with a background the field also covers the box's margin, so
+      // its editing outline surrounds the background box and a press in the margin places the caret there
+      // (the field's own nearest position) and keeps editing; only a press outside it reaches the canvas.
+      const margin = a.style.fill === 'none' ? 0 : TEXT_BACKGROUND_MARGIN * L.size * z;
+      s.padding = margin ? `calc(var(--tk-space-1) + ${margin}px)` : '';
       const cs = getComputedStyle(ta);
       const left = ta.clientLeft + parseFloat(cs.paddingLeft);
       const top = ta.clientTop + parseFloat(cs.paddingTop);
       // CMP-TextEditor: while empty the field is as wide as COPY-text.placeholder.
       const width = Math.max(L.box.width, ta.value ? 0 : measureLine(L.font, ta.placeholder)) * z;
-      const s = ta.style;
       // The display canvas snaps the view's offset to device pixels (viewTransform); so does the field.
       s.left = `${Math.round(v.x * ratio) / ratio + a.anchor.x * z - left}px`;
       s.top = `${Math.round(v.y * ratio) / ratio + a.anchor.y * z - top}px`;
@@ -592,13 +598,22 @@ export function Canvas({
         paintOverlays(ctx, scene, img, transform, { selection: selected, look, crop: crop.preview });
         return;
       }
+      // F-020.R8 / RULE-22: an empty text being edited shows the placeholder, which its background surrounds.
+      const placeholder = edited && edited.text === '' ? { id: edited.id, text: ta.placeholder } : null;
       paintScene(
         ctx,
         scene,
         img,
         transform,
         patches,
-        { selection: selected, look, backdrop, marquee: select.marquee, crop: shownFrame },
+        {
+          selection: selected,
+          look,
+          backdrop,
+          marquee: select.marquee,
+          crop: shownFrame,
+          ...(placeholder ? { placeholder } : {}),
+        },
         source,
       );
       // NFR-02: a gesture is pressed but not yet a drag: build the layers now (nothing new is drawn). A

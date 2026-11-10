@@ -1,7 +1,7 @@
 // MOD-Core — domain types as plain data (specs/10-domain/model.md). Coordinates and sizes are in
 // image pixels, origin at the image's top-left corner; annotation coordinates are never clamped.
 // Implements: ENT-Session (parts), ENT-Image (metadata), ENT-Annotation, ENT-Style (with F-019's custom colour
-// and size, RULE-21), ENT-Frame, ENT-Padding.
+// and size, RULE-21; F-020's fill colour and text background, RULE-22), ENT-Frame, ENT-Padding.
 
 /** RULE-04 palette, in order. */
 export const PALETTE_NAMES = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'black', 'white'] as const;
@@ -17,6 +17,11 @@ export type Size = 'S' | 'M' | 'L';
 /** ENT-Style `strokeSize`: a preset (RULE-04) or, from M-1b, a custom size in whole image pixels (RULE-21). */
 export type StyleSize = Size | number;
 export type Fill = 'none' | 'solid' | 'translucent';
+/**
+ * ENT-Style `fillColor` (M-1c, RULE-22): the fill colour of a rectangle or ellipse, or the text background
+ * colour of a text — `automatic` until one is picked, else a palette or custom colour.
+ */
+export type FillColour = 'automatic' | StyleColour;
 export type RedactionKind = 'solid' | 'blur' | 'pixelate';
 
 /** RULE-01 input formats (AVIF only where the browser decodes it). */
@@ -34,11 +39,17 @@ export interface Box {
   readonly height: number;
 }
 
-/** ENT-Style. `fill` applies to rectangle and ellipse; `redactionKind` and `strength` to redactions. */
+/**
+ * ENT-Style. `fill` applies to rectangle and ellipse (their fill) and, from M-1c, to text (its text
+ * background); `fillColor` is their fill colour or text background colour (RULE-22); `redactionKind` and
+ * `strength` apply to redactions.
+ */
 export interface Style {
   readonly color: StyleColour;
   readonly strokeSize: StyleSize;
   readonly fill: Fill;
+  /** Implements: F-020.R2/R4, RULE-22 — `automatic` follows the colour (a text: its contrast pairing). */
+  readonly fillColor: FillColour;
   readonly redactionKind: RedactionKind;
   readonly strength: Size;
 }

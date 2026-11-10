@@ -27,6 +27,12 @@
 // while it moves (one step per drag), shown only while the subjects share one width (R7).
 // Implements: F-019.R1/R2/R3/R4/R5/R7/R8/R9, RULE-21, CMP-StylePanel "Accessibility" (9 colour choices in 2
 // rows of 5 on narrow widths or a coarse pointer), style.md (the custom swatch's neutral mark).
+// F-020 (M-1c): COPY-style.fill_color after COPY-style.fill while the fill is solid or translucent; for a text
+// COPY-style.text_background after the size (its choices reuse the fill's copy) and, while it is not none,
+// COPY-style.text_background_color — each colour choice the same radio group as the colour's, with its own
+// label, the custom swatch and the picker (one remembered custom colour). An automatic colour marks the
+// swatch of the colour it is drawn in; choosing a checked swatch applies nothing.
+// Implements: F-020.R1/R2/R3/R6/R7/R8, RULE-22, CMP-StylePanel "Accessibility" (fill and background colours).
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { canvasCommands, viewCommands } from '../canvas';
 import { t, type MessageId } from '../copy';
@@ -209,7 +215,14 @@ function ColourGroup({
   const picker = useRef<HTMLInputElement>(null);
   const checked: ColourOption | null = custom.checked ? CUSTOM : value && !isHexColour(value) ? value : null;
   const tabStop = checked ?? COLOUR_OPTIONS[0];
-  const pick = (c: Colour) => (target === 'drawing' ? setDrawingColour(c) : setStyle({ color: c }));
+  const pick = (c: Colour) => {
+    // F-020.R2 / F-019.R1: choosing the checked swatch applies nothing (an automatic fill colour stays
+    // automatic, and no undo step is added).
+    if (c === checked) return;
+    if (target === 'drawing') setDrawingColour(c);
+    else if (target === 'fill') setStyle({ fillColor: c });
+    else setStyle({ color: c });
+  };
 
   // F-019.R8 (platform-mapping): the picker's colours preview, `change` ends the chain, and `cancel`, where
   // the browser fires one, restores the colour from before the swatch was chosen; focus moving to another
@@ -230,7 +243,8 @@ function ColourGroup({
       backToText();
     };
     const onFocusIn = (e: FocusEvent) => {
-      if (customPickOpen() && e.target !== refs.current[PALETTE_NAMES.length] && e.target !== input) endCustomPick();
+      if (customPickOpen(target) && e.target !== refs.current[PALETTE_NAMES.length] && e.target !== input)
+        endCustomPick();
     };
     input.addEventListener('input', onInput);
     input.addEventListener('change', onChange);
@@ -503,6 +517,36 @@ function Sections({ model, narrow }: { model: PanelModel; narrow: boolean }) {
           value={model.fill}
           label={(f) => t(FILL_COPY[f])}
           onPick={(fill) => setStyle({ fill })}
+        />
+      )}
+      {/* F-020.R1/R2: the fill colour, while the fill is solid or translucent. */}
+      {model.fillColor !== undefined && (
+        <ColourGroup
+          id="tk-style-fill-color"
+          legend={t('style.fill_color')}
+          value={model.fillColor}
+          custom={customSwatch(model, 'fill')}
+          target="fill"
+        />
+      )}
+      {/* F-020.R3/R4: a text's background (the fill's choices) and, unless none, its colour. */}
+      {model.textBackground !== undefined && (
+        <Choice
+          name="tk-style-text-background"
+          legend={t('style.text_background')}
+          values={FILLS}
+          value={model.textBackground}
+          label={(f) => t(FILL_COPY[f])}
+          onPick={(fill) => setStyle({ fill })}
+        />
+      )}
+      {model.textBackgroundColor !== undefined && (
+        <ColourGroup
+          id="tk-style-text-background-color"
+          legend={t('style.text_background_color')}
+          value={model.textBackgroundColor}
+          custom={customSwatch(model, 'fill')}
+          target="fill"
         />
       )}
       {model.strength !== undefined && (

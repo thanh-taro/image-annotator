@@ -6,13 +6,14 @@
 // strokes and highlights (F-004), step badges (F-006), text (F-005) and redactions (F-007: solid boxes, and
 // blur/pixelate patches composited per ADR-0006); the crop view and its frame overlay (F-010). Promoted
 // from the SP-engine spike (ADR-0004, ADR-0016, ADR-0022) and, for text, the SP-text spike (ADR-0009,
-// ADR-0020).
+// ADR-0020). F-020 (M-1c): rectangle and ellipse fills in their fill colour, and text backgrounds (RULE-22).
 import {
   ARROW_HEAD_LENGTH,
   arrowHead,
   boundsOf,
   canvasRect,
-  customContrast,
+  contrastPairing,
+  fillColourOf,
   handleBox,
   handlesOf,
   HIGHLIGHT_OPACITY,
@@ -29,6 +30,7 @@ import {
   shapeBox,
   stepBadge,
   strokePixels,
+  textBackground,
   textLines,
   textMetrics,
   textOutlineWidth,
@@ -93,6 +95,17 @@ export interface AnnotationPassOptions {
    * A drag frame draws only the dragged annotations, so it passes the whole document's solids.
    */
   readonly solids?: readonly Annotation[];
+  /** Screen only: the empty text being edited and its placeholder, which its background surrounds (RULE-22). */
+  readonly placeholder?: Placeholder;
+}
+
+/**
+ * RULE-22 / F-020.R8 (screen only): the text being edited while it is empty, by id, and the placeholder it
+ * shows (COPY-text.placeholder); its background box surrounds the placeholder at the text's size.
+ */
+export interface Placeholder {
+  readonly id: string;
+  readonly text: string;
 }
 
 /** The image as `paint` reads it: drawable, with its size (RULE-04 sizes use its shorter side). */
@@ -129,6 +142,8 @@ export interface Overlays {
    * outline and eight handles on top. The scene is then the crop view (`cropView`).
    */
   readonly crop?: Frame | null;
+  /** RULE-22 / F-020.R8: the empty text being edited, whose background surrounds its placeholder. */
+  readonly placeholder?: Placeholder;
 }
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -171,16 +186,10 @@ export function paint(
     ctx.drawImage(layer, 0, 0);
   } else paintScene(ctx, scene, image, transform, crisp);
   ctx.restore();
-  paintAnnotations(
-    ctx,
-    scene,
-    image,
-    transform,
-    patches,
-    0,
-    scene.annotations.length,
-    overlays?.backdrop ? { backdrop: overlays.backdrop } : {},
-  );
+  paintAnnotations(ctx, scene, image, transform, patches, 0, scene.annotations.length, {
+    ...(overlays?.backdrop ? { backdrop: overlays.backdrop } : {}),
+    ...(overlays?.placeholder ? { placeholder: overlays.placeholder } : {}),
+  });
   if (overlays) paintOverlays(ctx, scene, image, transform, overlays);
 }
 
@@ -326,7 +335,7 @@ export function paintAnnotations(
     if (isEffectRedaction(a)) {
       solids ??= (options.solids ?? scene.annotations).filter(isSolidRedaction);
       drawEffect(ctx, a, scene, patches.get(a.id), solids, transform, options.backdrop);
-    } else drawAnnotation(ctx, a, shortSide);
+    } else drawAnnotation(ctx, a, shortSide, options.placeholder);
   }
   ctx.restore();
 }
@@ -414,7 +423,7 @@ function paintBackdrop(ctx: Ctx, scene: Scene, box: Box, transform: Transform, b
 }
 
 /** One annotation in image pixels (the context already carries the transform). */
-function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
+function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number, placeholder?: Placeholder): void {
   const stroke = strokePixels(a.style, shortSide);
   const colour = colourValue(a.style.color);
   ctx.globalAlpha = 1;
@@ -429,8 +438,10 @@ function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
       ctx.lineJoin = 'miter';
       if (a.kind === 'rectangle') ctx.rect(b.x, b.y, b.width, b.height);
       else ctx.ellipse(b.x + b.width / 2, b.y + b.height / 2, b.width / 2, b.height / 2, 0, 0, 2 * Math.PI);
-      // F-003.R3 / RULE-04: outlined, filled solid, or filled at 30 % opacity in its colour.
+      // F-003.R3 / RULE-04: outlined, filled solid, or filled at 30 % opacity — from M-1c in its fill colour
+      // (automatic: its colour), under the outline (Implements: F-020.R1/R2, RULE-22).
       if (a.style.fill !== 'none') {
+        ctx.fillStyle = colourValue(fillColourOf(a.kind, a.style));
         ctx.globalAlpha = a.style.fill === 'translucent' ? TRANSLUCENT_FILL_OPACITY : 1;
         ctx.fill();
         ctx.globalAlpha = 1;
@@ -469,7 +480,7 @@ function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
       drawStep(ctx, a, shortSide);
       return;
     case 'text':
-      drawText(ctx, a, shortSide);
+      drawText(ctx, a, shortSide, placeholder?.id === a.id ? placeholder.text : undefined);
       return;
     case 'redaction':
       // Blur and pixelate go through drawEffect (they need the patches and the solids).
@@ -505,21 +516,38 @@ function drawStep(ctx: Ctx, a: StepAnnotation, shortSide: number): void {
  * outline is `strokeText` in the contrast pairing (RULE-07) with lineWidth 2 × max(1, 0.08 × size) and
  * round joins — half of it lies under the glyph — then `fillText` in the style colour on top. Lines
  * break only at typed new lines; nothing wraps.
+ * From M-1c (RULE-22, F-020.R4/R8): a text with a background is drawn on a box with rounded corners — the
+ * text box grown by 0.25 × the text size on every side, radius 0.2 × the text size — opaque when solid and
+ * at 70 % when translucent, in its text background colour (automatic: the contrast pairing of its colour),
+ * directly under its letters and without the outline. `placeholder` is the screen-only placeholder an empty
+ * text being edited shows, which the box then surrounds.
  */
-function drawText(ctx: Ctx, a: TextAnnotation, shortSide: number): void {
+function drawText(ctx: Ctx, a: TextAnnotation, shortSide: number, placeholder?: string): void {
   const m = textMetrics(a.style, shortSide);
   ctx.font = m.font;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  ctx.lineJoin = 'round';
-  ctx.miterLimit = 2;
-  ctx.lineWidth = 2 * textOutlineWidth(m.size);
-  ctx.strokeStyle = colourValue(contrastPair(a.style.color));
+  const background = textBackground(a, shortSide, measureWith(ctx), placeholder);
+  if (background) {
+    const { box: b, radius, opacity } = background;
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = colourValue(fillColourOf('text', a.style));
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.width, b.height, radius);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.font = m.font; // measuring the box set the same font; kept explicit for the letters
+  } else {
+    ctx.lineJoin = 'round';
+    ctx.miterLimit = 2;
+    ctx.lineWidth = 2 * textOutlineWidth(m.size);
+    ctx.strokeStyle = colourValue(contrastPair(a.style.color));
+  }
   ctx.fillStyle = colourValue(a.style.color);
   textLines(a.text).forEach((line, i) => {
     if (!line) return;
     const y = a.anchor.y + i * m.lineHeight + m.baseline;
-    ctx.strokeText(line, a.anchor.x, y);
+    if (!background) ctx.strokeText(line, a.anchor.x, y);
     ctx.fillText(line, a.anchor.x, y);
   });
 }
@@ -738,6 +766,5 @@ export function colourValue(name: StyleColour): string {
  * custom colour (RULE-21) pairs with whichever has the higher contrast ratio, black on a tie (F-019.R6).
  */
 export function contrastPair(name: StyleColour): 'black' | 'white' {
-  if (isHexColour(name)) return customContrast(name);
-  return name === 'yellow' || name === 'orange' || name === 'green' || name === 'white' ? 'black' : 'white';
+  return contrastPairing(name); // MOD-Core holds the pairing table, so the panel can mark it too (F-020.R4)
 }
