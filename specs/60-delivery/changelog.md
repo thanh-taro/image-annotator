@@ -2,6 +2,9 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
+## 1.1.1 — 2026-11-10 (release candidate 1.1.1-rc.1)
+Bug fix, no spec change: CMP-TextEditor shows a visible selection again (ADR-0009 §2).
+
 ## 1.1.0 — 2026-11-10 (milestone M-1b, release candidate 1.1.0-rc.1)
 Custom colour and size (F-019 `shipped`): a custom swatch opening the browser's colour picker and a size in pixels next to S, M and L. Fixes: clicking the active tool clears the selection on wide layouts (CMP-Toolbar, D-043); Esc in an unchanged panel field follows RULE-19 and focus moves to the canvas region (CMP-StylePanel).
 
