@@ -138,4 +138,13 @@ Done by automation, not on the list: security review F-017 m3 (paste before the 
   `Clear-Site-Data` or the kill-switch worker). Every account, token, domain, portal and upload step is USER-OWNED.
 
 ## Deployed
-Not deployed. (After phase 7, note here the production Cloudflare Version ID and the date.)
+- **Owner sign-off:** 2026-11-10, "The 1.0.0 is good to go"; deploy authorised by the owner ("You can wrangle to deploy").
+- **Deployed:** `v1.0.0-rc.4` (archive `dd7ce72f…`, verified 12/12 against `dist.sha256` before upload) with wrangler 4.158.0 on the
+  owner's logged-in account, 2026-11-10T05:13:09Z. Cloudflare Version ID `517ae3cf-f6e5-45b9-a99a-6deda8f9f469`.
+  Route `image-annotator.tarokit.app` (custom domain). First release: no earlier version to roll back to (runbook 6).
+- **Smoke checks (runbook 4.1, 4.2), passed:** page CSP with `connect-src 'none'`, `img-src 'self'`, `worker-src 'self'`,
+  `frame-ancestors https://tarokit.app`; Permissions-Policy, `Referrer-Policy: no-referrer`, nosniff, COOP, HSTS,
+  `Cache-Control: no-cache`; `/sw.js` own policy and no-cache; `/assets/*` immutable; `/nonexistent`, `*.map`, `/.vite/` and
+  `/_headers` return 404. Bytes: all 10 served files match `release/1.0.0-rc.4/dist.sha256`.
+- **Still owner-owned:** browser checks 4.3–4.6 (standalone, embedded via the portal, offline, framing refused); the catalog
+  entry in taro-kit; pushing the tag if wanted.
