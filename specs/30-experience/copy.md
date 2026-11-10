@@ -54,6 +54,10 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-style.size_s** | Small | Nhỏ | |
 | **COPY-style.size_m** | Medium | Vừa | |
 | **COPY-style.size_l** | Large | Lớn | |
+| **COPY-style.color_custom** | Custom color | Màu tùy chọn | Accessible name of the custom swatch before a custom colour is picked (F-019) |
+| **COPY-style.color_custom_value** | Custom color {hex} | Màu tùy chọn {hex} | Accessible name of the custom swatch once a colour is picked; hex like #1E90FF (F-019) |
+| **COPY-style.size_px** | Size in pixels | Cỡ (pixel) | Label of the size field and slider (F-019) |
+| **COPY-style.size_value** | {value} px | {value} px | A custom size, e.g. in the narrow summary bar's detail (F-019) |
 | **COPY-style.fill** | Fill | Tô nền | |
 | **COPY-style.fill_none** | None | Không | |
 | **COPY-style.fill_solid** | Solid | Đặc | |
@@ -69,7 +73,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-color.white** | White | Trắng | |
 | **COPY-canvas.title** | Canvas | Khung ảnh | Subject of the narrow summary bar when canvas settings show, and the heading of the wide panel's padding and background, below the drawing colour (D-046, D-047) |
 | **COPY-style.sheet_toggle** | Style options | Tùy chọn kiểu dáng | Start of the narrow summary bar's accessible name: "{sheet_toggle}: {sheet_summary}" |
-| **COPY-style.sheet_summary** | {subject} · {detail} | {subject} · {detail} | Narrow summary bar; subject: the tool, the selected kind, COPY-a11y.selected_count, COPY-canvas.title or COPY-tool.crop; detail: COPY-style.size_s/m/l (for a redaction: the subject is its kind, COPY-redact.solid, COPY-redact.blur or COPY-redact.pixelate, followed for blur and pixelate by COPY-redact.not_secure_short shown as the same tag as on the panel's choices (D-031), and the detail its strength for blur and pixelate, none for solid); for the canvas, COPY-canvas.padding, a space, then COPY-canvas.padding_none or COPY-style.size_s/m/l (e.g. "Padding None"); or COPY-crop.size |
+| **COPY-style.sheet_summary** | {subject} · {detail} | {subject} · {detail} | Narrow summary bar; subject: the tool, the selected kind, COPY-a11y.selected_count, COPY-canvas.title or COPY-tool.crop; detail: COPY-style.size_s/m/l or, for a custom size, COPY-style.size_value (for a redaction: the subject is its kind, COPY-redact.solid, COPY-redact.blur or COPY-redact.pixelate, followed for blur and pixelate by COPY-redact.not_secure_short shown as the same tag as on the panel's choices (D-031), and the detail its strength for blur and pixelate, none for solid); for the canvas, COPY-canvas.padding, a space, then COPY-canvas.padding_none or COPY-style.size_s/m/l (e.g. "Padding None"); or COPY-crop.size |
 | **COPY-canvas.padding** | Padding | Khoảng đệm | |
 | **COPY-canvas.padding_none** | None | Không | |
 | **COPY-canvas.background** | Background | Nền | |

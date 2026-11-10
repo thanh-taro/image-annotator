@@ -40,8 +40,8 @@ session: it starts at the defaults when the page opens and is kept when a new im
 - `number` — for `step` only (RULE-07).
 
 ### ENT-Style — Style
-- `color` — one of the palette colours (RULE-04).
-- `strokeSize` — `S`, `M` or `L` (RULE-04); for text and steps it sets the text size.
+- `color` — one of the palette colours (RULE-04), or a custom colour as a 6-digit hex value (RULE-21).
+- `strokeSize` — `S`, `M` or `L` (RULE-04), or a custom size in whole image pixels (RULE-21); for text and steps it sets the text size, for highlights a custom size is the highlight width.
 - `fill` — `none`, `solid` or `translucent` (rectangle and ellipse only, RULE-04).
 - `redactionKind` — `solid`, `blur` or `pixelate` (redaction only, RULE-10).
 - `strength` — `S`, `M` or `L` (blur and pixelate redactions only, RULE-10).

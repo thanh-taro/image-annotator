@@ -53,8 +53,9 @@ values live in `tokens.json`; no hard-coded colours, sizes or fonts in component
   group, and Download moves into the overflow.
 - **Work area:** `workArea` background; Fit leaves `space.6` between the canvas and the work area's edges; canvas centred with a 1 px `lineStrong` outline so its edge shows on light images; transparent areas show a `checkerA` /
   `checkerB` checkerboard of `size.checker` squares; outside the crop frame `cropDim` while cropping.
-- **Style panel:** sections with small `muted` headings: colour swatches (8, in RULE-04 order) ·
-  size S/M/L segmented control · fill or redaction kind · position and size fields · selection
+- **Style panel:** sections with small `muted` headings: colour swatches (8, in RULE-04 order; from M-1b
+  then the custom swatch, F-019) · size S/M/L segmented control (from M-1b with the pixel field and,
+  wide, a slider, F-019) · fill or redaction kind · position and size fields · selection
   actions. When nothing is selected with the select tool: padding and background. On narrow
   widths the panel becomes a bottom sheet that opens from the active tool.
 - **Notices:** CMP-Notice floats at the bottom centre of the work area, `space.4` above its edge, up to 680 px wide; it never covers the toolbar, style panel or status bar.

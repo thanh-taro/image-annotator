@@ -7,6 +7,10 @@ undo/redo; non-destructive crop; padding and background; copy and download as me
 keyboard map; leave-page warning; host integration, privacy statement, offline use and the
 portal's language. Features: F-001 … F-018. Scope chosen by the owner (D-001).
 
+### M-1b — Custom colour and size (version 1.1)
+Any colour through a custom swatch, and a size in pixels next to S, M and L, for every annotation
+that has them. Feature: F-019. Chosen by the owner after the 1.0.0 candidate (D-048, D-049, D-050).
+
 ### M-2 — Reach and polish
 HEIC input; images beyond the RULE-02 limit without scaling down; JPEG and WebP export; style
 presets; touch polish; text with background boxes; fixed crop ratios.
