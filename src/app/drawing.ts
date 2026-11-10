@@ -79,9 +79,12 @@ export const toolLabel = (name: ToolName): string => t(TOOL_COPY[name]);
 // Implements: CMP-Toolbar "Behavior" (D-043), F-008.AC19
 export function setTool(next: ToolName): void {
   const l = loaded.value;
-  if (!l || !BUILT_TOOLS.includes(next) || tool.value === next) return;
-  tool.value = next;
+  if (!l || !BUILT_TOOLS.includes(next)) return;
+  // Implements: CMP-Toolbar (D-043) — picking any tool but select, even the one already active,
+  // clears the selection, so a style choice changes only what is drawn next.
   if (next !== 'select' && selection.value.length) select([]);
+  if (tool.value === next) return;
+  tool.value = next;
   l.session.history.breakChain(); // ADR-0008 §3: a tool change breaks the coalescing chain
   announcePolite(t('a11y.tool_active', { tool: toolLabel(next) }));
 }

@@ -24,8 +24,8 @@ loaded, F-014.R3).
 | count fallback | In compact and narrow, whenever the count's full text would not fit on its row (for example in vi-VN, or at 10 or more), it shows an icon and the number only, with its full text as the accessible name |
 
 ## Behavior
-Exactly one tool is active. The select tool is active when the page opens; the active tool is kept when a new image loads. Picking any tool other than COPY-tool.select (with the pointer or its key, RULE-19) clears the
-selection, so CMP-StylePanel shows that tool's current style and a style choice changes only what is
+Exactly one tool is active. The select tool is active when the page opens; the active tool is kept when a new image loads. Picking any tool other than COPY-tool.select (with the pointer or its key, RULE-19), including the
+one already active, clears the selection, so CMP-StylePanel shows that tool's current style and a style choice changes only what is
 drawn next (D-043); picking COPY-tool.select keeps the selection.
 
 ## Accessibility

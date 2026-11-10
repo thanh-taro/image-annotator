@@ -34,6 +34,9 @@ async function pasteGrey(page: Page) {
 
 async function scan(page: Page, label: string, found: string[]) {
   // D-036: the tool starts with a visually hidden h1, so page-has-heading-one is no longer excluded.
+  // Measure the settled state: a colour fade still running (such as Copy becoming available after a
+  // load) would be sampled at an in-between colour.
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
   const r = await new AxeBuilder({ page }).withTags(TAGS).analyze();
   for (const v of r.violations)
     found.push(`${label} | ${v.id} (${v.impact}) | ${v.nodes.length} node(s) | ${v.nodes[0]?.target.join(' ')}`);

@@ -123,6 +123,19 @@ describe('MOD-App drawing commands', () => {
     expect(loaded.value?.session.history.canUndo).toBe(false);
   });
 
+  it('F-008.AC19 CMP-Toolbar re-picking the active drawing tool also clears the selection; picking select keeps it', () => {
+    setTool('rectangle');
+    createAnnotation(draft()); // a new annotation is selected
+    expect(selection.value).toHaveLength(1);
+    setTool('rectangle');
+    expect(selection.value).toEqual([]);
+    expect(tool.value).toBe('rectangle');
+    const id = doc.value?.annotations[0]?.id as string;
+    select([id]);
+    setTool('select');
+    expect(selection.value).toEqual([id]);
+  });
+
   it('F-003.AC1 F-003.R3 RULE-04 with nothing selected a style change is the tool’s current style, no step', () => {
     setTool('rectangle');
     setStyle({ color: 'blue', fill: 'translucent' });
