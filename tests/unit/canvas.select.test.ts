@@ -1,14 +1,14 @@
 // MOD-Canvas select tool (F-008): clicks, Shift+click, the marquee, moving the selection and dragging
 // handles, Alt+drag with a drawing tool, and the RULE-05 4-pixel rule for every press.
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_STYLES, shapeBox, type Annotation, type Point, type ToolName } from '../../src/core';
+import { DEFAULT_STYLES, shapeBox, withFill, type Annotation, type Point, type ToolName } from '../../src/core';
 import type { PointerInput } from '../../src/canvas/input';
 import { SelectTool } from '../../src/canvas/select';
 
 const rect = (id: string, x: number, y: number, width = 100, height = 50): Annotation => ({
   id,
   kind: 'rectangle',
-  style: { ...DEFAULT_STYLES.rectangle, fill: 'solid' },
+  style: withFill(DEFAULT_STYLES.rectangle, 'solid'), // RULE-22: a filled shape has a fill colour
   box: { x, y, width, height },
 });
 const arrow: Annotation = {

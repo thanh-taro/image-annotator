@@ -186,6 +186,19 @@ describe('F-020 fill colour', () => {
     expect(doc.value?.annotations.map((a) => a.style.fillColor)).toEqual(['purple', 'purple']);
   });
 
+  it('F-020.R1 F-020.R2 RULE-21 fill on for a custom-coloured shape copies the custom colour, marks the custom swatch and keeps the remembered colour', () => {
+    setTool('rectangle');
+    pick('style', '#ff00ff'); // the remembered custom colour (RULE-21) and the shared colour
+    createAnnotation(shape('rectangle', { color: '#1e90ff' })); // selected (F-003.R6), fill none, unset
+    expect(customColour.value).toBe('#ff00ff');
+    setStyle({ fill: 'solid' });
+    expect(byIndex(0)?.style).toMatchObject({ color: '#1e90ff', fill: 'solid', fillColor: '#1e90ff' });
+    expect(customSwatch(model(), 'fill')).toEqual({ colour: '#1e90ff', checked: true });
+    expect(customColour.value).toBe('#ff00ff'); // the copy is not a picked colour
+    // The tool's fill colour is the shared current colour (F-020.R6), not the copy.
+    expect(currentStyles.value.rectangle.fillColor).toBe('#ff00ff');
+  });
+
   it('F-020.AC23 F-020.R2 fill none, Blue, then solid: the outline is blue and the fill stays red', () => {
     setTool('rectangle');
     setStyle({ fill: 'solid' });
