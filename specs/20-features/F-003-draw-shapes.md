@@ -26,7 +26,7 @@ field (PRN-03).
 ## Requirements
 - **R1** With the rectangle or ellipse tool, dragging creates that shape spanning the drag.
 - **R2** With the line or arrow tool, dragging creates a line from the start to the end point; an arrow has its head at the end point, with head length 4 × and head width 3 × its stroke size.
-- **R3** New shapes get the tool's current style (RULE-04); rectangles and ellipses can be outlined, filled solid, or filled translucent.
+- **R3** New shapes get the tool's current style (RULE-04; the colour is shared with the other drawing tools except highlight and redaction, D-045); rectangles and ellipses can be outlined, filled solid, or filled translucent.
 - **R4** Holding Shift while dragging constrains the shape (RULE-06).
 - **R5** A click without dragging places a default-size shape (RULE-05); with the keyboard, the user can place one at the centre of the view (RULE-19).
 - **R6** After creating a shape, it is selected and the tool stays the same, so the next drag draws another.
@@ -41,6 +41,8 @@ field (PRN-03).
 - **AC7** Given the rectangle tool, when the user clicks without dragging on a 1000 × 800 image, then a 160 × 160 rectangle centred on the click is created. (R5)
 - **AC8** Given the arrow tool and focus on the canvas, when the user presses Enter, then a default-size arrow appears at the centre of the view and is selected. (R5)
 - **AC9** Given the arrow tool, when the user draws an arrow, then it is selected and the arrow tool is still active. (R6)
+- **AC10** Given the rectangle tool and green picked, when the user picks the arrow tool, then the panel shows green and the next arrow is green; when they pick the highlight tool, then the panel shows yellow. (R3)
+- **AC11** Given the select tool and nothing selected, when the user looks at the wide CMP-StylePanel, then it starts with the heading COPY-canvas.title and its colours are labelled COPY-canvas.background; picking green there leaves the next rectangle's colour unchanged. (R3)
 
 ## UX notes
 Tools in CMP-Toolbar: COPY-tool.rectangle, COPY-tool.ellipse, COPY-tool.line, COPY-tool.arrow.

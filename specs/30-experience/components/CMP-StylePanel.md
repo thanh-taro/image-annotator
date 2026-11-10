@@ -10,7 +10,7 @@ Change the style of the active tool or the selection, the position and size of a
 selection or the frame, or canvas settings when nothing is selected.
 
 ## Anatomy
-With a multi-selection, the wide panel starts with a heading COPY-a11y.selected_count (D-035); the narrow sheet shows it in its summary bar (COPY-style.sheet_summary).
+With a multi-selection, the wide panel starts with a heading COPY-a11y.selected_count (D-035); with canvas settings it starts with a heading COPY-canvas.title, so its colours read as the background, not the drawing colour (D-046); the narrow sheet shows it in its summary bar (COPY-style.sheet_summary).
 Colour swatches (COPY-style.color: COPY-color.red, COPY-color.orange, COPY-color.yellow,
 COPY-color.green, COPY-color.blue, COPY-color.purple, COPY-color.black, COPY-color.white);
 COPY-style.size (COPY-style.size_s, COPY-style.size_m, COPY-style.size_l); COPY-style.fill;

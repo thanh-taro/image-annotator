@@ -98,3 +98,4 @@ First release. All 18 features of M-1 are `shipped`; nothing was added to the sp
 
 ## 2026-11-10 — Release candidate feedback
 - Owner's manual test of 1.0.0-rc.2: CMP-Toolbar picking any tool other than select clears the selection, so a style choice changes only what is drawn next (D-043; was "picking a tool clears nothing"); F-008.R3 stroke and highlight handles sit on the box of the drawn mark (points' box grown by half the line width), so a thin highlight can be scaled (D-044). New F-008.AC18, AC19. Builder gaps: re-picking the active drawing tool also clears the selection; the selection outline uses the drawn-mark box; RULE-06 Shift keeps a stroke's points proportions.
+- Owner's manual test (2): RULE-04 one current colour shared by rectangle, ellipse, line, arrow, pen, text and step; highlight and redaction keep their own (D-045). CMP-StylePanel canvas settings start with the heading COPY-canvas.title (D-046). New F-003.AC10, AC11.
