@@ -9,6 +9,7 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - Builder questions (F-019 build): the picker starts at the subject's colour when none is remembered (R1); slider on the wide and compact layouts (R3); Esc in a changed field only restores, else RULE-19 (R5); cancel also restores the remembered colour (R8); AC22 and its edge case restated for the hidden panel with no image. MOD-Document `discardChain`, MOD-Canvas `focusTextEdit`, MOD-Core custom-style functions.
 - Code review round 1 of F-019: choosing the custom swatch applies the colour it shows, nothing when already checked (R1); the slider is on the wide and compact layouts in CMP-StylePanel, style.md and platform-mapping.
 - Accessibility audit of F-019: with differing sizes in a multi-selection the slider is not shown (R7).
+- F-019 fix round 1: CMP-StylePanel focus moves to the canvas region when the focused panel control is removed; MOD-Render `colourValue` replaces `paletteColour`.
 
 ## 1.0.0 — 2026-11-10 (milestone M-1, release candidate 1.0.0-rc.4)
 First release. All 18 features of M-1 are `shipped`. After the owner's hand test of rc.2: picking a drawing tool clears the selection (D-043), highlight and stroke handles sit on the drawn mark (D-044), one drawing colour is shared across tools (D-045), canvas settings have a Canvas heading (D-046), and the select tool's panel offers the drawing colour too (D-047).
