@@ -903,6 +903,20 @@
       "answer": "1.2.0",
       "asked": "2026-11-10T10:29:29+00:00",
       "answered": "2026-11-10T10:29:43+00:00"
+    },
+    {
+      "id": "D-054",
+      "question": "Does a rectangle's or ellipse's fill colour follow its line colour?",
+      "options": [
+        "copy-once,white,red"
+      ],
+      "recommendation": "copy-once",
+      "kind": "product",
+      "phase": "iterate",
+      "status": "answered",
+      "answer": "Separate: when fill is turned on and no fill colour was set, it starts as the line colour, then never follows it; text background stays automatic",
+      "asked": "2026-11-10T13:30:18+00:00",
+      "answered": "2026-11-10T13:30:18+00:00"
     }
   ],
   "loops": {
@@ -948,14 +962,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-11-02T04:03:49+00:00",
-      "event": "40-technical written; RULE-10 clarified (blur box outside frame covers earlier annotations)"
-    },
-    {
-      "at": "2026-11-02T04:06:40+00:00",
-      "event": "decision D-026 opened: Wrangler's sharp/libvips LGPL-3.0 (deploy-only)"
-    },
     {
       "at": "2026-11-02T04:06:40+00:00",
       "event": "decision D-026 answered: allow deploy-only"
@@ -1747,9 +1753,17 @@
     {
       "at": "2026-11-10T13:19:13+00:00",
       "event": "iterate step: 1.2.0 live; awaiting further requests"
+    },
+    {
+      "at": "2026-11-10T13:30:18+00:00",
+      "event": "decision D-054 opened: Does a rectangle's or ellipse's fill colour follow its line colour?"
+    },
+    {
+      "at": "2026-11-10T13:30:18+00:00",
+      "event": "decision D-054 answered: Separate: when fill is turned on and no fill colour was set, it starts as the line colour, then never follows it; text background stays automatic"
     }
   ],
-  "updated": "2026-11-10T13:19:13+00:00",
+  "updated": "2026-11-10T13:30:18+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
