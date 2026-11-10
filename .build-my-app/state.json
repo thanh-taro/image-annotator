@@ -94,7 +94,7 @@
     "iterate": {
       "title": "8 Iterate",
       "status": "in_progress",
-      "step": "F-020 code review round 1 + a11y audit",
+      "step": "1.2.0-rc.1 release build",
       "gate": {
         "status": "pending",
         "at": null,
@@ -950,14 +950,6 @@
   "log": [
     {
       "at": "2026-11-02T03:52:12+00:00",
-      "event": "decision D-023 answered: own exact algorithm"
-    },
-    {
-      "at": "2026-11-02T03:52:12+00:00",
-      "event": "decision D-024 opened: Undecodable huge image under 50 MB"
-    },
-    {
-      "at": "2026-11-02T03:52:12+00:00",
       "event": "decision D-024 answered: existing decode_failed message"
     },
     {
@@ -1747,9 +1739,17 @@
     {
       "at": "2026-11-10T11:23:13+00:00",
       "event": "F-020 built on feature/F-020 (bd32792): 21 ACs covered, check:full steps all pass"
+    },
+    {
+      "at": "2026-11-10T11:51:13+00:00",
+      "event": "iterate step: 1.2.0-rc.1 release build"
+    },
+    {
+      "at": "2026-11-10T11:51:14+00:00",
+      "event": "F-020 merged into build/1.2 (19b1008) after code review round 2 clean; release prep 98dbc24"
     }
   ],
-  "updated": "2026-11-10T11:23:13+00:00",
+  "updated": "2026-11-10T11:51:14+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
