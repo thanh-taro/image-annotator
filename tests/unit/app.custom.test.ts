@@ -8,13 +8,17 @@ import {
   chooseCustomSwatch,
   customSwatch,
   endCustomPick,
+  pickerStart,
   previewCustomColour,
 } from '../../src/app/custom';
 import {
+  beginSizeDrag,
   createAnnotation,
+  endSizeDrag,
   panelModel,
   select,
   setCustomSize,
+  setSliderSize,
   setStyle,
   setTool,
   summaryDetail,
@@ -25,13 +29,15 @@ import {
   currentStyles,
   customColour,
   doc,
+  exported,
   loaded,
   selection,
   startNewSession,
   tool,
+  unexported,
 } from '../../src/app/state';
-import { DEFAULT_CURRENT_STYLES, DEFAULT_STYLES, type Annotation } from '../../src/core';
-import { contrastPair, paletteColour } from '../../src/render';
+import { DEFAULT_CURRENT_STYLES, type Annotation } from '../../src/core';
+import { colourValue, contrastPair } from '../../src/render';
 import type { DecodedImage } from '../../src/io';
 
 const image = (width = 1000, height = 800): DecodedImage => ({
@@ -90,7 +96,7 @@ describe('F-019 custom colour', () => {
     pick('#1e90ff');
     createAnnotation(rect());
     expect(first()?.style.color).toBe('#1e90ff');
-    expect(paletteColour('#1e90ff')).toBe('#1e90ff');
+    expect(colourValue('#1e90ff')).toBe('#1e90ff');
     expect(customSwatch(model())).toEqual({ colour: '#1e90ff', checked: true });
     setTool('arrow');
     expect(customSwatch(model())).toEqual({ colour: '#1e90ff', checked: true });
@@ -247,7 +253,7 @@ describe('F-019 custom colour', () => {
 describe('F-019 custom size', () => {
   it('F-019.AC4 M shows 5 in the field; 7 unmarks M, shows 7, and the next rectangle has a 7-pixel stroke', () => {
     setTool('rectangle');
-    expect(model()).toMatchObject({ size: 'M', sizeField: { value: 5, min: 1, max: 100, available: true } });
+    expect(model()).toMatchObject({ size: 'M', sizeField: { value: 5, min: 1, max: 100, slider: true } });
     setCustomSize(7);
     expect(model()).toMatchObject({ size: 7, sizeField: { value: 7 } });
     createAnnotation(rect());
@@ -315,7 +321,8 @@ describe('F-019 custom size', () => {
     setTool('select');
     select((doc.value?.annotations ?? []).map((a) => a.id));
     expect(doc.value?.annotations.map((a) => a.style.strokeSize)).toEqual(['M', 7]);
-    expect(model()).toMatchObject({ size: null, sizeField: { value: null, available: true } });
+    // F-019.R7 (a11y audit): the field is empty and the slider is not shown.
+    expect(model()).toMatchObject({ size: null, sizeField: { value: null, slider: false } });
   });
 
   it('F-019.R7 an M and a custom 5 have the same width: the field shows 5 and no preset is marked', () => {
@@ -363,12 +370,104 @@ describe('F-019 custom size', () => {
     ]);
   });
 
-  it('F-019.AC22 with no image the field shows nothing for M and is unavailable; a custom 7 shows 7', () => {
-    const none = (styles = currentStyles.value) => panelModel('rectangle', [], null, styles, false, null);
-    expect(none()).toMatchObject({ size: 'M', sizeField: { value: null, available: false } });
-    tool.value = 'rectangle';
-    setCustomSize(7);
-    expect(none()).toMatchObject({ size: 7, sizeField: { value: 7, available: true } });
-    expect(DEFAULT_STYLES.rectangle.strokeSize).toBe('M');
+  it('F-019.R7 an M and a custom 5 have the same width: the slider is shown', () => {
+    setTool('rectangle');
+    createAnnotation(rect());
+    setTool('rectangle');
+    setCustomSize(5);
+    createAnnotation(rect());
+    setTool('select');
+    select((doc.value?.annotations ?? []).map((a) => a.id));
+    expect(model().sizeField).toMatchObject({ value: 5, slider: true });
+  });
+
+  it('F-019.R5 RULE-11 a slider pressed without moving leaves no drag key: three slider keys are one step', () => {
+    setTool('rectangle');
+    createAnnotation(rect());
+    const before = doc.value;
+    beginSizeDrag();
+    endSizeDrag(); // released without any input
+    for (const v of [6, 7, 8]) setSliderSize(v);
+    expect(first()?.style.strokeSize).toBe(8);
+    expect(history()?.undo()?.doc).toBe(before);
+  });
+
+  it('F-019.R5 RULE-11 one slider drag is one step; the next drag is another', () => {
+    setTool('rectangle');
+    createAnnotation(rect());
+    beginSizeDrag();
+    for (const v of [6, 9]) setSliderSize(v);
+    endSizeDrag();
+    beginSizeDrag();
+    setSliderSize(12);
+    endSizeDrag();
+    expect(history()?.undo()?.doc.annotations[0]?.style.strokeSize).toBe(9);
+  });
+});
+
+describe('F-019 custom swatch, review round 1', () => {
+  it('F-019.R1 the picker starts at the swatch’s colour, else at the subject’s colour (a palette colour’s value)', () => {
+    setTool('arrow');
+    setStyle({ color: 'green' });
+    createAnnotation(arrow());
+    expect(pickerStart('style')).toBe('#2db84d');
+    customColour.value = '#1e90ff';
+    expect(pickerStart('style')).toBe('#1e90ff');
+    setStyle({ color: '#2f4f4f' });
+    expect(pickerStart('style')).toBe('#2f4f4f'); // the swatch shows the subject's custom colour
+    setTool('select');
+    select([]);
+    customColour.value = null;
+    setStyle({ color: 'red' }); // nothing selected with the select tool: no change
+    expect(pickerStart('drawing')).toBe('#2f4f4f'); // the drawing colour (D-047) is the shared one
+  });
+
+  it('F-019.R1 F-019.AC15 a checked custom swatch chosen again applies nothing, even with another colour remembered', () => {
+    setTool('rectangle');
+    pick('#1e90ff');
+    setTool('highlight');
+    pick('#00ff00');
+    setTool('rectangle');
+    createAnnotation(rect()); // #1e90ff, selected
+    const before = doc.value;
+    expect(customSwatch(model())).toEqual({ colour: '#1e90ff', checked: true });
+    beginCustomPick('style', true);
+    endCustomPick();
+    expect(first()?.style.color).toBe('#1e90ff');
+    expect(doc.value).toBe(before);
+    expect(currentStyles.value.rectangle.color).toBe('#1e90ff');
+    expect(chooseCustomSwatch('style')).toBe(true);
+    expect(doc.value).toBe(before);
+  });
+
+  it('F-019.R1 an unchecked custom swatch applies the colour it shows (the remembered one)', () => {
+    setTool('rectangle');
+    customColour.value = '#00ff00';
+    beginCustomPick('style', true);
+    endCustomPick();
+    expect(currentStyles.value.rectangle.color).toBe('#00ff00');
+  });
+
+  it('F-019.R8 a colour the picker reports after its opening ended is ignored', () => {
+    setTool('arrow');
+    createAnnotation(arrow());
+    beginCustomPick('style', true);
+    previewCustomColour('#112233');
+    endCustomPick();
+    previewCustomColour('#445566');
+    expect(first()?.style.color).toBe('#112233');
+  });
+
+  it('F-019.R8 RULE-18 a cancelled picker after an export leaves the session exported', () => {
+    setTool('arrow');
+    createAnnotation(arrow());
+    exported();
+    expect(unexported.value).toBe(false);
+    beginCustomPick('style', true);
+    previewCustomColour('#2f4f4f');
+    expect(unexported.value).toBe(true);
+    cancelCustomPick();
+    expect(first()?.style.color).toBe('red');
+    expect(unexported.value).toBe(false);
   });
 });

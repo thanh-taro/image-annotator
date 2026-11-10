@@ -188,9 +188,10 @@ export function resolveKey(key: KeyInfo, scope: Scope): Resolution {
   if (exportKey === 's') return act('export', 'download');
   // F-005.R2 / RULE-19: while a text is edited only Esc and Mod+S keep their meaning; every other key
   // edits the text as in any text field, and undo/redo act within it.
-  if (scope.focus === 'textAnnotation')
+  // F-019.R5 / RULE-19: in a text or number field Esc keeps its meaning too (a field whose text changed
+  // restores it and stops the key before it gets here).
+  if (scope.focus === 'textAnnotation' || scope.focus === 'text')
     return !key.mod && !key.alt && key.key === 'Escape' ? act('edit', 'escape') : NONE;
-  if (scope.focus === 'text') return NONE;
   // RULE-19 Load: Mod+V is never kept, so the browser fires the paste event (MOD-IO loads from it);
   // Mod+O opens a file wherever focus is in the tool.
   if (exportKey === 'v') return NONE;

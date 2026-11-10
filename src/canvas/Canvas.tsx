@@ -57,7 +57,7 @@ import {
   measureWith,
   paint as paintScene,
   paintOverlays,
-  paletteColour,
+  colourValue,
   type BaseView,
   type OverlayLook,
   type Patches,
@@ -360,7 +360,7 @@ export function Canvas({
       s.width = `${Math.ceil(width) + EDITOR_CARET_ROOM_PX}px`;
       // ADR-0020: 0.2 em taller than the lines, so the field never scrolls inside.
       s.height = `${L.lines.length * L.lineHeight * z + Math.ceil(EDITOR_EXTRA_EM * L.size * z)}px`;
-      s.setProperty('--tk-text-colour', paletteColour(a.style.color));
+      s.setProperty('--tk-text-colour', colourValue(a.style.color));
       ta.scrollLeft = 0;
       ta.scrollTop = 0;
     };

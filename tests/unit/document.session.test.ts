@@ -129,4 +129,15 @@ describe('MOD-Document discardChain (F-019.R8)', () => {
     expect(s.history.discardChain('pick:3')).toBeNull();
     expect(s.history.canUndo).toBe(true);
   });
+
+  it('F-019.R8 RULE-18 a discarded chain after an export leaves the session exported', () => {
+    const s = startSession(image);
+    s.history.apply(touch, ['a']);
+    s.markExported();
+    s.history.apply(touch, ['a'], 'pick:1');
+    s.history.apply(touch, ['a'], 'pick:1');
+    expect(s.unexported).toBe(true);
+    s.history.discardChain('pick:1');
+    expect(s.unexported).toBe(false);
+  });
 });

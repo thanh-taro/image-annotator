@@ -103,7 +103,7 @@ describe('MOD-Core custom sizes (RULE-21)', () => {
     expect(sizePixels('stroke', 7, SHORT)).toBe(7);
   });
 
-  it('F-019.AC22 RULE-21 with no image a preset has no width in pixels; a custom size still has', () => {
+  it('RULE-21 with no image a preset has no width in pixels; a custom size still has', () => {
     expect(sizePixels('stroke', 'M', null)).toBeNull();
     expect(sizePixels('stroke', 7, null)).toBe(7);
   });

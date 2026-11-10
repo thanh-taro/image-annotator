@@ -292,6 +292,32 @@ export function setCustomSize(px: number, coalesceKey?: string): void {
   setStyle({ strokeSize: px }, coalesceKey);
 }
 
+let sizeDrag: string | null = null;
+let sizeDrags = 0;
+
+/** F-019.R5 / RULE-11: the slider was pressed; the sizes until it is released are one step. */
+export function beginSizeDrag(): void {
+  sizeDrag = `slider:${selection.value.join(',')}:${++sizeDrags}`;
+}
+
+/**
+ * F-019.R5 / RULE-11: the slider was released (moved or not): that drag's step ends, and later slider keys
+ * chain on their own.
+ */
+export function endSizeDrag(): void {
+  if (sizeDrag === null) return;
+  sizeDrag = null;
+  loaded.value?.session.history.breakChain();
+}
+
+/**
+ * F-019.R5: a size from the slider, applied while it moves — one drag, or repeated slider keys on the same
+ * selection, is one step (RULE-11).
+ */
+export function setSliderSize(px: number): void {
+  setCustomSize(px, sizeDrag ?? `slider:${selection.value.join(',')}:keys`);
+}
+
 /**
  * RULE-19 Esc: cancel the current drag; else (D-019) close the narrow sheet; else end text editing,
  * keeping the text (F-005.R3); else clear the selection; else switch to the select tool.
@@ -335,8 +361,9 @@ export interface PanelModel {
   readonly size?: StyleSize | null;
   /**
    * F-019.R3/R7 (RULE-21): the size field and slider, offered with the size when every subject is sized
-   * the same way: its value in pixels (null, so empty, when the subjects' widths differ or a preset has no
-   * width without an image), the range, and whether it is available (not with a preset and no image).
+   * the same way: its value in pixels (null, so empty, when the subjects' widths differ), the range, and
+   * whether the slider is shown (not when the widths differ, F-019.R7). The panel is only shown with an
+   * image (SCR-Annotator empty), so a preset always has a width here.
    */
   readonly sizeField?: {
     /** RULE-21: how the subjects are sized (stroke, highlight width or text size), for the range. */
@@ -344,7 +371,7 @@ export interface PanelModel {
     readonly value: number | null;
     readonly min: number;
     readonly max: number;
-    readonly available: boolean;
+    readonly slider: boolean;
   };
   /** Offered only when every subject kind has a fill (rectangle, ellipse). */
   readonly fill?: Fill | null;
@@ -398,9 +425,7 @@ function sizeField(
   if (classes.size !== 1 || !cls) return {};
   const widths = subjects.map((x) => sizePixels(cls, x.style.strokeSize, shortSide));
   const value = widths.every((w) => w === widths[0]) ? (widths[0] ?? null) : null;
-  // F-019 edge case: with no image a preset has no width, so the field and slider are unavailable.
-  const available = shortSide !== null || subjects.every((x) => typeof x.style.strokeSize === 'number');
-  return { sizeField: { cls, value, ...CUSTOM_SIZE_RANGE[cls], available } };
+  return { sizeField: { cls, value, ...CUSTOM_SIZE_RANGE[cls], slider: value !== null } };
 }
 
 /** The redaction choices (and which general ones apply) for subjects with these styles and kinds. */

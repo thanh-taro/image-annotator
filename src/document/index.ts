@@ -303,6 +303,7 @@ export function startSession(image: ImageInfo): Session {
   let cursor = 0; // steps[0..cursor) are done
   let current: Selection = [];
   let chain: string | undefined; // coalescing key of the top step, while nothing else happened
+  let chainEpoch = 0; // the epoch before the chain's first step (F-019.R8: a discarded chain restores it)
   let epoch = 0;
   let exportedEpoch = 0;
   let ids = 0;
@@ -320,6 +321,7 @@ export function startSession(image: ImageInfo): Session {
         steps[cursor - 1] = { ...top, after, selectionAfter: selection };
       } else {
         steps = steps.slice(0, cursor);
+        chainEpoch = epoch;
         steps.push({ before: doc, after, selectionBefore: current, selectionAfter: selection });
         if (steps.length > HISTORY_STEPS) steps = steps.slice(steps.length - HISTORY_STEPS);
         cursor = steps.length;
@@ -371,7 +373,10 @@ export function startSession(image: ImageInfo): Session {
       cursor = steps.length;
       doc = top.before;
       current = top.selectionBefore;
+      // RULE-18: no step was recorded, so the document is as it was before the chain: if that state was
+      // the exported one, it still is. Epochs only grow, so an export still running never sees one reused.
       epoch++;
+      if (exportedEpoch === chainEpoch) exportedEpoch = epoch;
       return { doc, selection: current };
     },
   };

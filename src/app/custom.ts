@@ -1,14 +1,24 @@
 // MOD-App — the custom swatch of CMP-StylePanel's annotation colour groups (F-019, RULE-21): what it
 // shows, choosing it, and one opening of the browser's colour picker. Choosing the swatch applies the
-// remembered custom colour, if any; each colour the picker reports previews at once; the swatch and the
+// colour it shows, if any (nothing when it is already checked); each colour the picker reports previews at once; the swatch and the
 // colours of one opening form one undo step for a selection (RULE-11), ending when the picker closes or
 // focus moves to another control; a cancel restores the colour from before the swatch was chosen and
 // records no step. A value equal to a palette colour is that palette colour (RULE-21).
 // Implements: F-019.R1, F-019.R2, F-019.R8, RULE-21, RULE-11 (the picker chain), D-047 (the drawing colour).
 import { PALETTE_HEX } from '../canvas';
 import { isHexColour, pickedColour, type CurrentStyles, type HexColour, type StyleColour } from '../core';
-import { setDrawingColour, setStyle, type PanelModel } from './drawing';
-import { commit, currentStyleModel, customColour, loaded, selection } from './state';
+import { panelModel, setDrawingColour, setStyle, type PanelModel } from './drawing';
+import {
+  commit,
+  currentStyleModel,
+  currentStyles,
+  customColour,
+  doc,
+  loaded,
+  selection,
+  textEditing,
+  tool,
+} from './state';
 
 /** Which colour a group sets: the subject's style (tool or selection), or the drawing colour (D-047). */
 export type ColourTarget = 'style' | 'drawing';
@@ -24,19 +34,47 @@ export function customSwatch(model: PanelModel): { colour: HexColour | null; che
   return { colour: customColour.value, checked: false };
 }
 
+/** The panel model now (the size field's preset widths do not matter here). */
+const modelNow = (): PanelModel =>
+  panelModel(tool.value, selection.value, doc.value, currentStyles.value, textEditing.value !== null);
+
+/** The subject's colour: the drawing colour, the shared colour, or else the first selected annotation's. */
+function subjectColour(model: PanelModel): StyleColour | null {
+  if (model.canvas) return model.canvas.drawColor;
+  if (model.color) return model.color;
+  // A multi-selection whose colours differ: the first selected annotation's colour (F-019.R1 names "the
+  // subject's colour"; with several colours the first in the selection's order stands for it).
+  const first = selection.value[0];
+  return doc.value?.annotations.find((a) => a.id === first)?.style.color ?? null;
+}
+
+/**
+ * F-019.R1: where the picker starts — the swatch's colour, or when none is remembered the subject's
+ * colour (a palette colour as its value, `#rrggbb`).
+ */
+export function pickerStart(_target: ColourTarget): HexColour | null {
+  const model = modelNow();
+  const swatch = customSwatch(model).colour;
+  if (swatch) return swatch;
+  const subject = subjectColour(model);
+  if (!subject) return null;
+  return isHexColour(subject) ? subject : (PALETTE_HEX[subject].toLowerCase() as HexColour);
+}
+
 function apply(target: ColourTarget, color: StyleColour, coalesceKey?: string): void {
   if (target === 'drawing') setDrawingColour(color);
   else setStyle({ color }, coalesceKey);
 }
 
 /**
- * F-019.R1: the custom swatch chosen without the picker (arrow keys): the remembered custom colour applies
- * like a palette colour. False when none is remembered: the swatch only takes focus.
+ * F-019.R1: the custom swatch chosen without the picker (arrow keys): the colour it shows applies like a
+ * palette colour — nothing when it is already checked. False when it shows none: it only takes focus.
  */
 export function chooseCustomSwatch(target: ColourTarget): boolean {
-  const remembered = customColour.value;
-  if (!remembered) return false;
-  apply(target, remembered);
+  const swatch = customSwatch(modelNow());
+  if (swatch.checked) return true;
+  if (!swatch.colour) return false;
+  apply(target, swatch.colour);
   return true;
 }
 
@@ -50,37 +88,35 @@ interface PickSession {
 
 let session: PickSession | null = null;
 let openings = 0;
-/** The group whose picker opened last: a colour it reports after its chain ended still applies. */
-let lastTarget: ColourTarget = 'style';
 
 /** A picker opening is in progress (between `beginCustomPick` and its end or cancel). */
 export const customPickOpen = (): boolean => session !== null;
 
 /**
  * F-019.R1/R8: the swatch was clicked or tapped, or Enter or Space pressed on it — `choose` applies the
- * remembered custom colour (if any) and the picker opens. Its changes chain into one step from here.
+ * colour the swatch shows (nothing when it is already checked) and the picker opens. Its changes chain into
+ * one step from here.
  */
 export function beginCustomPick(target: ColourTarget, choose: boolean): void {
   endCustomPick();
-  lastTarget = target;
+  const swatch = customSwatch(modelNow());
   session = {
     target,
     key: `custom-colour:${++openings}:${selection.value.join(',')}`,
     styles: currentStyleModel.value,
     remembered: customColour.value,
   };
-  const remembered = customColour.value;
-  if (choose && remembered) apply(target, remembered, session.key);
+  if (choose && !swatch.checked && swatch.colour) apply(target, swatch.colour, session.key);
 }
 
-/** F-019.R8: a colour the picker reports while open (`#rrggbb`): the subject follows it at once. */
+/**
+ * F-019.R8: a colour the picker reports while open (`#rrggbb`): the subject follows it at once. One
+ * reported after the opening ended (the subject may have changed since) is ignored.
+ */
 export function previewCustomColour(value: string): void {
   const color = pickedColour(value, PALETTE_HEX);
-  if (!color) return;
-  // A browser that reports `change` for each colour while its picker stays open ends the chain each time;
-  // the colours after it still apply, each as its own step.
-  if (session) apply(session.target, color, session.key);
-  else apply(lastTarget, color);
+  if (!color || !session) return;
+  apply(session.target, color, session.key);
 }
 
 /**

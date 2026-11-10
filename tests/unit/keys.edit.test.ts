@@ -30,6 +30,13 @@ describe('MOD-Keys edit keys (RULE-19)', () => {
     expect(resolveKey(key({ key: 'Backspace' }), scope({ selection: 'none' })).preventDefault).toBe(true);
   });
 
+  it('F-019.R5 RULE-19 Esc in a panel field (its text unchanged) runs the Esc chain', () => {
+    expect(resolveKey(key({ key: 'Escape', code: 'Escape' }), scope({ focus: 'text' }))).toEqual({
+      action: { kind: 'named', group: 'edit', name: 'escape' },
+      preventDefault: true,
+    });
+  });
+
   it('F-008.AC16 RULE-19 in a panel field Backspace, arrows and Enter are the field’s own', () => {
     for (const k of ['Backspace', 'Delete', 'ArrowLeft', 'Enter'])
       expect(resolveKey(key({ key: k, code: k }), scope({ focus: 'text' }))).toEqual({ preventDefault: false });

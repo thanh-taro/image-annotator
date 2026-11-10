@@ -23,8 +23,9 @@
 // visually hidden colour input (showPicker, else click) whose `input` events preview and chain into one
 // step, `change` or focus leaving ends the chain, and `cancel` restores the colour (platform-mapping). The
 // size choice adds the pixel field (COPY-style.size_px, applied on Enter or blur only when typed into,
-// Esc restores) and, on the wide panel, a slider that applies while it moves (one step per drag).
-// Implements: F-019.R1/R2/R3/R4/R5/R8/R9, RULE-21, CMP-StylePanel "Accessibility" (9 colour choices in 2
+// Esc restores, else Esc acts as RULE-19 states) and, except on the narrow layout, a slider that applies
+// while it moves (one step per drag), shown only while the subjects share one width (R7).
+// Implements: F-019.R1/R2/R3/R4/R5/R7/R8/R9, RULE-21, CMP-StylePanel "Accessibility" (9 colour choices in 2
 // rows of 5 on narrow widths or a coarse pointer), style.md (the custom swatch's neutral mark).
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { canvasCommands, viewCommands } from '../canvas';
@@ -53,13 +54,17 @@ import {
   customPickOpen,
   customSwatch,
   endCustomPick,
+  pickerStart,
   previewCustomColour,
   type ColourTarget,
 } from './custom';
 import {
+  beginSizeDrag,
+  endSizeDrag,
   paddingLabel,
   panelModel,
   setCustomSize,
+  setSliderSize,
   setDrawingColour,
   setStyle,
   sizeLabel,
@@ -240,10 +245,13 @@ function ColourGroup({
   const openPicker = () => {
     const input = picker.current;
     if (!input) return;
+    // F-019.R1: the picker starts at the swatch's colour, else at the subject's colour.
+    const start = pickerStart(target);
     beginCustomPick(target, true);
-    // F-019.R1: the picker starts at the swatch's colour (the remembered one, now applied).
-    const start = customSwatch(currentModel()).colour;
     if (start) input.value = start;
+    // F-019.R9 (a11y audit m3): a browser that fires neither `change` nor `cancel` when its picker closes
+    // still returns focus to the page window; then focus goes back to the edited text.
+    if (textEditing.value) window.addEventListener('focus', backToText, { once: true });
     try {
       input.showPicker();
     } catch {
@@ -322,13 +330,12 @@ function ColourGroup({
   );
 }
 
-let sliderDrags = 0;
-
 /**
  * F-019.R3/R4/R5 (RULE-21): the size in image pixels after S, M and L — a number field that applies on
  * Enter or when focus leaves it, only when typed into since it was last shown (Esc restores the shown
- * value), and on the wide panel a slider with the same range that applies while it moves (one drag, or
- * repeated keys on the same selection, one step, RULE-11). Either makes a custom size.
+ * value; with the text unchanged Esc acts as RULE-19 states), and except on the narrow layout a slider
+ * with the same range that applies while it moves (one drag, or repeated keys on the same selection, one
+ * step, RULE-11), shown only when the subjects share one width (R7). Either makes a custom size.
  */
 function SizeField({ field, slider }: { field: NonNullable<PanelModel['sizeField']>; slider: boolean }) {
   const shown = field.value === null ? '' : String(field.value);
@@ -347,7 +354,6 @@ function SizeField({ field, slider }: { field: NonNullable<PanelModel['sizeField
     setDraft(shown); // the new value, if any, arrives with the next render
     if (px !== null) setCustomSize(px);
   };
-  const drag = useRef<string | null>(null);
   const labelId = 'tk-style-size-px';
   return (
     <div class="tk-size">
@@ -363,7 +369,6 @@ function SizeField({ field, slider }: { field: NonNullable<PanelModel['sizeField
           max={field.max}
           step={1}
           autocomplete="off"
-          disabled={!field.available}
           value={draft}
           onInput={(e) => {
             typed.current = true;
@@ -385,7 +390,7 @@ function SizeField({ field, slider }: { field: NonNullable<PanelModel['sizeField
           onBlur={apply}
         />
       </label>
-      {slider && (
+      {slider && field.slider && (
         <input
           class="tk-size__slider"
           type="range"
@@ -394,20 +399,22 @@ function SizeField({ field, slider }: { field: NonNullable<PanelModel['sizeField
           min={field.min}
           max={field.max}
           step={1}
-          disabled={!field.available}
           value={field.value ?? field.min}
           onPointerDown={() => {
-            drag.current = `slider:${selection.value.join(',')}:${++sliderDrags}`;
+            // RULE-11: one drag is one step, ending when the pointer is released (moved or not); repeated
+            // keys on the same selection go on chaining.
+            beginSizeDrag();
+            const end = () => {
+              window.removeEventListener('pointerup', end);
+              window.removeEventListener('pointercancel', end);
+              endSizeDrag();
+            };
+            window.addEventListener('pointerup', end);
+            window.addEventListener('pointercancel', end);
           }}
           onInput={(e) => {
             const px = parseCustomSize(field.cls, e.currentTarget.value);
-            if (px !== null) setCustomSize(px, drag.current ?? `slider:${selection.value.join(',')}:keys`);
-          }}
-          onChange={() => {
-            // RULE-11: one drag is one step; repeated keys on the same selection go on chaining.
-            if (!drag.current) return;
-            drag.current = null;
-            loaded.value?.session.history.breakChain();
+            if (px !== null) setSliderSize(px);
           }}
         />
       )}

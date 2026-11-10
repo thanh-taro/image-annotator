@@ -1,5 +1,6 @@
 /* MOD-App — F-019: CMP-StylePanel's annotation colour groups as ARIA radio groups (the palette and the
-   custom swatch, the ninth option), and the size in pixels (field and, on the wide panel, slider).
+   custom swatch, the ninth option), and the size in pixels (the field, and except on the narrow layout the
+   slider, F-019.R3/R7).
    Tokens only; the custom colour itself comes in through CSSOM as --tk-custom-colour (ADR-0010). */
 @layer components {
   .tk-swatch[role='radio'] {
@@ -29,7 +30,7 @@
     background: var(--tk-custom-colour);
   }
 
-  /* F-019.R3: COPY-style.size_px, then the slider on the wide panel. */
+  /* F-019.R3: COPY-style.size_px, then the slider (wide and compact layouts). */
   .tk-size {
     display: flex;
     align-items: flex-end;
@@ -47,8 +48,10 @@
   }
   /* As the position and size fields (./edit.css). */
   .tk-size__input {
-    width: var(--tk-size-field);
-    height: var(--tk-size-control);
+    /* Room for "400" and the browser's spin buttons, so the digits never clip (a11y audit m7). */
+    width: calc(3ch + var(--tk-size-control));
+    min-width: var(--tk-size-field);
+    min-height: var(--tk-size-control);
     padding: 0 var(--tk-space-1);
     border: var(--tk-border-width-hairline) solid var(--tk-color-line-strong);
     border-radius: var(--tk-radius-sm);
@@ -61,17 +64,6 @@
     outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
     outline-offset: 0;
   }
-  @media (pointer: coarse) {
-    .tk-size__input {
-      min-height: var(--tk-size-touch-target);
-    }
-  }
-  .tk-size__input:disabled,
-  .tk-size__slider:disabled {
-    border-color: var(--tk-color-line);
-    color: var(--tk-color-muted);
-    cursor: not-allowed;
-  }
   .tk-size__slider {
     flex: 1;
     min-width: 0;
@@ -83,10 +75,27 @@
     outline: var(--tk-border-width-focus) solid var(--tk-color-accent);
     outline-offset: var(--tk-border-width-focus);
   }
+  /* NFR-06: the field and the slider are touch targets on a coarse pointer (a11y audit m5). */
+  @media (pointer: coarse) {
+    .tk-size__input,
+    .tk-size__slider {
+      min-height: var(--tk-size-touch-target);
+    }
+  }
 
+  /* Forced colours (a11y audit m6): the checked option and the focus ring in system colours. */
   @media (forced-colors: active) {
     .tk-swatch[role='radio'][aria-checked='true'] {
-      outline: var(--tk-border-width-focus) solid Highlight;
+      border-color: Highlight;
+    }
+    .tk-swatch[role='radio']:focus-visible,
+    .tk-size__input:focus-visible,
+    .tk-size__slider:focus-visible {
+      outline-color: Highlight;
+    }
+    .tk-swatch--custom {
+      border-color: CanvasText;
+      color: CanvasText;
     }
   }
 }

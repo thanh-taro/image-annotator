@@ -702,6 +702,125 @@ test.describe('F-019 custom colour and size', () => {
     expect(rows.filter((t) => t === rows[0])).toHaveLength(5);
   });
 
+  test('F-019.R7 a selected M and custom 7 show no slider; an M and a custom 5 (the same width) show it at 5', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await dragImage(page, [100, 100], [300, 200]);
+    await deselect(page);
+    await enterSize(page, '7');
+    await dragImage(page, [400, 100], [600, 200]);
+    await workArea(page).focus();
+    await page.keyboard.press('ControlOrMeta+A');
+    await expect(field(page)).toHaveValue('');
+    await expect(slider(page)).toHaveCount(0);
+    await deselect(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await enterSize(page, '5');
+    await dragImage(page, [100, 300], [300, 400]);
+    await toolButton(page, 'Select (V)').click();
+    await clickImage(page, 100, 150); // the M rectangle's left edge
+    await page.keyboard.down('Shift');
+    await clickImage(page, 100, 350); // add the custom 5 rectangle
+    await page.keyboard.up('Shift');
+    await expect(panel(page).getByRole('heading', { name: '2 annotations selected' })).toBeVisible();
+    await expect(field(page)).toHaveValue('5');
+    await expect(slider(page)).toHaveValue('5');
+  });
+
+  test('F-019.AC22 with no image no size field is shown; a custom 7 set before a new image is loaded shows 7, no preset marked', async ({
+    page,
+  }) => {
+    await stubPicker(page);
+    await page.setViewportSize(VIEWPORT);
+    await page.goto('/');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page.getByRole('spinbutton', { name: 'Size in pixels' })).toHaveCount(0);
+    await paste(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await enterSize(page, '7');
+    await paste(page); // a new image, nothing to lose
+    await toolButton(page, 'Rectangle (R)').click();
+    await expect(field(page)).toHaveValue('7');
+    for (const p of ['Small', 'Medium', 'Large'] as const) await expect(preset(page, p)).not.toBeChecked();
+  });
+
+  test('F-019.R5 RULE-19 Esc in the size field, its text unchanged, clears the selection; after typing it only restores', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await dragImage(page, [100, 100], [300, 200]);
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await field(page).click();
+    await page.keyboard.type('9');
+    await page.keyboard.press('Escape'); // typed: restores 5, nothing else
+    await expect(field(page)).toHaveValue('5');
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await page.keyboard.press('Escape'); // unchanged: RULE-19's Esc clears the selection
+    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+  });
+
+  test('F-019.R5 RULE-19 Esc in an untouched position field clears the selection', async ({ page }) => {
+    await open(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await dragImage(page, [100, 100], [300, 200]);
+    await toolButton(page, 'Select (V)').click();
+    await clickImage(page, 100, 150);
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await panel(page).getByRole('textbox', { name: 'X', exact: true }).focus();
+    await page.keyboard.press('Escape');
+    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+  });
+
+  test('F-008.AC19 CMP-Toolbar D-043 clicking the active tool clears the selection (wide); on narrow it also toggles the sheet', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await dragImage(page, [100, 100], [300, 200]);
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    await toolButton(page, 'Rectangle (R)').click();
+    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+    await expect(toolButton(page, 'Rectangle (R)')).toBeChecked();
+
+    await page.setViewportSize({ width: 390, height: 760 });
+    await dragImage(page, [100, 100], [300, 200]);
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
+    const bar = page.getByRole('button', { name: /^Style options: / });
+    await expect(bar).toHaveAttribute('aria-expanded', 'false');
+    await toolButton(page, 'Rectangle (R)').click();
+    await expect(bar).toHaveAttribute('aria-expanded', 'true');
+    await expect(state(page)).not.toHaveAttribute('data-state', 'selecting');
+    await toolButton(page, 'Rectangle (R)').click();
+    await expect(bar).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('F-019.R1 the picker starts at the subject’s colour; a checked custom swatch clicked again applies nothing', async ({
+    page,
+  }) => {
+    await open(page);
+    await toolButton(page, 'Rectangle (R)').click();
+    await swatch(page, 'Green').click();
+    await custom(page).click();
+    const input = page.locator('.tk-panel input[type="color"]');
+    await expect(input).toHaveValue('#2db84d');
+    await picker(page, ['#1e90ff']);
+    await dragImage(page, [100, 100], [300, 200]); // #1e90ff, selected
+    await toolButton(page, 'Highlight (H)').click();
+    await pickCustom(page, '#00ff00'); // remembered now: #00ff00
+    await toolButton(page, 'Select (V)').click();
+    await clickImage(page, 100, 150);
+    await expect(custom(page)).toBeChecked();
+    await expect(custom(page)).toHaveAccessibleName('Custom color #1E90FF');
+    await custom(page).click();
+    await expect(input).toHaveValue('#1e90ff');
+    await picker(page, [], 'close');
+    await expect(custom(page)).toHaveAccessibleName('Custom color #1E90FF');
+    await expect(undoButton(page)).toBeEnabled();
+  });
+
   for (const theme of ['dark', 'light'] as const) {
     test(`NFR-06 F-019 the colour group with the custom swatch, the size field and slider have no axe violations (${theme})`, async ({
       page,

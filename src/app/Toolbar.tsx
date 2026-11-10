@@ -162,11 +162,9 @@ function ToolGroup({ narrow }: { narrow: boolean }) {
   };
 
   const pick = (name: ToolName) => {
-    // D-019: on narrow widths, tapping the active tool again opens or closes the style sheet.
-    if (name === active) {
-      if (narrow) sheetOpen.value = !sheetOpen.value;
-      return;
-    }
+    // D-019: on narrow widths, tapping the active tool again opens or closes the style sheet. Picking it
+    // again on any layout still clears the selection (CMP-Toolbar, D-043; setTool does that).
+    if (name === active && narrow) sheetOpen.value = !sheetOpen.value;
     setTool(name);
   };
 
