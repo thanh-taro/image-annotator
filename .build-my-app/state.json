@@ -73,21 +73,21 @@
     },
     "release": {
       "title": "6 Release candidate",
-      "status": "in_progress",
-      "step": "6 release 1.0.0-rc.1: release-manager preparing build, notes, inventory, runbook",
+      "status": "done",
+      "step": "6 gate G6: awaiting user approval of v1.0.0-rc.1 and runbook",
       "gate": {
-        "status": "pending",
-        "at": null,
+        "status": "passed",
+        "at": "2026-11-10T00:08:17+00:00",
         "note": null
       }
     },
     "deploy": {
       "title": "7 Deploy",
-      "status": "pending",
-      "step": null,
+      "status": "done",
+      "step": "7.5 live: 1.1.0 (e4f26f6f) on image-annotator.tarokit.app, listed in the portal under Developer and Media",
       "gate": {
-        "status": "pending",
-        "at": null,
+        "status": "passed",
+        "at": "2026-11-10T08:04:33+00:00",
         "note": null
       }
     },
@@ -678,6 +678,189 @@
       "answer": "At release: the 12 manual checks are the phase 6 sign-off list on the release candidate",
       "asked": "2026-11-09T16:16:30+00:00",
       "answered": "2026-11-09T16:16:30+00:00"
+    },
+    {
+      "id": "D-039",
+      "question": "Runbook: write as a file in phase 6?",
+      "options": [
+        "file",
+        "phase7"
+      ],
+      "recommendation": "file",
+      "kind": "release",
+      "phase": "release",
+      "status": "answered",
+      "answer": "Write it as a file with the editor; nothing runs",
+      "asked": "2026-11-09T16:37:11+00:00",
+      "answered": "2026-11-09T16:37:11+00:00"
+    },
+    {
+      "id": "D-040",
+      "question": "Staging environment for 1.0.0?",
+      "options": [
+        "none",
+        "staging"
+      ],
+      "recommendation": "none",
+      "kind": "release",
+      "phase": "release",
+      "status": "answered",
+      "answer": "No staging (ADR-0010 kept)",
+      "asked": "2026-11-09T16:37:11+00:00",
+      "answered": "2026-11-09T16:37:11+00:00"
+    },
+    {
+      "id": "D-041",
+      "question": "Source licence?",
+      "options": [
+        "same-as-siblings",
+        "MIT",
+        "later"
+      ],
+      "recommendation": "same-as-siblings",
+      "kind": "legal",
+      "phase": null,
+      "status": "answered",
+      "answer": "Same licence as the other tools: PolyForm Strict 1.0.0 (identical LICENSE file and Required Notice as json-formatter, text-case-converter, app-sketcher)",
+      "asked": "2026-11-10T00:08:17+00:00",
+      "answered": "2026-11-10T00:08:17+00:00"
+    },
+    {
+      "id": "D-042",
+      "question": "Catalog category?",
+      "options": [
+        "developer",
+        "media",
+        "both"
+      ],
+      "recommendation": "developer",
+      "kind": "product",
+      "phase": null,
+      "status": "answered",
+      "answer": "Both developer and media, via a portal change (INV-07); ships as developer until then",
+      "asked": "2026-11-10T00:09:56+00:00",
+      "answered": "2026-11-10T00:09:56+00:00"
+    },
+    {
+      "id": "D-043",
+      "question": "Picking a drawing tool: clear the selection?",
+      "options": [
+        "clear",
+        "keep"
+      ],
+      "recommendation": "clear",
+      "kind": "product",
+      "phase": "deploy",
+      "status": "answered",
+      "answer": "Clear it; the select tool keeps it (owner's manual test)",
+      "asked": "2026-11-10T00:39:07+00:00",
+      "answered": "2026-11-10T00:39:07+00:00"
+    },
+    {
+      "id": "D-044",
+      "question": "Highlight handles on the drawn mark's edge?",
+      "options": [
+        "mark-edge",
+        "centreline"
+      ],
+      "recommendation": "mark-edge",
+      "kind": "product",
+      "phase": "deploy",
+      "status": "answered",
+      "answer": "Handles on the drawn mark's box so thin highlights can be resized (owner's manual test)",
+      "asked": "2026-11-10T00:39:08+00:00",
+      "answered": "2026-11-10T00:39:08+00:00"
+    },
+    {
+      "id": "D-045",
+      "question": "Drawing colour across tools?",
+      "options": [
+        "shared",
+        "shared+highlight",
+        "per-tool"
+      ],
+      "recommendation": "shared",
+      "kind": "product",
+      "phase": "deploy",
+      "status": "answered",
+      "answer": "One shared colour; highlight and redaction keep theirs",
+      "asked": "2026-11-10T01:18:09+00:00",
+      "answered": "2026-11-10T01:18:10+00:00"
+    },
+    {
+      "id": "D-046",
+      "question": "Select tool panel colours?",
+      "options": [
+        "background",
+        "drawing"
+      ],
+      "recommendation": "background",
+      "kind": "design",
+      "phase": "deploy",
+      "status": "answered",
+      "answer": "Keep canvas background, add a Canvas heading",
+      "asked": "2026-11-10T01:18:10+00:00",
+      "answered": "2026-11-10T01:18:11+00:00"
+    },
+    {
+      "id": "D-047",
+      "question": "Select tool, nothing selected: which colour do the panel swatches set?",
+      "options": [
+        "drawing colour row plus background row",
+        "background only (D-046)"
+      ],
+      "recommendation": "drawing colour row plus background row",
+      "kind": "design",
+      "phase": "deploy",
+      "status": "answered",
+      "answer": "Drawing colour row first, then the Canvas heading with padding and background (owner: 'the color picker reset to red. Fix it.')",
+      "asked": "2026-11-10T03:09:14+00:00",
+      "answered": "2026-11-10T03:09:19+00:00"
+    },
+    {
+      "id": "D-048",
+      "question": "When do custom colour and sizes land?",
+      "options": [
+        "1.1",
+        "1.0"
+      ],
+      "recommendation": "1.1",
+      "kind": "release",
+      "phase": "deploy",
+      "status": "answered",
+      "answer": "Next version 1.1; ship 1.0.0 as rc.4 after the hand checks",
+      "asked": "2026-11-10T04:39:38+00:00",
+      "answered": "2026-11-10T04:39:38+00:00"
+    },
+    {
+      "id": "D-049",
+      "question": "How is a custom colour picked?",
+      "options": [
+        "swatch",
+        "picker"
+      ],
+      "recommendation": "swatch",
+      "kind": "design",
+      "phase": "deploy",
+      "status": "answered",
+      "answer": "Palette plus a Custom swatch opening the browser colour picker; annotations only, not the background",
+      "asked": "2026-11-10T04:39:38+00:00",
+      "answered": "2026-11-10T04:39:38+00:00"
+    },
+    {
+      "id": "D-050",
+      "question": "How are custom sizes set?",
+      "options": [
+        "field",
+        "slider"
+      ],
+      "recommendation": "field",
+      "kind": "design",
+      "phase": "deploy",
+      "status": "answered",
+      "answer": "S/M/L presets plus a number field in pixels, slider on wide layouts; text, step, pen, highlight, shape, line and arrow",
+      "asked": "2026-11-10T04:39:38+00:00",
+      "answered": "2026-11-10T04:39:38+00:00"
     }
   ],
   "loops": {
@@ -723,206 +906,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-11-02T02:29:43+00:00",
-      "event": "design step: 2.4 design loop D1: audit + UI critique round 3 running"
-    },
-    {
-      "at": "2026-11-02T02:29:43+00:00",
-      "event": "D1 round 3: boards pulled to design/canvas/project; design-auditor + ui-critic launched"
-    },
-    {
-      "at": "2026-11-02T02:36:00+00:00",
-      "event": "design step: 2.4 design loop D1: round 3 fixes applied locally; waiting on breakpoint decision (R3-1)"
-    },
-    {
-      "at": "2026-11-02T02:36:02+00:00",
-      "event": "D1 round 3: audit 0/0/3, UI 0/2/8, a11y 0/0/5; all minors + R3-2 fixed in design/canvas/project; copy scope_note + click_to_paste changed (lint 0/0); R3-1 breakpoint needs owner decision"
-    },
-    {
-      "at": "2026-11-02T02:38:47+00:00",
-      "event": "decision D-014 opened: Layout widths: wide/compact/narrow thresholds for Toolbar and Status bar (D1 R3-1)"
-    },
-    {
-      "at": "2026-11-02T02:38:52+00:00",
-      "event": "decision D-014 answered: Three steps by the tool's own width: wide >= 1000 px; compact 800-999 px (one row, Open image and Download icon-only, status bar hides image size); narrow < 800 px (two-row toolbar, bottom sheet). D1 closes after one extra UI check on Toolbar and Status bar (owner consent past round limit)."
-    },
-    {
-      "at": "2026-11-02T02:39:52+00:00",
-      "event": "design step: 2.4 design loop D1: verification check on Toolbar/StatusBar (owner-approved)"
-    },
-    {
-      "at": "2026-11-02T02:44:44+00:00",
-      "event": "loop design-D1 ended: converged after 3 rounds + 1 owner-approved verification; D-014 layout widths; canvas v37"
-    },
-    {
-      "at": "2026-11-02T02:44:44+00:00",
-      "event": "design step: 2.4 design loop D1 done; 2.4.5 owner review of D1 before D2"
-    },
-    {
-      "at": "2026-11-02T02:44:44+00:00",
-      "event": "D1 closed: canvas v37; spec changes D-014 widths, count fallback, tool-strip gap, 2 copy strings (draft until G2, lint 0/0)"
-    },
-    {
-      "at": "2026-11-02T02:48:54+00:00",
-      "event": "decision D-015 opened: D1 component boards review"
-    },
-    {
-      "at": "2026-11-02T02:48:54+00:00",
-      "event": "decision D-015 answered: Approved by owner (canvas v37)"
-    },
-    {
-      "at": "2026-11-02T02:48:54+00:00",
-      "event": "D1 approved by owner"
-    },
-    {
-      "at": "2026-11-02T02:48:55+00:00",
-      "event": "design step: 2.4 design loop D2 (FLOW-01): make"
-    },
-    {
-      "at": "2026-11-02T02:48:55+00:00",
-      "event": "loop design-D2 started (max 3)"
-    },
-    {
-      "at": "2026-11-02T02:52:46+00:00",
-      "event": "design step: 2.4 design loop D2: round 1 review (6 boards made)"
-    },
-    {
-      "at": "2026-11-02T02:52:46+00:00",
-      "event": "D2 made: Main + FLOW-01 steps 1-5 via design/canvas/gen_d2.py; spec adds initial select tool, notice placement"
-    },
-    {
-      "at": "2026-11-02T02:59:00+00:00",
-      "event": "D2 round 1: audit 1/3/5, UI 0/2/4, a11y 2/4/4 — all fixed or recorded; spec adds loaded copy, canvas listbox, editor focus"
-    },
-    {
-      "at": "2026-11-02T02:59:20+00:00",
-      "event": "loop design-D2 round 2"
-    },
-    {
-      "at": "2026-11-02T02:59:21+00:00",
-      "event": "design step: 2.4 design loop D2: round 2 re-review"
-    },
-    {
-      "at": "2026-11-02T03:01:20+00:00",
-      "event": "D2 round 2: audit 0/0/1, a11y 1/1/4 — all fixed; copy annotations_list/hint; CMP-Notice live-region wording"
-    },
-    {
-      "at": "2026-11-02T03:01:32+00:00",
-      "event": "loop design-D2 round 3"
-    },
-    {
-      "at": "2026-11-02T03:01:33+00:00",
-      "event": "design step: 2.4 design loop D2: round 3 verification (a11y)"
-    },
-    {
-      "at": "2026-11-02T03:02:28+00:00",
-      "event": "loop design-D2 ended: converged in 3 rounds (round 3 a11y verification: 0/0/2, minors fixed); canvas v41"
-    },
-    {
-      "at": "2026-11-02T03:02:28+00:00",
-      "event": "design step: 2.4 design loop D2 done; owner review of D2 before D3"
-    },
-    {
-      "at": "2026-11-02T03:02:28+00:00",
-      "event": "D2 converged; minors fixed (region focus ring, no tab stop while editing)"
-    },
-    {
-      "at": "2026-11-02T03:09:13+00:00",
-      "event": "decision D-016 opened: D2 FLOW-01 boards review"
-    },
-    {
-      "at": "2026-11-02T03:09:13+00:00",
-      "event": "decision D-016 answered: Approved by owner (canvas v41), incl. draft spec additions"
-    },
-    {
-      "at": "2026-11-02T03:09:13+00:00",
-      "event": "D2 approved by owner"
-    },
-    {
-      "at": "2026-11-02T03:09:14+00:00",
-      "event": "design step: 2.4 design loop D3 (screen states, embedded): make"
-    },
-    {
-      "at": "2026-11-02T03:09:14+00:00",
-      "event": "loop design-D3 started (max 3)"
-    },
-    {
-      "at": "2026-11-02T03:12:07+00:00",
-      "event": "design step: 2.4 design loop D3: round 1 review (10 boards made)"
-    },
-    {
-      "at": "2026-11-02T03:12:07+00:00",
-      "event": "D3 made: 10 SCR-Annotator state boards via design/canvas/gen_d3.py; default/editing-text = Main/FLOW-01 step 3"
-    },
-    {
-      "at": "2026-11-02T03:12:50+00:00",
-      "event": "context compaction (auto) at: build-my-app: phase 2 Design [in_progress] — 2.4 design loop D3: round 1 review (10 boards made) · 2/9 phases done · autonomy balanced"
-    },
-    {
-      "at": "2026-11-02T03:18:37+00:00",
-      "event": "design step: 2.4 design loop D3: round 1 fixed, publishing"
-    },
-    {
-      "at": "2026-11-02T03:18:37+00:00",
-      "event": "D3 round 1: 0 blockers, 7 majors fixed; status bar size = frame size (pending owner confirm)"
-    },
-    {
-      "at": "2026-11-02T03:19:13+00:00",
-      "event": "loop design-D3 round 2"
-    },
-    {
-      "at": "2026-11-02T03:19:13+00:00",
-      "event": "design step: 2.4 design loop D3: round 2 re-review"
-    },
-    {
-      "at": "2026-11-02T03:22:04+00:00",
-      "event": "loop design-D3 ended: converged in 2 rounds; 0 blockers"
-    },
-    {
-      "at": "2026-11-02T03:22:05+00:00",
-      "event": "decision D-017 opened: Status bar and canvas summary size once padding or a crop exists"
-    },
-    {
-      "at": "2026-11-02T03:22:05+00:00",
-      "event": "design step: 2.4 design D3 converged; awaiting owner review"
-    },
-    {
-      "at": "2026-11-02T03:22:57+00:00",
-      "event": "decision D-017 answered: export frame size"
-    },
-    {
-      "at": "2026-11-02T03:22:57+00:00",
-      "event": "decision D-018 opened: Approve design D3 (desktop screen states)"
-    },
-    {
-      "at": "2026-11-02T03:23:00+00:00",
-      "event": "decision D-018 answered: approve"
-    },
-    {
-      "at": "2026-11-02T03:23:01+00:00",
-      "event": "design step: 2.4 design loop D4: planning narrow 390 boards + FLOW-02"
-    },
-    {
-      "at": "2026-11-02T03:24:36+00:00",
-      "event": "decision D-019 opened: Narrow style panel: how the bottom sheet opens"
-    },
-    {
-      "at": "2026-11-02T03:26:37+00:00",
-      "event": "decision D-020 opened: Padding with a crop (FLOW-02 conflict)"
-    },
-    {
-      "at": "2026-11-02T03:31:03+00:00",
-      "event": "decision D-019 answered: summary bar"
-    },
-    {
-      "at": "2026-11-02T03:31:03+00:00",
-      "event": "decision D-020 answered: padding wraps the frame"
-    },
-    {
-      "at": "2026-11-02T03:33:38+00:00",
-      "event": "loop design-D4 started (max 3)"
-    },
     {
       "at": "2026-11-02T03:33:38+00:00",
       "event": "design step: 2.4 design loop D4: round 1 review (9 boards made)"
@@ -1522,9 +1505,209 @@
     {
       "at": "2026-11-09T16:17:06+00:00",
       "event": "release step: 6 release 1.0.0-rc.1: release-manager preparing build, notes, inventory, runbook"
+    },
+    {
+      "at": "2026-11-09T16:37:11+00:00",
+      "event": "decision D-039 opened: Runbook: write as a file in phase 6?"
+    },
+    {
+      "at": "2026-11-09T16:37:11+00:00",
+      "event": "decision D-039 answered: Write it as a file with the editor; nothing runs"
+    },
+    {
+      "at": "2026-11-09T16:37:11+00:00",
+      "event": "decision D-040 opened: Staging environment for 1.0.0?"
+    },
+    {
+      "at": "2026-11-09T16:37:11+00:00",
+      "event": "decision D-040 answered: No staging (ADR-0010 kept)"
+    },
+    {
+      "at": "2026-11-10T00:06:34+00:00",
+      "event": "1.0.0-rc.1 tagged locally at 2d38457; rebuild from tag byte-identical (archive 764ab1f4…)"
+    },
+    {
+      "at": "2026-11-10T00:06:35+00:00",
+      "event": "release step: 6 gate G6: awaiting user approval of v1.0.0-rc.1 and runbook"
+    },
+    {
+      "at": "2026-11-10T00:08:17+00:00",
+      "event": "gate release passed"
+    },
+    {
+      "at": "2026-11-10T00:08:17+00:00",
+      "event": "G6 release gate approved by user (v1.0.0-rc.1 and runbook)"
+    },
+    {
+      "at": "2026-11-10T00:08:17+00:00",
+      "event": "decision D-041 opened: Source licence?"
+    },
+    {
+      "at": "2026-11-10T00:08:17+00:00",
+      "event": "decision D-041 answered: Same licence as the other tools: PolyForm Strict 1.0.0 (identical LICENSE file and Required Notice as json-formatter, text-case-converter, app-sketcher)"
+    },
+    {
+      "at": "2026-11-10T00:09:56+00:00",
+      "event": "decision D-042 opened: Catalog category?"
+    },
+    {
+      "at": "2026-11-10T00:09:56+00:00",
+      "event": "decision D-042 answered: Both developer and media, via a portal change (INV-07); ships as developer until then"
+    },
+    {
+      "at": "2026-11-10T00:11:08+00:00",
+      "event": "v1.0.0-rc.2 tagged at a6a362a (licence D-041); dist byte-identical to rc.1; tag rebuild identical"
+    },
+    {
+      "at": "2026-11-10T00:11:13+00:00",
+      "event": "phase deploy -> in_progress"
+    },
+    {
+      "at": "2026-11-10T00:11:13+00:00",
+      "event": "deploy step: 7.0 waiting on owner: 12 manual checks on v1.0.0-rc.2 (release-1.0.0.md), legal review, repo public"
+    },
+    {
+      "at": "2026-11-10T00:39:07+00:00",
+      "event": "decision D-043 opened: Picking a drawing tool: clear the selection?"
+    },
+    {
+      "at": "2026-11-10T00:39:07+00:00",
+      "event": "decision D-043 answered: Clear it; the select tool keeps it (owner's manual test)"
+    },
+    {
+      "at": "2026-11-10T00:39:08+00:00",
+      "event": "decision D-044 opened: Highlight handles on the drawn mark's edge?"
+    },
+    {
+      "at": "2026-11-10T00:39:08+00:00",
+      "event": "decision D-044 answered: Handles on the drawn mark's box so thin highlights can be resized (owner's manual test)"
+    },
+    {
+      "at": "2026-11-10T00:39:31+00:00",
+      "event": "deploy step: 7.0 RC feedback: fixing D-043 tool-change deselect, D-044 highlight handles; then rc.3"
+    },
+    {
+      "at": "2026-11-10T00:39:31+00:00",
+      "event": "Owner hand test of rc.2: 2 issues -> specs 37e5cec, builder fixing; rc.3 to follow"
+    },
+    {
+      "at": "2026-11-10T01:18:09+00:00",
+      "event": "decision D-045 opened: Drawing colour across tools?"
+    },
+    {
+      "at": "2026-11-10T01:18:10+00:00",
+      "event": "decision D-045 answered: One shared colour; highlight and redaction keep theirs"
+    },
+    {
+      "at": "2026-11-10T01:18:10+00:00",
+      "event": "decision D-046 opened: Select tool panel colours?"
+    },
+    {
+      "at": "2026-11-10T01:18:11+00:00",
+      "event": "decision D-046 answered: Keep canvas background, add a Canvas heading"
+    },
+    {
+      "at": "2026-11-10T01:18:41+00:00",
+      "event": "deploy step: 7.0 RC feedback round 2: shared colour D-045, Canvas heading D-046; then next candidate"
+    },
+    {
+      "at": "2026-11-10T01:18:41+00:00",
+      "event": "rc.3 build of 3b614f3 passed (not tagged; superseded by colour change 4a74705)"
+    },
+    {
+      "at": "2026-11-10T01:42:39+00:00",
+      "event": "v1.0.0-rc.3 tagged at 7a55e4a (D-043..D-046); full release-build tests green; tag rebuild identical"
+    },
+    {
+      "at": "2026-11-10T01:42:39+00:00",
+      "event": "deploy step: 7.0 waiting on owner: hand checks on v1.0.0-rc.3, legal review, repo public"
+    },
+    {
+      "at": "2026-11-10T02:36:40+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 7 Deploy [in_progress] — 7.0 waiting on owner: hand checks on v1.0.0-rc.3, legal review, repo public · 7/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-10T03:09:14+00:00",
+      "event": "decision D-047 opened: Select tool, nothing selected: which colour do the panel swatches set?"
+    },
+    {
+      "at": "2026-11-10T03:09:19+00:00",
+      "event": "decision D-047 answered: Drawing colour row first, then the Canvas heading with padding and background (owner: 'the color picker reset to red. Fix it.')"
+    },
+    {
+      "at": "2026-11-10T03:32:31+00:00",
+      "event": "deploy step: 7.0 waiting on owner: hand checks on v1.0.0-rc.4, legal review, repo public"
+    },
+    {
+      "at": "2026-11-10T03:32:31+00:00",
+      "event": "rc.4 tagged (f28cf62): D-047 drawing colour in select-tool panel; release build 705 unit, 602 e2e, 96 host, 16 security; reproducible from tag"
+    },
+    {
+      "at": "2026-11-10T04:39:38+00:00",
+      "event": "decision D-048 opened: When do custom colour and sizes land?"
+    },
+    {
+      "at": "2026-11-10T04:39:38+00:00",
+      "event": "decision D-048 answered: Next version 1.1; ship 1.0.0 as rc.4 after the hand checks"
+    },
+    {
+      "at": "2026-11-10T04:39:38+00:00",
+      "event": "decision D-049 opened: How is a custom colour picked?"
+    },
+    {
+      "at": "2026-11-10T04:39:38+00:00",
+      "event": "decision D-049 answered: Palette plus a Custom swatch opening the browser colour picker; annotations only, not the background"
+    },
+    {
+      "at": "2026-11-10T04:39:38+00:00",
+      "event": "decision D-050 opened: How are custom sizes set?"
+    },
+    {
+      "at": "2026-11-10T04:39:38+00:00",
+      "event": "decision D-050 answered: S/M/L presets plus a number field in pixels, slider on wide layouts; text, step, pen, highlight, shape, line and arrow"
+    },
+    {
+      "at": "2026-11-10T04:42:06+00:00",
+      "event": "M-1b change request (custom colour and size): D-048/049/050; F-019 + RULE-21 draft on branch build/1.1 (4124c44); spec review round 1 running. 1.0.0 stays rc.4 on build/m1."
+    },
+    {
+      "at": "2026-11-10T04:50:19+00:00",
+      "event": "F-019 spec review converged in 3 rounds; F-019 ready (commit on build/1.1). Feature build next."
+    },
+    {
+      "at": "2026-11-10T05:13:55+00:00",
+      "event": "deploy step: 7.4 deployed 1.0.0 (517ae3cf); waiting on owner browser checks 4.3-4.6 and the portal catalog entry"
+    },
+    {
+      "at": "2026-11-10T05:13:55+00:00",
+      "event": "1.0.0 deployed to image-annotator.tarokit.app, version 517ae3cf-f6e5-45b9-a99a-6deda8f9f469; smoke 4.1/4.2 passed; tagged v1.0.0 locally"
+    },
+    {
+      "at": "2026-11-10T05:58:41+00:00",
+      "event": "context compaction (auto) at: build-my-app: phase 7 Deploy [in_progress] — 7.4 deployed 1.0.0 (517ae3cf); waiting on owner browser checks 4.3-4.6 and the portal catalog entry · 7/9 phases done · autonomy balanced"
+    },
+    {
+      "at": "2026-11-10T07:06:08+00:00",
+      "event": "1.1.0-rc.1 tagged (F-019 + D-043 toolbar fix + Esc focus); release build 752 unit, 666 e2e, 96 host; reproducible from tag; waiting on owner hand checks"
+    },
+    {
+      "at": "2026-11-10T07:53:05+00:00",
+      "event": "1.1.0 deployed, version e4f26f6f-ff4a-4333-9f1a-785e4c70d0ee; smoke passed; tagged v1.1.0"
+    },
+    {
+      "at": "2026-11-10T08:03:59+00:00",
+      "event": "Portal: catalog entry live; tool on Developer and Media pages (D-042 change applied by owner)"
+    },
+    {
+      "at": "2026-11-10T08:04:30+00:00",
+      "event": "deploy step: 7.5 live: 1.1.0 (e4f26f6f) on image-annotator.tarokit.app, listed in the portal under Developer and Media"
+    },
+    {
+      "at": "2026-11-10T08:04:33+00:00",
+      "event": "gate deploy passed"
     }
   ],
-  "updated": "2026-11-09T16:17:06+00:00",
+  "updated": "2026-11-10T08:04:33+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
