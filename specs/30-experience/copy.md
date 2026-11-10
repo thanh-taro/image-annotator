@@ -67,7 +67,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-color.purple** | Purple | Tím | |
 | **COPY-color.black** | Black | Đen | |
 | **COPY-color.white** | White | Trắng | |
-| **COPY-canvas.title** | Canvas | Khung ảnh | Subject of the narrow summary bar when canvas settings show |
+| **COPY-canvas.title** | Canvas | Khung ảnh | Subject of the narrow summary bar when canvas settings show, and the heading of the wide panel's canvas settings (D-046) |
 | **COPY-style.sheet_toggle** | Style options | Tùy chọn kiểu dáng | Start of the narrow summary bar's accessible name: "{sheet_toggle}: {sheet_summary}" |
 | **COPY-style.sheet_summary** | {subject} · {detail} | {subject} · {detail} | Narrow summary bar; subject: the tool, the selected kind, COPY-a11y.selected_count, COPY-canvas.title or COPY-tool.crop; detail: COPY-style.size_s/m/l (for a redaction: the subject is its kind, COPY-redact.solid, COPY-redact.blur or COPY-redact.pixelate, followed for blur and pixelate by COPY-redact.not_secure_short shown as the same tag as on the panel's choices (D-031), and the detail its strength for blur and pixelate, none for solid); for the canvas, COPY-canvas.padding, a space, then COPY-canvas.padding_none or COPY-style.size_s/m/l (e.g. "Padding None"); or COPY-crop.size |
 | **COPY-canvas.padding** | Padding | Khoảng đệm | |
