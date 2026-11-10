@@ -64,8 +64,23 @@ export const isShapeKind = (kind: AnnotationKind): kind is ShapeKind =>
 /** RULE-04: fill applies to rectangles and ellipses only. */
 export const hasFill = (kind: AnnotationKind): boolean => kind === 'rectangle' || kind === 'ellipse';
 
+/**
+ * RULE-22 (F-020.R3): a text's `fill` is its text background; with a rectangle's and an ellipse's fill,
+ * these are the kinds whose `fill` and `fillColor` mean something.
+ */
+export const hasFillOrBackground = (kind: AnnotationKind): boolean => hasFill(kind) || kind === 'text';
+
+// Implements: RULE-04 / RULE-22 (F-020.R6) — every tool starts with fill none and an automatic fill colour.
 const style = (s: Partial<Style>): Style =>
-  Object.freeze({ color: 'red', strokeSize: 'M', fill: 'none', redactionKind: 'solid', strength: 'M', ...s });
+  Object.freeze({
+    color: 'red',
+    strokeSize: 'M',
+    fill: 'none',
+    fillColor: 'automatic',
+    redactionKind: 'solid',
+    strength: 'M',
+    ...s,
+  });
 
 /**
  * RULE-04 / D-045: which current colour a tool uses — rectangle, ellipse, line, arrow, pen, text and

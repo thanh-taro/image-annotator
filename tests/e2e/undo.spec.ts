@@ -121,7 +121,9 @@ test.describe('F-009 undo and redo', () => {
     await toolButton(page, 'Select (V)').click();
     await workArea(page).focus();
     await page.keyboard.press('ControlOrMeta+A');
-    await panel(page).getByRole('radio', { name: 'Blue', exact: true }).check();
+    // F-020: the fill colour group shows too (fill solid), so the colour is taken from COPY-style.color.
+    const colour = panel(page).getByRole('radiogroup', { name: 'Color', exact: true });
+    await colour.getByRole('radio', { name: 'Blue', exact: true }).check();
     await expect.poll(async () => near(await pixel(page, 200, 150), BLUE)).toBe(true);
     await workArea(page).focus();
     await page.keyboard.press('Escape'); // clear the selection (not a step)
@@ -132,7 +134,7 @@ test.describe('F-009 undo and redo', () => {
     // Both are selected again: several selected (no position fields), sharing the red colour.
     await expect(state(page)).toHaveAttribute('data-state', 'selecting');
     await expect(geometry(page)).toHaveCount(0);
-    await expect(panel(page).getByRole('radio', { name: 'Red', exact: true })).toBeChecked();
+    await expect(colour.getByRole('radio', { name: 'Red', exact: true })).toBeChecked();
   });
 
   test('F-009.AC5 with a new image undo and redo are disabled; after one change and one undo, undo is disabled and redo enabled', async ({

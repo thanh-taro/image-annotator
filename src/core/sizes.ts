@@ -35,6 +35,13 @@ export const HIGHLIGHT_PER_STROKE = 3;
 /** RULE-04: translucent fill opacity; RULE-09: highlight opacity. */
 export const TRANSLUCENT_FILL_OPACITY = 0.3;
 export const HIGHLIGHT_OPACITY = 0.4;
+/**
+ * RULE-22 (F-020.R4): a text background extends 0.25 × the text size beyond the text box on every side,
+ * with corners of radius 0.2 × the text size; translucent is 70 % opacity.
+ */
+export const TEXT_BACKGROUND_MARGIN = 0.25;
+export const TEXT_BACKGROUND_RADIUS = 0.2;
+export const TEXT_BACKGROUND_OPACITY = 0.7;
 
 const scaled = ({ min, factor }: Scale, s: number) => Math.round(Math.max(min, factor * s));
 

@@ -4,9 +4,10 @@
 // image pixels whose meaning and range depend on how the kind is sized; a preset's width in pixels is its
 // RULE-04 width for the loaded image.
 // Implements: RULE-21, RULE-07 (contrast pairing of a custom colour), RULE-04 (preset widths in pixels),
-// F-019.R2 (palette match), F-019.R3/R5 (the field's value, rounding halves up, range).
+// F-019.R2 (palette match), F-019.R3/R5 (the field's value, rounding halves up, range); RULE-22 / F-020.R2/R4
+// (automatic fill colour and text background colour).
 import { styleSizes } from './sizes';
-import type { AnnotationKind, Colour, HexColour, StyleColour, StyleSize } from './types';
+import type { AnnotationKind, Colour, HexColour, Style, StyleColour, StyleSize } from './types';
 import { PALETTE_NAMES } from './types';
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -55,6 +56,25 @@ export const pairingFor = (blackRatio: number, whiteRatio: number): 'black' | 'w
 /** RULE-07: a custom colour pairs with black or white, whichever has the higher contrast ratio with it. */
 export const customContrast = (hex: HexColour): 'black' | 'white' =>
   pairingFor(contrastRatio(hex, '#000000'), contrastRatio(hex, '#ffffff'));
+
+/**
+ * RULE-07 contrast pairing of any style colour: black on yellow, orange, green and white; white on red,
+ * blue, purple and black; a custom colour by contrast ratio (RULE-21, black on a tie).
+ */
+export function contrastPairing(c: StyleColour): 'black' | 'white' {
+  if (isHexColour(c)) return customContrast(c);
+  return c === 'yellow' || c === 'orange' || c === 'green' || c === 'white' ? 'black' : 'white';
+}
+
+/**
+ * RULE-22 (F-020.R2/R4): the fill colour of a rectangle or ellipse, or the text background colour of a
+ * text, as drawn — a picked one, or while automatic the annotation's colour (a text: its contrast pairing,
+ * RULE-07), following that colour.
+ */
+export function fillColourOf(kind: AnnotationKind, style: Pick<Style, 'color' | 'fillColor'>): StyleColour {
+  if (style.fillColor !== 'automatic') return style.fillColor;
+  return kind === 'text' ? contrastPairing(style.color) : style.color;
+}
 
 /** RULE-21: how a kind is sized — its stroke, a highlight's width, or a text size (text and steps). */
 export type SizeClass = 'stroke' | 'highlight' | 'text';

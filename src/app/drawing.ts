@@ -11,13 +11,16 @@
 // (the text tool), F-007.R1/R2/R4/R6 (the redaction tool and its choices), RULE-04, RULE-10, RULE-08, RULE-11, RULE-19 (Esc chain, Enter on a text), CMP-Toolbar "Behavior",
 // CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed, deleted_count;
 // F-013: the annotation options' names and the selection announcements); F-019.R2/R3/R4/R6/R7, RULE-21 (custom
-// colours and sizes as style choices, the size field's model, the remembered custom colour).
+// colours and sizes as style choices, the size field's model, the remembered custom colour); F-020.R1/R2/R3/R6/R7,
+// RULE-22 (fill colour, text background and text background colour as per-tool style choices).
 import { canvasCommands, type TextEdit, type TextEndReason } from '../canvas';
 import { t, type MessageId } from '../copy';
 import {
   availablePaddings,
+  fillColourOf,
   geometryOf,
   hasFill,
+  hasFillOrBackground,
   isBlankText,
   isLineAnnotation,
   isEffectRedaction,
@@ -201,7 +204,9 @@ export function editSelectedText(): void {
 }
 
 /** The style choices CMP-StylePanel offers (RULE-04). */
-export type StylePatch = Partial<Pick<Style, 'color' | 'strokeSize' | 'fill' | 'redactionKind' | 'strength'>>;
+export type StylePatch = Partial<
+  Pick<Style, 'color' | 'strokeSize' | 'fill' | 'fillColor' | 'redactionKind' | 'strength'>
+>;
 
 function selectedAnnotations(d: Doc | null, ids: Selection): Annotation[] {
   if (!d || !ids.length) return [];
@@ -210,12 +215,16 @@ function selectedAnnotations(d: Doc | null, ids: Selection): Annotation[] {
 }
 
 /**
- * The part of a patch that applies to a kind: fill only to rectangles and ellipses (RULE-04); the
- * redaction kind and strength only to redactions, which have no stroke size (RULE-10).
+ * The part of a patch that applies to a kind: fill and fill colour only to rectangles and ellipses
+ * (RULE-04) and, as the text background and its colour, to text (RULE-22, F-020.R6); the redaction kind
+ * and strength only to redactions, which have no stroke size (RULE-10).
  */
 const patchFor = (patch: StylePatch, kind: Annotation['kind']): StylePatch => {
   const out: { -readonly [K in keyof StylePatch]: StylePatch[K] } = { ...patch };
-  if (!hasFill(kind)) delete out.fill;
+  if (!hasFillOrBackground(kind)) {
+    delete out.fill;
+    delete out.fillColor;
+  }
   if (kind === 'redaction') delete out.strokeSize;
   else {
     delete out.redactionKind;
@@ -233,8 +242,11 @@ const toSolid = (patch: StylePatch, a: Annotation, current: Style): StylePatch =
     ? { ...patch, color: current.color }
     : patch;
 
-/** RULE-21 (F-019.R2): a custom colour that is applied is the one remembered for the custom swatch. */
-function remember(color: StyleColour | undefined): void {
+/**
+ * RULE-21 (F-019.R2): a custom colour that is applied is the one remembered for the custom swatch — one
+ * for the colour, fill colour and text background colour choices (F-020.R1).
+ */
+function remember(color: StyleColour | 'automatic' | undefined): void {
   if (isHexColour(color)) customColour.value = color;
 }
 
@@ -270,6 +282,7 @@ export function setStyle(patch: StylePatch, coalesceKey?: string): void {
     styles = withToolStyle(styles, active, patchFor(patch, TOOL_KIND[active]));
   }
   remember(patch.color);
+  remember(patch.fillColor);
   currentStyleModel.value = styles;
 }
 
@@ -375,6 +388,18 @@ export interface PanelModel {
   };
   /** Offered only when every subject kind has a fill (rectangle, ellipse). */
   readonly fill?: Fill | null;
+  /**
+   * F-020.R1/R2/R7 (RULE-22): COPY-style.fill_color, offered with the fill when every subject's fill is solid
+   * or translucent — the fill colour as drawn (automatic: the colour), null when the subjects' differ.
+   */
+  readonly fillColor?: StyleColour | null;
+  /** F-020.R3/R7: COPY-style.text_background, offered only when every subject is a text. */
+  readonly textBackground?: Fill | null;
+  /**
+   * F-020.R3/R4/R7: COPY-style.text_background_color, offered when every subject's text background is solid
+   * or translucent — as drawn (automatic: the contrast pairing of the colour), null when they differ.
+   */
+  readonly textBackgroundColor?: StyleColour | null;
   /** COPY-redact.kind: offered when every subject is a redaction (F-007.R4/R6). */
   readonly kind?: RedactionKind | null;
   /** COPY-style.strength: offered when every subject is a blur or pixelate redaction (RULE-10). */
@@ -441,8 +466,29 @@ function choices(
     ...(effects.length ? {} : { color: shared(styles.map((x) => x.color)) }),
     ...(redactions.length ? {} : { size: shared(styles.map((x) => x.strokeSize)), ...sizeField(subjects, shortSide) }),
     ...(subjects.every((x) => hasFill(x.kind)) ? { fill: shared(styles.map((x) => x.fill)) } : {}),
+    ...fillChoices(subjects),
     ...(allRedactions ? { kind: shared(styles.map((x) => x.redactionKind)), notSecure: effects.length > 0 } : {}),
     ...(allRedactions && effects.length === subjects.length ? { strength: shared(styles.map((x) => x.strength)) } : {}),
+  };
+}
+
+/**
+ * F-020.R1/R3/R7 (RULE-22): the fill colour (rectangles and ellipses) or the text background and its colour
+ * (texts) — only when every subject is of those kinds; the colour only when no subject's fill or background
+ * is none, compared as drawn (automatic colours included).
+ */
+function fillChoices(
+  subjects: readonly { kind: Annotation['kind']; style: Style }[],
+): Pick<PanelModel, 'fillColor' | 'textBackground' | 'textBackgroundColor'> {
+  const shapes = subjects.every((x) => hasFill(x.kind));
+  const texts = subjects.every((x) => x.kind === 'text');
+  if (!subjects.length || (!shapes && !texts)) return {};
+  const coloured = subjects.every((x) => x.style.fill !== 'none');
+  const colour = shared(subjects.map((x) => fillColourOf(x.kind, x.style)));
+  if (shapes) return coloured ? { fillColor: colour } : {};
+  return {
+    textBackground: shared(subjects.map((x) => x.style.fill)),
+    ...(coloured ? { textBackgroundColor: colour } : {}),
   };
 }
 

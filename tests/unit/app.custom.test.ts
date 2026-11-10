@@ -36,8 +36,8 @@ import {
   tool,
   unexported,
 } from '../../src/app/state';
-import { DEFAULT_CURRENT_STYLES, type Annotation } from '../../src/core';
-import { colourValue, contrastPair } from '../../src/render';
+import { contrastPairing as contrastPair, DEFAULT_CURRENT_STYLES, type Annotation } from '../../src/core';
+import { colourValue } from '../../src/render';
 import type { DecodedImage } from '../../src/io';
 
 const image = (width = 1000, height = 800): DecodedImage => ({

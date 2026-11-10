@@ -218,7 +218,11 @@ test.describe('F-008 select and edit', () => {
     await panel(page).getByRole('radio', { name: 'Solid', exact: true }).check();
     await dragImage(page, [100, 100], [300, 300]);
     await deselect(page);
-    await panel(page).getByRole('radio', { name: 'Blue', exact: true }).check();
+    // F-020: the fill colour group shows too (fill solid), so the colour is taken from COPY-style.color.
+    await panel(page)
+      .getByRole('radiogroup', { name: 'Color', exact: true })
+      .getByRole('radio', { name: 'Blue', exact: true })
+      .check();
     await dragImage(page, [200, 200], [400, 400]); // blue, on top, selected
     await panel(page).getByRole('button', { name: 'Send backward' }).click();
     await deselect(page);

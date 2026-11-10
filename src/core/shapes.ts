@@ -15,7 +15,7 @@
 import { DEFAULT_SIZE_FACTOR } from './constants';
 import { highlightWidthOf, strokeSizeOf } from './sizes';
 import { distanceToStep, isStepAnnotation, stepBox } from './steps';
-import { hitsText, isTextAnnotation, textLayout, type TextMeasure } from './text';
+import { hitsText, isTextAnnotation, textArea, type TextMeasure } from './text';
 import type { Annotation, AnnotationKind, Box, Point, Style } from './types';
 
 export type BoxAnnotation = Extract<Annotation, { readonly box: Box }>;
@@ -243,7 +243,7 @@ export function shapeBox(a: Annotation): Box {
 
 /**
  * The box covering a shape's visible mark, including its stroke and arrowhead. A text's is its box
- * (RULE-08, ADR-0020), measured with `measure`.
+ * (RULE-08, ADR-0020), measured with `measure`, or from M-1c its background box (RULE-22, F-020.R5).
  */
 export function boundsOf(a: Annotation, shortSide: number, measure: TextMeasure): Box {
   const stroke = strokePixels(a.style, shortSide);
@@ -268,7 +268,8 @@ export function boundsOf(a: Annotation, shortSide: number, measure: TextMeasure)
     return { x: b.x - reach, y: b.y - reach, width: b.width + 2 * reach, height: b.height + 2 * reach };
   }
   if (isStepAnnotation(a)) return stepBox(a, shortSide);
-  if (isTextAnnotation(a)) return textLayout(a, shortSide, measure).box;
+  // RULE-22 (F-020.R5): a text with a background is bounded by its background box.
+  if (isTextAnnotation(a)) return textArea(a, shortSide, measure);
   throw new Error(`boundsOf: ${(a as Annotation).kind} arrives with its feature`);
 }
 
@@ -766,7 +767,8 @@ function markMeetsBox(a: Annotation, m: Box, shortSide: number, measure: TextMea
     const g = grow(m, markWidth(a, shortSide) / 2);
     return curveSegments(a.points).some(([p, q]) => segmentMeetsBox(p, q, g));
   }
-  // Text and steps are solid marks: their box (a step's badge box) is the mark.
+  // Text and steps are solid marks: their box (a step's badge box; a text's background box, RULE-22) is
+  // the mark.
   return true;
 }
 

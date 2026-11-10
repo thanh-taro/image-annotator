@@ -5,7 +5,7 @@
 // no DOM. Coordinates are image pixels.
 // Implements: F-005.R1 (anchor = top-left), F-005.R2 (lines, limit, composed form), F-005.R4 (caret
 // where clicked), RULE-04 (text sizes), RULE-08, ADR-0009 §1/§3, ADR-0020 (NFC back to the last
-// starter, metrics, text box = lines × line height).
+// starter, metrics, text box = lines × line height); RULE-22 / F-020.R4/R5/R8 (the background box).
 import {
   baselineOffset,
   LINE_HEIGHT,
@@ -14,7 +14,7 @@ import {
   TEXT_OUTLINE_MIN,
   TEXT_WEIGHT,
 } from './constants';
-import { textSizeOf } from './sizes';
+import { TEXT_BACKGROUND_MARGIN, TEXT_BACKGROUND_OPACITY, TEXT_BACKGROUND_RADIUS, textSizeOf } from './sizes';
 import type { Annotation, Box, Point, Style } from './types';
 
 export type TextAnnotation = Extract<Annotation, { readonly kind: 'text' }>;
@@ -82,7 +82,72 @@ export function textLayout(
   return { ...m, lines, widths, box };
 }
 
-/** CMP-Canvas: a click hits a text anywhere on its box (within `tolerance` image pixels). */
+/** RULE-22: a text's background box, its corner radius and its opacity (solid 1, translucent 0.7). */
+export interface TextBackground {
+  readonly box: Box;
+  readonly radius: number;
+  readonly opacity: number;
+}
+
+/**
+ * RULE-22 (F-020.R4/R8): the background of a text whose `fill` is solid or translucent, else null — a box
+ * with rounded corners around the text box, 0.25 × the text size beyond it on every side, with a corner
+ * radius of 0.2 × the text size. `placeholder` (COPY-text.placeholder, screen only) is what an empty text
+ * being edited shows: its box then surrounds the placeholder at the text's size.
+ */
+export function textBackground(
+  a: Pick<TextAnnotation, 'anchor' | 'text' | 'style'>,
+  shortSide: number,
+  measure: TextMeasure,
+  placeholder?: string,
+): TextBackground | null {
+  if (a.style.fill === 'none') return null;
+  const shown = a.text === '' && placeholder ? { ...a, text: placeholder } : a;
+  const { box: b, size } = textLayout(shown, shortSide, measure);
+  const margin = TEXT_BACKGROUND_MARGIN * size;
+  return {
+    box: { x: b.x - margin, y: b.y - margin, width: b.width + 2 * margin, height: b.height + 2 * margin },
+    radius: TEXT_BACKGROUND_RADIUS * size,
+    opacity: a.style.fill === 'translucent' ? TEXT_BACKGROUND_OPACITY : 1,
+  };
+}
+
+/**
+ * RULE-22 (F-020.R5): a text's area for selecting, hit-testing and its selection outline — its background
+ * box when it has one, else its text box (RULE-08).
+ */
+export function textArea(
+  a: Pick<TextAnnotation, 'anchor' | 'text' | 'style'>,
+  shortSide: number,
+  measure: TextMeasure,
+): Box {
+  return textBackground(a, shortSide, measure)?.box ?? textLayout(a, shortSide, measure).box;
+}
+
+/**
+ * ADR-0009 §2 / F-020.R8 (CMP-TextEditor): the padding of the editing field, in CSS pixels, for a text of
+ * `size` image pixels at `zoom` (1 = 100 %) whose field is `extra` CSS pixels taller than its lines
+ * (ADR-0020) and `caretRoom` CSS pixels wider than its text (SP-text) — null without a background (the field keeps its stylesheet padding). With a background the
+ * field covers exactly the background box: its margin (0.25 × the text size × zoom) on every side, the
+ * extra height counted in the bottom margin and the caret room in the right one, so its editing outline surrounds the box and a press anywhere
+ * in the box is the field's own (the caret goes to the nearest position) while one outside it is not.
+ */
+export function editorPadding(
+  style: Pick<Style, 'fill'>,
+  size: number,
+  zoom: number,
+  extra: number,
+  caretRoom: number,
+): { readonly top: number; readonly right: number; readonly bottom: number; readonly left: number } | null {
+  if (style.fill === 'none') return null;
+  const margin = TEXT_BACKGROUND_MARGIN * size * zoom;
+  return { top: margin, right: Math.max(0, margin - caretRoom), bottom: Math.max(0, margin - extra), left: margin };
+}
+
+/**
+ * CMP-Canvas: a click hits a text anywhere on its box (within `tolerance` image pixels); from M-1c a text
+ * with a background anywhere on its background box (F-020.R5).
+ */
 export function hitsText(
   a: TextAnnotation,
   p: Point,
@@ -90,7 +155,7 @@ export function hitsText(
   shortSide: number,
   measure: TextMeasure,
 ): boolean {
-  const { box: b } = textLayout(a, shortSide, measure);
+  const b = textArea(a, shortSide, measure);
   return (
     p.x >= b.x - tolerance &&
     p.x <= b.x + b.width + tolerance &&
