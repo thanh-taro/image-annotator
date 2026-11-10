@@ -2,8 +2,8 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
-## 1.0.0 — 2026-11-09 (milestone M-1, release candidate 1.0.0-rc.1)
-First release. All 18 features of M-1 are `shipped`; nothing was added to the specs for the release itself.
+## 1.0.0 — 2026-11-10 (milestone M-1, release candidate 1.0.0-rc.3)
+First release. All 18 features of M-1 are `shipped`. After the owner's hand test of rc.2: picking a drawing tool clears the selection (D-043), highlight and stroke handles sit on the drawn mark (D-044), one drawing colour is shared across tools (D-045), and canvas settings have a Canvas heading (D-046).
 - Open an image by paste, drop or file picker (F-001); zoom and pan (F-002).
 - Draw rectangles, ellipses, lines and arrows (F-003); pen and highlighter strokes (F-004); text (F-005); numbered steps (F-006).
 - Redact with solid fill (secure) or blur and pixelate (labelled not secure); the exported file never holds the hidden pixels (F-007).
