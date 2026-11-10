@@ -216,7 +216,7 @@ function ColourGroup({
   const checked: ColourOption | null = custom.checked ? CUSTOM : value && !isHexColour(value) ? value : null;
   const tabStop = checked ?? COLOUR_OPTIONS[0];
   const pick = (c: Colour) => {
-    // F-020.R2 / F-019.R1: choosing the checked swatch applies nothing (an automatic fill colour stays
+    // F-020.R2 / F-019.R1: choosing the checked swatch applies nothing (an automatic text background colour stays
     // automatic, and no undo step is added).
     if (c === checked) return;
     if (target === 'drawing') setDrawingColour(c);

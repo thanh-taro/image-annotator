@@ -439,9 +439,11 @@ function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number, placeholder?
       if (a.kind === 'rectangle') ctx.rect(b.x, b.y, b.width, b.height);
       else ctx.ellipse(b.x + b.width / 2, b.y + b.height / 2, b.width / 2, b.height / 2, 0, 0, 2 * Math.PI);
       // F-003.R3 / RULE-04: outlined, filled solid, or filled at 30 % opacity — from M-1c in its fill colour
-      // (automatic: its colour), under the outline (Implements: F-020.R1/R2, RULE-22).
-      if (a.style.fill !== 'none') {
-        ctx.fillStyle = colourValue(fillColourOf(a.kind, a.style));
+      // as stored, never the outline colour (D-054), under the outline (Implements: F-020.R1/R2, RULE-22). A
+      // filled shape always has a fill colour (RULE-22); unset only occurs with fill none.
+      const fillColour = fillColourOf(a.kind, a.style);
+      if (a.style.fill !== 'none' && fillColour) {
+        ctx.fillStyle = colourValue(fillColour);
         ctx.globalAlpha = a.style.fill === 'translucent' ? TRANSLUCENT_FILL_OPACITY : 1;
         ctx.fill();
         ctx.globalAlpha = 1;

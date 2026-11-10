@@ -1,5 +1,5 @@
 // MOD-Render fill colour and text background (F-020, RULE-22, NFR-08): a rectangle's or ellipse's fill in
-// its fill colour (automatic: its colour) under the outline in its colour; a text with a background on a
+// its fill colour under the outline in its colour; a text with a background on a
 // rounded box (roundRect with the RULE-22 margin and radius) in its text background colour, opaque or at
 // 70 %, directly under its letters and without the outline; around the placeholder while an edited text is
 // empty (screen only). Contexts are recording fakes; pixels are in tests/e2e/fill-background.spec.ts.
@@ -65,11 +65,17 @@ describe('MOD-Render fill colour', () => {
     expect(lastSet(calls, 'strokeStyle', stroke)).toBe(`strokeStyle=${PALETTE_HEX.red}`);
   });
 
-  it('F-020.AC3 F-020.R2 a translucent automatic fill is the colour at 30 %; a picked one its own colour', () => {
+  it('F-020.AC3 F-020.R2 a translucent fill is its fill colour at 30 %, not the outline colour', () => {
     const a = recorder();
-    paintAnnotations(a.ctx, scene([rect({ color: 'blue', fill: 'translucent' })]), image, T, new Map());
+    paintAnnotations(
+      a.ctx,
+      scene([rect({ color: 'blue', fill: 'translucent', fillColor: 'red' })]),
+      image,
+      T,
+      new Map(),
+    );
     const fill = a.calls.indexOf('fill()');
-    expect(lastSet(a.calls, 'fillStyle', fill)).toBe(`fillStyle=${PALETTE_HEX.blue}`);
+    expect(lastSet(a.calls, 'fillStyle', fill)).toBe(`fillStyle=${PALETTE_HEX.red}`);
     expect(lastSet(a.calls, 'globalAlpha', fill)).toBe('globalAlpha=0.3');
     const b = recorder();
     paintAnnotations(

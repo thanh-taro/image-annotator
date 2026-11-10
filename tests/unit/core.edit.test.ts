@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   altResized,
   DEFAULT_STYLES,
+  withFill,
   geometryOf,
   handleBox,
   handlesOf,
@@ -242,7 +243,7 @@ describe('MOD-Core edit geometry — F-008 review round 1', () => {
     const outline = rect('o', 100, 100, 300, 300);
     const filled = {
       ...rect('f', 100, 100, 300, 300),
-      style: { ...DEFAULT_STYLES.rectangle, fill: 'solid' },
+      style: withFill(DEFAULT_STYLES.rectangle, 'solid'),
     } as Annotation;
     const inside = { x: 200, y: 200, width: 50, height: 50 };
     expect(marqueeHits([outline, filled], inside, 800, measure)).toEqual(['f']);

@@ -39,7 +39,7 @@ export const shownColour = (model: PanelModel, target: ColourTarget): StyleColou
  * F-019.R2: the custom swatch — the subject's custom colour, marked, or else the colour last picked on
  * the page, unmarked (null before any is picked). A palette colour, or a multi-selection whose colours
  * differ, leaves it unmarked. F-020.R1: the same for the fill colour and text background colour (as drawn:
- * an automatic fill colour in a custom colour marks the custom swatch, F-020.R2), with one remembered colour.
+ * an automatic text background colour in a custom colour marks the custom swatch, F-020.R4), with one remembered colour.
  */
 export function customSwatch(
   model: PanelModel,
@@ -83,7 +83,7 @@ export function pickerStart(target: ColourTarget): HexColour | null {
 function apply(target: ColourTarget, color: StyleColour, coalesceKey?: string): void {
   if (target === 'drawing') setDrawingColour(color);
   else if (target === 'fill')
-    setStyle({ fillColor: color }, coalesceKey); // F-020.R1/R2: no longer automatic
+    setStyle({ fillColor: color }, coalesceKey); // F-020.R1/R2: a picked fill colour (a text background: no longer automatic)
   else setStyle({ color }, coalesceKey);
 }
 

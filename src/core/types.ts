@@ -18,10 +18,11 @@ export type Size = 'S' | 'M' | 'L';
 export type StyleSize = Size | number;
 export type Fill = 'none' | 'solid' | 'translucent';
 /**
- * ENT-Style `fillColor` (M-1c, RULE-22): the fill colour of a rectangle or ellipse, or the text background
- * colour of a text — `automatic` until one is picked, else a palette or custom colour.
+ * ENT-Style `fillColor` (M-1c, RULE-22, D-054): the fill colour of a rectangle or ellipse — `unset` until
+ * the fill is turned on while unset, then a palette or custom colour — or the text background colour of a
+ * text — `automatic` until one is picked, else a palette or custom colour.
  */
-export type FillColour = 'automatic' | StyleColour;
+export type FillColour = 'unset' | 'automatic' | StyleColour;
 export type RedactionKind = 'solid' | 'blur' | 'pixelate';
 
 /** RULE-01 input formats (AVIF only where the browser decodes it). */
@@ -48,7 +49,10 @@ export interface Style {
   readonly color: StyleColour;
   readonly strokeSize: StyleSize;
   readonly fill: Fill;
-  /** Implements: F-020.R2/R4, RULE-22 — `automatic` follows the colour (a text: its contrast pairing). */
+  /**
+   * Implements: F-020.R2/R4, RULE-22 (D-054) — a rectangle's or ellipse's fill colour never follows the
+   * colour (`unset` only with fill none); a text's `automatic` follows its colour's contrast pairing.
+   */
   readonly fillColor: FillColour;
   readonly redactionKind: RedactionKind;
   readonly strength: Size;

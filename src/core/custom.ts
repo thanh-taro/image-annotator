@@ -5,7 +5,7 @@
 // RULE-04 width for the loaded image.
 // Implements: RULE-21, RULE-07 (contrast pairing of a custom colour), RULE-04 (preset widths in pixels),
 // F-019.R2 (palette match), F-019.R3/R5 (the field's value, rounding halves up, range); RULE-22 / F-020.R2/R4
-// (automatic fill colour and text background colour).
+// (fill colour copied once from the colour, withFill; automatic text background colour).
 import { styleSizes } from './sizes';
 import type { AnnotationKind, Colour, HexColour, Style, StyleColour, StyleSize } from './types';
 import { PALETTE_NAMES } from './types';
@@ -67,13 +67,26 @@ export function contrastPairing(c: StyleColour): 'black' | 'white' {
 }
 
 /**
- * RULE-22 (F-020.R2/R4): the fill colour of a rectangle or ellipse, or the text background colour of a
- * text, as drawn — a picked one, or while automatic the annotation's colour (a text: its contrast pairing,
- * RULE-07), following that colour.
+ * RULE-22 (F-020.R2/R4, D-054): a rectangle's or ellipse's fill colour as stored (null while unset, which
+ * occurs only with fill none), or a text's text background colour with automatic resolved to the contrast
+ * pairing of its colour (RULE-07), following that colour. A text always has a text background colour.
  */
-export function fillColourOf(kind: AnnotationKind, style: Pick<Style, 'color' | 'fillColor'>): StyleColour {
-  if (style.fillColor !== 'automatic') return style.fillColor;
-  return kind === 'text' ? contrastPairing(style.color) : style.color;
+export function fillColourOf(kind: 'text', style: Pick<Style, 'color' | 'fillColor'>): StyleColour;
+export function fillColourOf(kind: AnnotationKind, style: Pick<Style, 'color' | 'fillColor'>): StyleColour | null;
+export function fillColourOf(kind: AnnotationKind, style: Pick<Style, 'color' | 'fillColor'>): StyleColour | null {
+  if (style.fillColor !== 'unset' && style.fillColor !== 'automatic') return style.fillColor;
+  return kind === 'text' ? contrastPairing(style.color) : null;
+}
+
+/**
+ * Implements: RULE-22 / F-020.R2 / F-020.R6 (D-054) — sets the fill; turning it on (solid or translucent)
+ * while the fill colour is unset copies the colour at that moment, so a filled rectangle, ellipse or tool
+ * always has a fill colour. A kept fill colour, and a text's automatic background colour, stay as they are.
+ * Used for tools (with their current colour) and for each selected annotation (with its own colour).
+ */
+export function withFill<S extends Pick<Style, 'color' | 'fill' | 'fillColor'>>(style: S, fill: Style['fill']): S {
+  const copy = fill !== 'none' && style.fillColor === 'unset';
+  return { ...style, fill, ...(copy ? { fillColor: style.color } : {}) };
 }
 
 /** RULE-21: how a kind is sized — its stroke, a highlight's width, or a text size (text and steps). */

@@ -1,5 +1,6 @@
-// MOD-Core fill colour and text background (F-020, RULE-22): the automatic fill colour (the annotation's
-// colour) and the automatic text background colour (the RULE-07 contrast pairing of the text's colour);
+// MOD-Core fill colour and text background (F-020, RULE-22, D-054): a rectangle's or ellipse's fill colour
+// (unset until the fill is turned on while unset, then copied once from the colour by `withFill`, never
+// following it) and the automatic text background colour (the RULE-07 contrast pairing of the text's colour);
 // the background box (0.25 × the text size beyond the text box on every side, corner radius 0.2 × the
 // text size, 70 % when translucent), around the placeholder while an edited text is empty; and the box as
 // the text's area for hit-testing, bounds and the selection box (F-020.R5).
@@ -15,8 +16,12 @@ import {
   textAt,
   textBackground,
   textLayout,
+  DEFAULT_CURRENT_STYLES,
+  resolveStyles,
   type Style,
   type TextMeasure,
+  withFill,
+  withToolStyle,
 } from '../../src/core';
 
 const SHORT = 800; // a 1000 × 800 image: text size M = max(16, 0.04 × 800) = 32
@@ -26,16 +31,52 @@ const text = (style: Partial<Style> = {}, s = 'Bug') =>
   textAt({ x: 100, y: 50 }, 't1', { ...DEFAULT_STYLES.text, ...style }, s);
 
 describe('MOD-Core fill colour (RULE-22)', () => {
-  it('F-020.R2 RULE-22 every tool starts with fill none and an automatic fill colour', () => {
-    for (const style of Object.values(DEFAULT_STYLES)) expect(style).toMatchObject({ fillColor: 'automatic' });
-    expect(DEFAULT_STYLES.rectangle.fill).toBe('none');
-    expect(DEFAULT_STYLES.text.fill).toBe('none');
+  it('F-020.R2 RULE-04 RULE-22 rectangles and ellipses start with fill none and an unset fill colour; text with an automatic one', () => {
+    expect(DEFAULT_STYLES.rectangle).toMatchObject({ fill: 'none', fillColor: 'unset' });
+    expect(DEFAULT_STYLES.ellipse).toMatchObject({ fill: 'none', fillColor: 'unset' });
+    expect(DEFAULT_STYLES.text).toMatchObject({ fill: 'none', fillColor: 'automatic' });
   });
 
-  it('F-020.AC3 RULE-22 an automatic fill colour is the colour and follows it; a picked one is kept', () => {
-    expect(fillColourOf('ellipse', { color: 'blue', fillColor: 'automatic' })).toBe('blue');
+  it('F-020.AC17 F-020.R2 RULE-22 a fill colour is as stored and never follows the colour; unset has none', () => {
+    expect(fillColourOf('ellipse', { color: 'blue', fillColor: 'red' })).toBe('red');
     expect(fillColourOf('ellipse', { color: 'green', fillColor: 'yellow' })).toBe('yellow');
-    expect(fillColourOf('rectangle', { color: '#1e90ff', fillColor: 'automatic' })).toBe('#1e90ff');
+    expect(fillColourOf('rectangle', { color: '#1e90ff', fillColor: 'unset' })).toBeNull();
+  });
+
+  it('F-020.AC1 F-020.R2 RULE-22 withFill: turning the fill on while unset copies the colour', () => {
+    expect(withFill({ color: 'red', fill: 'none', fillColor: 'unset' }, 'solid')).toEqual({
+      color: 'red',
+      fill: 'solid',
+      fillColor: 'red',
+    });
+    expect(withFill({ color: '#1e90ff', fill: 'none', fillColor: 'unset' }, 'translucent').fillColor).toBe('#1e90ff');
+    // Fill none keeps it unset.
+    expect(withFill({ color: 'red', fill: 'none', fillColor: 'unset' }, 'none').fillColor).toBe('unset');
+  });
+
+  it('F-020.AC23 F-020.R2 RULE-22 withFill keeps a fill colour through none and back, even when the colour changed', () => {
+    const off = withFill({ color: 'red', fill: 'solid', fillColor: 'red' }, 'none');
+    expect(off).toMatchObject({ fill: 'none', fillColor: 'red' });
+    expect(withFill({ ...off, color: 'blue' }, 'solid')).toMatchObject({
+      color: 'blue',
+      fill: 'solid',
+      fillColor: 'red',
+    });
+    expect(withFill({ color: 'red', fill: 'none', fillColor: 'white' }, 'solid').fillColor).toBe('white');
+  });
+
+  it('F-020.R4 RULE-22 withFill never copies into an automatic text background colour', () => {
+    expect(withFill({ color: 'red', fill: 'none', fillColor: 'automatic' }, 'solid').fillColor).toBe('automatic');
+  });
+
+  it('F-020.AC6 F-020.R6 RULE-04 a tool whose fill is turned on while unset takes the shared current colour', () => {
+    let s = withToolStyle(DEFAULT_CURRENT_STYLES, 'rectangle', { color: 'blue' });
+    s = withToolStyle(s, 'ellipse', { fill: 'solid' });
+    expect(resolveStyles(s).ellipse).toMatchObject({ color: 'blue', fill: 'solid', fillColor: 'blue' });
+    expect(resolveStyles(s).rectangle).toMatchObject({ fill: 'none', fillColor: 'unset' });
+    // A fill colour given with the fill is kept as given.
+    s = withToolStyle(DEFAULT_CURRENT_STYLES, 'rectangle', { fill: 'solid', fillColor: 'white' });
+    expect(resolveStyles(s).rectangle.fillColor).toBe('white');
   });
 
   it('F-020.AC10 RULE-07 RULE-22 an automatic text background colour is the contrast pairing of the text colour', () => {

@@ -1,5 +1,6 @@
 // MOD-Core — the tools of CMP-Toolbar and the default current style of each drawing tool.
 // Implements: RULE-04 (default current styles; one colour shared by seven tools, D-045), RULE-19 (tool keys V R O A L P H T N X C).
+import { withFill } from './custom';
 import type { AnnotationKind, Style, StyleColour } from './types';
 
 /** CMP-Toolbar tools in toolbar order (COPY-tool.*), with their RULE-19 keys. */
@@ -70,13 +71,14 @@ export const hasFill = (kind: AnnotationKind): boolean => kind === 'rectangle' |
  */
 export const hasFillOrBackground = (kind: AnnotationKind): boolean => hasFill(kind) || kind === 'text';
 
-// Implements: RULE-04 / RULE-22 (F-020.R6) — every tool starts with fill none and an automatic fill colour.
+// Implements: RULE-04 / RULE-22 (F-020.R6, D-054) — every tool starts with fill none and an unset fill
+// colour; the text tool with an automatic text background colour.
 const style = (s: Partial<Style>): Style =>
   Object.freeze({
     color: 'red',
     strokeSize: 'M',
     fill: 'none',
-    fillColor: 'automatic',
+    fillColor: 'unset',
     redactionKind: 'solid',
     strength: 'M',
     ...s,
@@ -111,7 +113,7 @@ const DEFAULTS: Readonly<Record<DrawingTool, Style>> = {
   arrow: style({}),
   line: style({}),
   pen: style({}),
-  text: style({}),
+  text: style({ fillColor: 'automatic' }),
   step: style({}),
   highlight: style({ color: 'yellow', strokeSize: 'L' }),
   redact: style({ color: 'black', redactionKind: 'solid', strength: 'M' }),
@@ -138,11 +140,18 @@ export function resolveStyles(current: CurrentStyles): Readonly<Record<DrawingTo
 
 /**
  * RULE-04: a style choice that becomes `tool`'s current style — the colour goes to its colour group
- * (shared by seven tools, D-045), every other choice to the tool alone.
+ * (shared by seven tools, D-045), every other choice to the tool alone. A fill turned on while the tool's
+ * fill colour is unset takes the tool's current colour (withFill; F-020.R6, RULE-22): also when a selection
+ * turned it on, so the colours copied to the selected annotations never become the tool's fill colour.
  */
 export function withToolStyle(current: CurrentStyles, tool: DrawingTool, patch: Partial<Style>): CurrentStyles {
-  const { color, ...rest } = patch;
+  const { color, ...given } = patch;
   const colours = color === undefined ? current.colours : { ...current.colours, [colourGroup(tool)]: color };
+  const own = current.tools[tool];
+  const rest =
+    given.fill !== undefined && given.fillColor === undefined
+      ? { ...given, fillColor: withFill({ ...own, color: colours[colourGroup(tool)] }, given.fill).fillColor }
+      : given;
   const tools = Object.keys(rest).length
     ? { ...current.tools, [tool]: { ...current.tools[tool], ...rest } }
     : current.tools;

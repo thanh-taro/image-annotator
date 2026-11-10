@@ -31,10 +31,12 @@ import {
   CUSTOM_SIZE_RANGE,
   TOOL_KIND,
   toolOf,
+  withFill,
   withToolStyle,
   type Annotation,
   type Colour,
   type DrawingTool,
+  type FillColour,
   type SizeClass,
   type StyleColour,
   type StyleSize,
@@ -243,10 +245,21 @@ const toSolid = (patch: StylePatch, a: Annotation, current: Style): StylePatch =
     : patch;
 
 /**
+ * Implements: RULE-22 / F-020.R2 (D-054) — a fill turned on for an annotation whose fill colour is unset
+ * also sets the fill colour to the annotation's own colour (withFill), in the same restyle, so one undo step
+ * turns the fill off and returns the fill colour to unset.
+ */
+const withCopiedFill = (patch: StylePatch, a: Annotation): StylePatch => {
+  if (patch.fill === undefined || patch.fillColor !== undefined) return patch;
+  const { fillColor } = withFill({ ...a.style, ...patch }, patch.fill);
+  return fillColor === a.style.fillColor ? patch : { ...patch, fillColor };
+};
+
+/**
  * RULE-21 (F-019.R2): a custom colour that is applied is the one remembered for the custom swatch — one
  * for the colour, fill colour and text background colour choices (F-020.R1).
  */
-function remember(color: StyleColour | 'automatic' | undefined): void {
+function remember(color: FillColour | undefined): void {
   if (isHexColour(color)) customColour.value = color;
 }
 
@@ -266,7 +279,7 @@ export function setStyle(patch: StylePatch, coalesceKey?: string): void {
     // One step (RULE-11) of one restyle per distinct patch (only F-007.AC8 makes them differ).
     const groups = new Map<string, { patch: StylePatch; ids: string[] }>();
     for (const a of picked) {
-      const p = toSolid(patchFor(patch, a.kind), a, currentStyles.value.redact);
+      const p = withCopiedFill(toSolid(patchFor(patch, a.kind), a, currentStyles.value.redact), a);
       const key = JSON.stringify(p);
       const g = groups.get(key) ?? { patch: p, ids: [] };
       g.ids.push(a.id);
@@ -390,7 +403,7 @@ export interface PanelModel {
   readonly fill?: Fill | null;
   /**
    * F-020.R1/R2/R7 (RULE-22): COPY-style.fill_color, offered with the fill when every subject's fill is solid
-   * or translucent — the fill colour as drawn (automatic: the colour), null when the subjects' differ.
+   * or translucent — the fill colour as stored (D-054), null when the subjects' differ.
    */
   readonly fillColor?: StyleColour | null;
   /** F-020.R3/R7: COPY-style.text_background, offered only when every subject is a text. */
@@ -475,7 +488,7 @@ function choices(
 /**
  * F-020.R1/R3/R7 (RULE-22): the fill colour (rectangles and ellipses) or the text background and its colour
  * (texts) — only when every subject is of those kinds; the colour only when no subject's fill or background
- * is none, compared as drawn (automatic colours included).
+ * is none, compared as drawn (automatic text background colours included, F-020.R7).
  */
 function fillChoices(
   subjects: readonly { kind: Annotation['kind']; style: Style }[],

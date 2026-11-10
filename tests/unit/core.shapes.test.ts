@@ -6,6 +6,7 @@ import {
   boundsOf,
   constrain,
   DEFAULT_STYLES,
+  withFill,
   defaultAnnotationAt,
   handlesOf,
   hitHandle,
@@ -91,7 +92,7 @@ describe('MOD-Core shapes', () => {
   it('ADR-0004 §3 outlined shapes hit on their outline, filled ones inside too; arrowheads hit', () => {
     const box = { x: 100, y: 100, width: 200, height: 100 };
     const outline: Annotation = { id: 'r', kind: 'rectangle', style: red, box };
-    const filled: Annotation = { ...outline, style: { ...red, fill: 'translucent' } };
+    const filled: Annotation = { ...outline, style: withFill(red, 'translucent') };
     expect(hitTest(outline, { x: 200, y: 150 }, 1, S, noMeasure)).toBe(false);
     expect(hitTest(outline, { x: 101, y: 150 }, 1, S, noMeasure)).toBe(true);
     expect(hitTest(filled, { x: 200, y: 150 }, 1, S, noMeasure)).toBe(true);
