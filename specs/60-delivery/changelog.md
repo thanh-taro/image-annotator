@@ -2,6 +2,9 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
+## 1.2.1 — 2026-11-10 (release candidate 1.2.1-rc.1)
+The fill colour of rectangles and ellipses is separate from their colour (D-054, F-020.R2, RULE-22).
+
 ## 2026-11-10 — Fill colour separate from the colour (D-054)
 - Owner's change after 1.2.0: a rectangle's or ellipse's fill colour never follows its colour. It starts as the colour when the fill is first turned on (each selected annotation its own), then is independent. RULE-22, RULE-04 defaults, F-020.R2, R7, AC3, AC6, AC17, new AC22, ENT-Style `fillColor`, glossary fill colour and automatic (now text background only). Text background colour stays automatic.
 - Spec review of D-054: R4 no longer refers to R2; a selection turning the fill on gives its tool the shared colour (R6); copy and fill-on are one undo step that undo unsets (R2); a new shape takes the tool's fill colour, unset included, and a filled shape always has one (RULE-22); AC1, AC22 concrete, new AC23, AC24; MOD-Core `withFill`.
