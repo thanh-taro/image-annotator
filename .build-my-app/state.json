@@ -94,7 +94,7 @@
     "iterate": {
       "title": "8 Iterate",
       "status": "in_progress",
-      "step": "1.2.0 live; awaiting further requests",
+      "step": "1.2.1 live; awaiting further requests",
       "gate": {
         "status": "pending",
         "at": null,
@@ -963,22 +963,6 @@
   },
   "log": [
     {
-      "at": "2026-11-02T04:06:40+00:00",
-      "event": "decision D-026 answered: allow deploy-only"
-    },
-    {
-      "at": "2026-11-02T04:06:40+00:00",
-      "event": "decision D-027 opened: CI for this tool"
-    },
-    {
-      "at": "2026-11-02T04:06:40+00:00",
-      "event": "decision D-027 answered: no CI, local checks (ADR-0014)"
-    },
-    {
-      "at": "2026-11-02T04:06:56+00:00",
-      "event": "architecture step: 3.2 spikes: next (licences approved except DEP-19 pending lockfile)"
-    },
-    {
       "at": "2026-11-02T04:06:56+00:00",
       "event": "licence audit done; D-026 deploy-only LGPL allowed; D-027 no CI"
     },
@@ -1761,9 +1745,25 @@
     {
       "at": "2026-11-10T13:30:18+00:00",
       "event": "decision D-054 answered: Separate: when fill is turned on and no fill colour was set, it starts as the line colour, then never follows it; text background stays automatic"
+    },
+    {
+      "at": "2026-11-10T14:34:51+00:00",
+      "event": "iterate step: 1.2.1-rc.1 awaiting owner sign-off"
+    },
+    {
+      "at": "2026-11-10T14:34:52+00:00",
+      "event": "1.2.1-rc.1 built (fa589bb), reproducible, tagged locally"
+    },
+    {
+      "at": "2026-11-10T14:40:56+00:00",
+      "event": "1.2.1 deployed: Cloudflare version 59a264d9, smoke checks passed"
+    },
+    {
+      "at": "2026-11-10T14:41:00+00:00",
+      "event": "iterate step: 1.2.1 live; awaiting further requests"
     }
   ],
-  "updated": "2026-11-10T13:30:18+00:00",
+  "updated": "2026-11-10T14:41:00+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
