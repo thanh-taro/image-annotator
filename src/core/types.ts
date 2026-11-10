@@ -1,13 +1,21 @@
 // MOD-Core — domain types as plain data (specs/10-domain/model.md). Coordinates and sizes are in
 // image pixels, origin at the image's top-left corner; annotation coordinates are never clamped.
-// Implements: ENT-Session (parts), ENT-Image (metadata), ENT-Annotation, ENT-Style, ENT-Frame, ENT-Padding.
+// Implements: ENT-Session (parts), ENT-Image (metadata), ENT-Annotation, ENT-Style (with F-019's custom colour
+// and size, RULE-21), ENT-Frame, ENT-Padding.
 
 /** RULE-04 palette, in order. */
 export const PALETTE_NAMES = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'black', 'white'] as const;
 export type Colour = (typeof PALETTE_NAMES)[number];
 
+/** RULE-21 (F-019): a custom colour, a lowercase 6-digit sRGB hex value (`#1e90ff`). */
+export type HexColour = `#${string}`;
+/** ENT-Style `color`: a palette colour (RULE-04) or, from M-1b, a custom colour (RULE-21). */
+export type StyleColour = Colour | HexColour;
+
 /** S / M / L of RULE-04 (stroke and text sizes) and RULE-10 (redaction strength). */
 export type Size = 'S' | 'M' | 'L';
+/** ENT-Style `strokeSize`: a preset (RULE-04) or, from M-1b, a custom size in whole image pixels (RULE-21). */
+export type StyleSize = Size | number;
 export type Fill = 'none' | 'solid' | 'translucent';
 export type RedactionKind = 'solid' | 'blur' | 'pixelate';
 
@@ -28,8 +36,8 @@ export interface Box {
 
 /** ENT-Style. `fill` applies to rectangle and ellipse; `redactionKind` and `strength` to redactions. */
 export interface Style {
-  readonly color: Colour;
-  readonly strokeSize: Size;
+  readonly color: StyleColour;
+  readonly strokeSize: StyleSize;
   readonly fill: Fill;
   readonly redactionKind: RedactionKind;
   readonly strength: Size;

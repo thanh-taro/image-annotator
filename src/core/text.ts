@@ -14,7 +14,7 @@ import {
   TEXT_OUTLINE_MIN,
   TEXT_WEIGHT,
 } from './constants';
-import { styleSizes } from './sizes';
+import { textSizeOf } from './sizes';
 import type { Annotation, Box, Point, Style } from './types';
 
 export type TextAnnotation = Extract<Annotation, { readonly kind: 'text' }>;
@@ -56,7 +56,7 @@ export interface TextMetrics {
 }
 
 export function textMetrics(style: Style, shortSide: number): TextMetrics {
-  const size = styleSizes(shortSide, style.strokeSize).text;
+  const size = textSizeOf(shortSide, style.strokeSize); // RULE-21: or a custom text size (F-019)
   return { size, font: textFont(size), lineHeight: LINE_HEIGHT * size, baseline: baselineOffset(size) };
 }
 

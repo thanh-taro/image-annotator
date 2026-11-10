@@ -391,12 +391,12 @@ test.describe('F-003 draw shapes', () => {
     // D-047: the shared drawing colour first; D-036: then the level 2 heading, like D-035's.
     const heading = panel.getByRole('heading', { level: 2, name: 'Canvas' });
     await expect(heading).toBeVisible();
-    await expect(panel.getByRole('group', { name: 'Color' }).getByRole('radio', { name: 'Red' })).toBeChecked();
+    await expect(panel.getByRole('radiogroup', { name: 'Color' }).getByRole('radio', { name: 'Red' })).toBeChecked();
     expect(
       await panel.evaluate((el) =>
         [...(el.querySelector('.tk-panel__body')?.children ?? [])].map((c) => c.tagName).slice(0, 2),
       ),
-    ).toEqual(['FIELDSET', 'H2']);
+    ).toEqual(['DIV', 'H2']); // F-019: the colour section is an ARIA radio group (platform-mapping)
     const background = panel.getByRole('group', { name: 'Background' });
     await expect(background.getByRole('radio', { name: 'Green' })).toBeVisible();
     await background.getByRole('radio', { name: 'Green' }).check();
@@ -413,7 +413,7 @@ test.describe('F-003 draw shapes', () => {
   }) => {
     await open(page);
     const panel = page.getByRole('complementary', { name: 'Style' });
-    await panel.getByRole('group', { name: 'Color' }).getByRole('radio', { name: 'Green' }).check();
+    await panel.getByRole('radiogroup', { name: 'Color' }).getByRole('radio', { name: 'Green' }).check();
     await toolButton(page, 'Rectangle (R)').click();
     await expect(panel.getByRole('radio', { name: 'Green' })).toBeChecked();
     await dragImage(page, [100, 100], [300, 200]);

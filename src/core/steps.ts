@@ -6,7 +6,7 @@
 // Digit metrics are Manrope's at weight 600 (ADR-0009), measured once with measureText in Chromium and
 // WebKit (both give the same values): the digits are 0.72 em tall, and each has its own advance.
 import { TEXT_WEIGHT } from './constants';
-import { styleSizes } from './sizes';
+import { STEP_DIAMETER_PER_TEXT, textSizeOf } from './sizes';
 import type { Annotation, Box, Point, Style } from './types';
 
 export type StepAnnotation = Extract<Annotation, { readonly kind: 'step' }>;
@@ -86,7 +86,9 @@ export function stepPillWidth(label: string, textSize: number, diameter: number)
  * height (stepPillWidth).
  */
 export function stepBadge(a: StepAnnotation, shortSide: number): StepBadge {
-  const { text, stepDiameter } = styleSizes(shortSide, a.style.strokeSize);
+  // RULE-21: a custom size is the text size; the badge follows from it as from a preset (F-019).
+  const text = textSizeOf(shortSide, a.style.strokeSize);
+  const stepDiameter = STEP_DIAMETER_PER_TEXT * text;
   const label = String(Math.trunc(a.number));
   const width = label.length >= STEP_PILL_DIGITS ? stepPillWidth(label, text, stepDiameter) : stepDiameter;
   return {

@@ -20,6 +20,7 @@ import {
   effectSize,
   intersectBoxes,
   isEffectRedaction,
+  isHexColour,
   isSolidRedaction,
   redactionBox,
   solidsTouching,
@@ -265,7 +266,8 @@ export class EffectsClient {
     const palette = this.palette;
     const solids: WireSolid[] = solidsTouching(doc.annotations, area.window).map((s) => ({
       box: redactionBox(s.box),
-      rgb: palette[s.style.color],
+      // RULE-10 / RULE-21: a solid redaction in a palette colour, or a custom colour (F-019).
+      rgb: isHexColour(s.style.color) ? hexRgb(s.style.color) : palette[s.style.color],
     }));
     const box = redactionBox(a.box);
     const f = doc.frame;

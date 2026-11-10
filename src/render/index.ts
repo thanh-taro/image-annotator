@@ -12,6 +12,7 @@ import {
   arrowHead,
   boundsOf,
   canvasRect,
+  customContrast,
   handleBox,
   handlesOf,
   HIGHLIGHT_OPACITY,
@@ -22,6 +23,7 @@ import {
   isSolidRedaction,
   isStepAnnotation,
   intersectBoxes,
+  isHexColour,
   redactionBox,
   isTextAnnotation,
   shapeBox,
@@ -33,12 +35,12 @@ import {
   TRANSLUCENT_FILL_OPACITY,
   type Annotation,
   type Box,
-  type Colour,
   type Frame,
   type Padding,
   type PathAnnotation,
   type RedactionAnnotation,
   type StepAnnotation,
+  type StyleColour,
   type TextAnnotation,
   type TextMeasure,
 } from '../core';
@@ -726,12 +728,16 @@ function paintChecker(ctx: Ctx, r: Box, view: Backdrop, limit?: Box): void {
   ctx.fill();
 }
 
-/** The sRGB value of a palette colour (tokens.json, ADR-0013). */
-export function paletteColour(name: Colour): string {
-  return PALETTE_HEX[name];
+/** The sRGB value of a palette colour (tokens.json, ADR-0013), or a custom colour's own (RULE-21, F-019). */
+export function paletteColour(name: StyleColour): string {
+  return isHexColour(name) ? name : PALETTE_HEX[name];
 }
 
-/** RULE-07 contrast pairing: black on yellow, orange, green, white; white on red, blue, purple, black. */
-export function contrastPair(name: Colour): 'black' | 'white' {
+/**
+ * RULE-07 contrast pairing: black on yellow, orange, green, white; white on red, blue, purple, black; a
+ * custom colour (RULE-21) pairs with whichever has the higher contrast ratio, black on a tie (F-019.R6).
+ */
+export function contrastPair(name: StyleColour): 'black' | 'white' {
+  if (isHexColour(name)) return customContrast(name);
   return name === 'yellow' || name === 'orange' || name === 'green' || name === 'white' ? 'black' : 'white';
 }

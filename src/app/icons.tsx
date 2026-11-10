@@ -24,6 +24,7 @@ import {
   Minus,
   MousePointer2,
   MoveUpRight,
+  Palette,
   Pen,
   Plus,
   RectangleEllipsis,
@@ -80,6 +81,8 @@ const SOURCES = {
   redo: Redo2,
   // F-010: the crop tool.
   crop: Crop,
+  // F-019: the custom swatch before any colour is picked (style.md: a neutral "pick a colour" mark).
+  palette: Palette,
 } as const;
 
 export type IconName = keyof typeof SOURCES;

@@ -28,6 +28,11 @@ export { SelectTool, type SelectCallbacks, type SelectSetup } from './select';
 export { CropTool, type CropCallbacks, type CropSetup } from './crop';
 export { TextTool, type TextEdit, type TextEndReason, type TextField, type TextSetup } from './text';
 export { AnnotationList, leaveRegion, nextIndex, type AnnotationListProps } from './list';
+/**
+ * The palette's sRGB values (`annotation.color.*`, MOD-Render), for matching a picked custom colour to a
+ * palette colour (RULE-21, F-019.R2) in MOD-App, which does not import MOD-Render itself.
+ */
+export { PALETTE_HEX } from '../render';
 
 /**
  * The view commands (F-002.R2/R4; CMP-StatusBar and the RULE-19 View keys). With no image shown they
@@ -69,4 +74,6 @@ export const canvasCommands = {
   beginTextEdit: (id: string): boolean => activeCanvas()?.beginTextEdit(id) ?? false,
   /** RULE-19 Esc: ends the text edit, keeping the text selected; true if one was open. */
   endTextEdit: (): boolean => activeCanvas()?.endTextEdit() ?? false,
+  /** F-019.R9: focus returns to the text being edited, which goes on; true if one is open. */
+  focusTextEdit: (): boolean => activeCanvas()?.focusTextEdit() ?? false,
 };

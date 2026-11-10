@@ -4,7 +4,7 @@
 // step numbering in `add`, `remove` and `duplicate` (F-006, RULE-07); `update`, `edit` and `reorder`
 // (F-008, wired with `remove` and `duplicate` to the keys and the panel by MOD-App); the text commit rules
 // in `commitText` (F-005); `setFrame` with the padding step-down (F-010, F-011.R6); `setPadding` and
-// `setBackground` (F-011).
+// `setBackground` (F-011); `discardChain` for a cancelled colour picker (F-019.R8).
 import {
   availablePaddings,
   DUPLICATE_OFFSET,
@@ -249,6 +249,12 @@ export interface History {
   noteSelection(selection: Selection): void;
   /** Any other command (tool change, …) breaks the coalescing chain (ADR-0008 §3). */
   breakChain(): void;
+  /**
+   * F-019.R8: a cancelled colour picker — when the top step is the chain `coalesceKey` (nothing else since),
+   * it is dropped without a redo, so the document returns to before it and no step is recorded. Null when
+   * that chain made no step.
+   */
+  discardChain(coalesceKey: string): Restore | null;
 }
 
 /** A session: the current document, the history and the change epoch for RULE-18. */
@@ -356,6 +362,17 @@ export function startSession(image: ImageInfo): Session {
     },
     breakChain() {
       chain = undefined;
+    },
+    discardChain(coalesceKey) {
+      const top = steps[cursor - 1];
+      if (chain !== coalesceKey || !top || cursor !== steps.length) return null;
+      chain = undefined;
+      steps = steps.slice(0, cursor - 1);
+      cursor = steps.length;
+      doc = top.before;
+      current = top.selectionBefore;
+      epoch++;
+      return { doc, selection: current };
     },
   };
 

@@ -1,7 +1,8 @@
 // MOD-Core — the RULE-04 and RULE-10 size tables, relative to the image's shorter side `s`.
-// Implements: RULE-04 (stroke, text, step badge, highlight sizes), RULE-10 (blur radius, pixelate block).
+// Implements: RULE-04 (stroke, text, step badge, highlight sizes), RULE-10 (blur radius, pixelate block),
+// RULE-21 (a custom size in pixels, F-019).
 // Sizes are rounded to the nearest whole pixel (rules.md preamble).
-import type { Size } from './types';
+import type { Size, StyleSize } from './types';
 
 /** `max(min, factor · s)` per size, as written in the rules. */
 interface Scale {
@@ -60,3 +61,18 @@ export function styleSizes(shortSide: number, size: Size): StyleSizes {
     pixelateBlock: redaction,
   };
 }
+
+/**
+ * RULE-04 / RULE-21: the stroke size in pixels — a custom size is the stroke itself, kept in pixels
+ * whatever the image (F-019).
+ */
+export const strokeSizeOf = (shortSide: number, size: StyleSize): number =>
+  typeof size === 'number' ? size : styleSizes(shortSide, size).stroke;
+
+/** RULE-04 / RULE-21: the text size in pixels of text and steps — a custom size is the text size itself. */
+export const textSizeOf = (shortSide: number, size: StyleSize): number =>
+  typeof size === 'number' ? size : styleSizes(shortSide, size).text;
+
+/** RULE-04 / RULE-21: a highlight's width in pixels — 3 × its preset's stroke size, or a custom width. */
+export const highlightWidthOf = (shortSide: number, size: StyleSize): number =>
+  typeof size === 'number' ? size : styleSizes(shortSide, size).highlight;

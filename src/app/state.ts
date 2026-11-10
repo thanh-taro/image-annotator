@@ -5,7 +5,14 @@
 // stays free of signals; every change to the session goes through `commit` or `exported` here.
 import { computed, signal } from '@preact/signals';
 import { startSession, type Doc, type Restore, type Selection, type Session } from '../document';
-import { DEFAULT_CURRENT_STYLES, resolveStyles, type CurrentStyles, type ToolName, type View } from '../core';
+import {
+  DEFAULT_CURRENT_STYLES,
+  resolveStyles,
+  type CurrentStyles,
+  type HexColour,
+  type ToolName,
+  type View,
+} from '../core';
 import { feedEffects, releaseEffects, type DecodedImage, type Size } from '../io';
 import { toolbarCount } from './export';
 import type { Notice } from './notice';
@@ -59,6 +66,13 @@ export const currentStyleModel = signal<CurrentStyles>(DEFAULT_CURRENT_STYLES);
 
 /** RULE-04: each drawing tool's full current style, resolved from `currentStyleModel` (read-only). */
 export const currentStyles = computed(() => resolveStyles(currentStyleModel.value));
+
+/**
+ * RULE-21 (F-019.R2): the custom colour last picked on the page, shown on the custom swatch when the
+ * subject has no custom colour; remembered until the page closes, like the current style (kept across
+ * images). Null until one is picked.
+ */
+export const customColour = signal<HexColour | null>(null);
 
 /** The selected annotations' ids, in selection order (not an undo step, RULE-11). */
 export const selection = signal<Selection>([]);

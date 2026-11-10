@@ -18,12 +18,23 @@
 // (CMP-StylePanel "crop": frame size, position and size fields, reset); F-011.R1/R2/R5, RULE-14 (CMP-StylePanel
 // "canvas": the padding sizes, the unavailable ones disabled with COPY-canvas.padding_unavailable, and the
 // background, transparent or a palette colour).
+// F-019 (M-1b): the annotation colour groups (the style's and the canvas drawing colour, not the background)
+// are an ARIA radio group with a roving tabindex whose ninth option is the custom swatch: it drives a
+// visually hidden colour input (showPicker, else click) whose `input` events preview and chain into one
+// step, `change` or focus leaving ends the chain, and `cancel` restores the colour (platform-mapping). The
+// size choice adds the pixel field (COPY-style.size_px, applied on Enter or blur only when typed into,
+// Esc restores) and, on the wide panel, a slider that applies while it moves (one step per drag).
+// Implements: F-019.R1/R2/R3/R4/R5/R8/R9, RULE-21, CMP-StylePanel "Accessibility" (9 colour choices in 2
+// rows of 5 on narrow widths or a coarse pointer), style.md (the custom swatch's neutral mark).
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { viewCommands } from '../canvas';
+import { canvasCommands, viewCommands } from '../canvas';
 import { t, type MessageId } from '../copy';
 import type { ComponentChildren } from 'preact';
 import {
+  hexLabel,
+  isHexColour,
   PALETTE_NAMES,
+  parseCustomSize,
   type Colour,
   type Fill,
   type Frame,
@@ -32,21 +43,34 @@ import {
   type PaddingSize,
   type RedactionKind,
   type Size,
+  type StyleColour,
 } from '../core';
 import { cropSizeText, resetFrame, setFrameField } from './crop';
 import {
+  beginCustomPick,
+  cancelCustomPick,
+  chooseCustomSwatch,
+  customPickOpen,
+  customSwatch,
+  endCustomPick,
+  previewCustomColour,
+  type ColourTarget,
+} from './custom';
+import {
   paddingLabel,
   panelModel,
+  setCustomSize,
   setDrawingColour,
   setStyle,
   sizeLabel,
+  sizeValue,
   summaryDetail,
   type PanelModel,
 } from './drawing';
 import { setBackground, setPadding } from './padding';
 import { deleteSelection, duplicateSelection, reorderSelection, setGeometry } from './editing';
 import { Icon } from './icons';
-import { currentStyles, doc, layout, selection, sheetOpen, textEditing, tool } from './state';
+import { currentStyles, doc, layout, loaded, selection, sheetOpen, textEditing, tool } from './state';
 
 const COLOUR_COPY = {
   red: 'color.red',
@@ -130,6 +154,267 @@ function Choice<T extends string>(props: {
   );
 }
 
+/** The custom swatch's place in the colour radio group: the ninth option, after the palette (F-019.R1). */
+const CUSTOM = 'custom';
+type ColourOption = Colour | typeof CUSTOM;
+const COLOUR_OPTIONS: readonly ColourOption[] = [...PALETTE_NAMES, CUSTOM];
+
+/** The custom swatch as CMP-StylePanel shows it (F-019.R2). */
+type CustomSwatch = ReturnType<typeof customSwatch>;
+
+/** F-019.R9: while a text is edited, focus returns to it after the field applies or the picker closes. */
+const backToText = () => {
+  if (textEditing.value) canvasCommands.focusTextEdit();
+};
+
+/** The loaded image's shorter side, for the size field's preset widths (RULE-21); null with no image. */
+const shortSideOf = (): number | null => {
+  const info = loaded.value?.image.info;
+  return info ? Math.min(info.width, info.height) : null;
+};
+
+/** The current panel model (the custom swatch's colour after the remembered one is applied). */
+const currentModel = (): PanelModel =>
+  panelModel(tool.value, selection.value, doc.value, currentStyles.value, textEditing.value !== null, shortSideOf());
+
+const arrowStep = (key: string): number =>
+  key === 'ArrowRight' || key === 'ArrowDown' ? 1 : key === 'ArrowLeft' || key === 'ArrowUp' ? -1 : 0;
+
+/**
+ * CMP-StylePanel colour swatches for annotations (COPY-style.color; the drawing colour in canvas settings,
+ * D-047): an ARIA radio group with a roving tabindex, named by colour (NFR-06). An option is checked only
+ * when its colour is applied: arrow keys move and choose, but arrowing onto a custom swatch with no
+ * remembered colour only moves focus (F-019.R1). Clicking the custom swatch, or Enter or Space on it,
+ * applies the remembered custom colour and opens the browser's picker at the swatch's colour.
+ */
+function ColourGroup({
+  id,
+  legend,
+  value,
+  custom,
+  target,
+}: {
+  id: string;
+  legend: string;
+  value: StyleColour | null;
+  custom: CustomSwatch;
+  target: ColourTarget;
+}) {
+  const refs = useRef<(HTMLDivElement | null)[]>([]);
+  const picker = useRef<HTMLInputElement>(null);
+  const checked: ColourOption | null = custom.checked ? CUSTOM : value && !isHexColour(value) ? value : null;
+  const tabStop = checked ?? COLOUR_OPTIONS[0];
+  const pick = (c: Colour) => (target === 'drawing' ? setDrawingColour(c) : setStyle({ color: c }));
+
+  // F-019.R8 (platform-mapping): the picker's colours preview, `change` ends the chain, and `cancel`, where
+  // the browser fires one, restores the colour from before the swatch was chosen; focus moving to another
+  // control also ends the chain.
+  useEffect(() => {
+    const input = picker.current;
+    if (!input) return;
+    const onInput = () => previewCustomColour(input.value);
+    const onChange = () => {
+      previewCustomColour(input.value);
+      endCustomPick();
+      backToText();
+    };
+    const onCancel = () => {
+      cancelCustomPick();
+      backToText();
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      if (customPickOpen() && e.target !== refs.current[PALETTE_NAMES.length] && e.target !== input) endCustomPick();
+    };
+    input.addEventListener('input', onInput);
+    input.addEventListener('change', onChange);
+    input.addEventListener('cancel', onCancel);
+    document.addEventListener('focusin', onFocusIn);
+    return () => {
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('change', onChange);
+      input.removeEventListener('cancel', onCancel);
+      document.removeEventListener('focusin', onFocusIn);
+    };
+  }, []);
+
+  const openPicker = () => {
+    const input = picker.current;
+    if (!input) return;
+    beginCustomPick(target, true);
+    // F-019.R1: the picker starts at the swatch's colour (the remembered one, now applied).
+    const start = customSwatch(currentModel()).colour;
+    if (start) input.value = start;
+    try {
+      input.showPicker();
+    } catch {
+      input.click(); // browsers without showPicker() for colour inputs
+    }
+  };
+
+  const onKeyDown = (e: KeyboardEvent, index: number) => {
+    const option = COLOUR_OPTIONS[index];
+    if (!option) return;
+    if (e.key === ' ' || e.key === 'Enter') {
+      // F-019.R1: Space or Enter on the custom swatch opens the picker; Space checks a palette colour.
+      if (option === CUSTOM) {
+        e.preventDefault();
+        openPicker();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        pick(option);
+      }
+      return;
+    }
+    const step = arrowStep(e.key);
+    if (!step || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    const next = (index + step + COLOUR_OPTIONS.length) % COLOUR_OPTIONS.length;
+    const nextOption = COLOUR_OPTIONS[next];
+    refs.current[next]?.focus();
+    // Arrow keys never open the picker; an unused custom swatch only takes focus.
+    if (nextOption === CUSTOM) chooseCustomSwatch(target);
+    else if (nextOption) pick(nextOption);
+  };
+
+  const headingId = `${id}-label`;
+  return (
+    <div class="tk-panel__section">
+      <div id={headingId} class="tk-panel__heading">
+        {legend}
+      </div>
+      <div role="radiogroup" aria-labelledby={headingId} class="tk-swatches tk-swatches--5">
+        {COLOUR_OPTIONS.map((option, i) => {
+          const isCustom = option === CUSTOM;
+          const name = !isCustom
+            ? t(COLOUR_COPY[option])
+            : custom.colour
+              ? t('style.color_custom_value', { hex: hexLabel(custom.colour) })
+              : t('style.color_custom');
+          return (
+            <div
+              key={option}
+              ref={(el) => {
+                refs.current[i] = el;
+              }}
+              role="radio"
+              aria-checked={checked === option}
+              aria-label={name}
+              title={name}
+              tabIndex={option === tabStop ? 0 : -1}
+              class={
+                isCustom
+                  ? `tk-swatch tk-swatch--custom${custom.colour ? ' tk-swatch--custom-set' : ''}`
+                  : `tk-swatch tk-swatch--${option}`
+              }
+              style={isCustom && custom.colour ? { '--tk-custom-colour': custom.colour } : undefined}
+              onClick={() => (isCustom ? openPicker() : pick(option))}
+              onKeyDown={(e) => onKeyDown(e, i)}
+            >
+              {/* style.md: before any pick a neutral "pick a colour" mark, with no colour of its own. */}
+              {isCustom && !custom.colour && <Icon name="palette" />}
+            </div>
+          );
+        })}
+      </div>
+      {/* platform-mapping: the browser's own colour picker, opened by the custom swatch only. */}
+      <input ref={picker} type="color" class="tk-sr" tabIndex={-1} aria-hidden="true" />
+    </div>
+  );
+}
+
+let sliderDrags = 0;
+
+/**
+ * F-019.R3/R4/R5 (RULE-21): the size in image pixels after S, M and L — a number field that applies on
+ * Enter or when focus leaves it, only when typed into since it was last shown (Esc restores the shown
+ * value), and on the wide panel a slider with the same range that applies while it moves (one drag, or
+ * repeated keys on the same selection, one step, RULE-11). Either makes a custom size.
+ */
+function SizeField({ field, slider }: { field: NonNullable<PanelModel['sizeField']>; slider: boolean }) {
+  const shown = field.value === null ? '' : String(field.value);
+  const [draft, setDraft] = useState(shown);
+  const typed = useRef(false);
+  const shownValue = useRef(shown);
+  useEffect(() => {
+    if (shownValue.current === shown) return;
+    shownValue.current = shown;
+    typed.current = false;
+    setDraft(shown);
+  }, [shown]);
+  const apply = () => {
+    const px = typed.current ? parseCustomSize(field.cls, draft) : null;
+    typed.current = false;
+    setDraft(shown); // the new value, if any, arrives with the next render
+    if (px !== null) setCustomSize(px);
+  };
+  const drag = useRef<string | null>(null);
+  const labelId = 'tk-style-size-px';
+  return (
+    <div class="tk-size">
+      <label class="tk-size__field">
+        <span id={labelId} class="tk-size__label">
+          {t('style.size_px')}
+        </span>
+        <input
+          class="tk-size__input"
+          type="number"
+          inputMode="numeric"
+          min={field.min}
+          max={field.max}
+          step={1}
+          autocomplete="off"
+          disabled={!field.available}
+          value={draft}
+          onInput={(e) => {
+            typed.current = true;
+            setDraft(e.currentTarget.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              apply();
+              backToText();
+            } else if (e.key === 'Escape' && typed.current) {
+              // F-019.R5: Esc restores the shown value without applying it.
+              e.preventDefault();
+              e.stopPropagation();
+              typed.current = false;
+              setDraft(shown);
+            }
+          }}
+          onBlur={apply}
+        />
+      </label>
+      {slider && (
+        <input
+          class="tk-size__slider"
+          type="range"
+          aria-labelledby={labelId}
+          aria-valuetext={field.value === null ? undefined : sizeValue(field.value)}
+          min={field.min}
+          max={field.max}
+          step={1}
+          disabled={!field.available}
+          value={field.value ?? field.min}
+          onPointerDown={() => {
+            drag.current = `slider:${selection.value.join(',')}:${++sliderDrags}`;
+          }}
+          onInput={(e) => {
+            const px = parseCustomSize(field.cls, e.currentTarget.value);
+            if (px !== null) setCustomSize(px, drag.current ?? `slider:${selection.value.join(',')}:keys`);
+          }}
+          onChange={() => {
+            // RULE-11: one drag is one step; repeated keys on the same selection go on chaining.
+            if (!drag.current) return;
+            drag.current = null;
+            loaded.value?.session.history.breakChain();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
 /** A redaction kind choice: its icon and name; blur and pixelate carry the not-secure tag (RULE-10). */
 function KindLabel({ kind }: { kind: RedactionKind }) {
   return (
@@ -147,7 +432,7 @@ function KindLabel({ kind }: { kind: RedactionKind }) {
 }
 
 function Sections({ model, narrow }: { model: PanelModel; narrow: boolean }) {
-  if (model.canvas) return <CanvasSettings canvas={model.canvas} narrow={narrow} />;
+  if (model.canvas) return <CanvasSettings canvas={model.canvas} narrow={narrow} custom={customSwatch(model)} />;
   if (model.frame) return <Crop frame={model.frame} />;
   return (
     <>
@@ -180,14 +465,12 @@ function Sections({ model, narrow }: { model: PanelModel; narrow: boolean }) {
         </Choice>
       )}
       {model.color !== undefined && (
-        <Choice
-          name="tk-style-color"
+        <ColourGroup
+          id="tk-style-color"
           legend={t('style.color')}
-          values={PALETTE_NAMES}
           value={model.color}
-          label={(c) => t(COLOUR_COPY[c])}
-          onPick={(color) => setStyle({ color })}
-          swatches
+          custom={customSwatch(model)}
+          target="style"
         />
       )}
       {model.size !== undefined && (
@@ -195,10 +478,13 @@ function Sections({ model, narrow }: { model: PanelModel; narrow: boolean }) {
           name="tk-style-size"
           legend={t('style.size')}
           values={SIZES}
-          value={model.size}
+          // F-019.R4: a custom size marks no preset.
+          value={typeof model.size === 'number' ? null : model.size}
           label={sizeLabel}
           onPick={(strokeSize) => setStyle({ strokeSize })}
-        />
+        >
+          {model.sizeField && <SizeField field={model.sizeField} slider={!narrow} />}
+        </Choice>
       )}
       {model.fill !== undefined && (
         <Choice
@@ -377,20 +663,27 @@ const UNAVAILABLE_NOTE = 'tk-padding-unavailable';
  * COPY-canvas.padding_unavailable below them (describing the group) — and COPY-canvas.background:
  * COPY-canvas.transparent (the checkerboard), then the palette, named by colour (NFR-06). One step each.
  */
-function CanvasSettings({ canvas, narrow }: { canvas: NonNullable<PanelModel['canvas']>; narrow: boolean }) {
+function CanvasSettings({
+  canvas,
+  narrow,
+  custom,
+}: {
+  canvas: NonNullable<PanelModel['canvas']>;
+  narrow: boolean;
+  custom: CustomSwatch;
+}) {
   const unavailable = PADDINGS.some((p) => !canvas.available.includes(p));
   return (
     <>
       {/* Implements: D-047, F-003.AC11/AC12, RULE-04 — the shared drawing colour comes first, so a colour
           picked here is the next shape's; the Canvas heading (D-046) then heads padding and background. */}
-      <Choice
-        name="tk-canvas-draw-color"
+      {/* F-019.R1: the drawing colour ends with the custom swatch; the background never does (D-049). */}
+      <ColourGroup
+        id="tk-canvas-draw-color"
         legend={t('style.color')}
-        values={PALETTE_NAMES}
         value={canvas.drawColor}
-        label={(c) => t(COLOUR_COPY[c])}
-        onPick={setDrawingColour}
-        swatches
+        custom={custom}
+        target="drawing"
       />
       {/* Same level and style as D-035's heading; the narrow bar's summary names it instead. */}
       {!narrow && <h2 class="tk-panel__count">{t('canvas.title')}</h2>}
@@ -486,7 +779,7 @@ function Actions() {
 }
 
 export function StylePanel() {
-  const model = panelModel(tool.value, selection.value, doc.value, currentStyles.value, textEditing.value !== null);
+  const model = currentModel();
   const narrow = layout.value === 'narrow';
   const open = narrow && sheetOpen.value;
   const ref = useRef<HTMLElement>(null);
@@ -550,7 +843,17 @@ export function StylePanel() {
             onClick={() => (sheetOpen.value = !sheetOpen.value)}
           >
             <span class="tk-sr">{`${t('style.sheet_toggle')}: `}</span>
-            {model.color && <span class={`tk-panel__chip tk-swatch--${model.color}`} aria-hidden="true" />}
+            {model.color &&
+              (isHexColour(model.color) ? (
+                // F-019: a custom colour's chip shows the colour itself.
+                <span
+                  class="tk-panel__chip tk-swatch--custom-set"
+                  style={{ '--tk-custom-colour': model.color }}
+                  aria-hidden="true"
+                />
+              ) : (
+                <span class={`tk-panel__chip tk-swatch--${model.color}`} aria-hidden="true" />
+              ))}
             <span class="tk-panel__summary">
               <Summary model={model} detail={detail} />
             </span>

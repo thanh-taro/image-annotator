@@ -1,6 +1,6 @@
 // MOD-Core — the tools of CMP-Toolbar and the default current style of each drawing tool.
 // Implements: RULE-04 (default current styles; one colour shared by seven tools, D-045), RULE-19 (tool keys V R O A L P H T N X C).
-import type { AnnotationKind, Colour, Style } from './types';
+import type { AnnotationKind, Style, StyleColour } from './types';
 
 /** CMP-Toolbar tools in toolbar order (COPY-tool.*), with their RULE-19 keys. */
 export const TOOLS = [
@@ -83,7 +83,8 @@ export type ToolStyle = Omit<Style, 'color'>;
  * (D-045) and each drawing tool's other choices.
  */
 export interface CurrentStyles {
-  readonly colours: Readonly<Record<ColourGroup, Colour>>;
+  /** A palette colour or, from M-1b, a custom colour (RULE-21, F-019.R6). */
+  readonly colours: Readonly<Record<ColourGroup, StyleColour>>;
   readonly tools: Readonly<Record<DrawingTool, ToolStyle>>;
 }
 

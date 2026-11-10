@@ -112,3 +112,21 @@ describe('MOD-Document session', () => {
     expect(s.unexported).toBe(false);
   });
 });
+
+describe('MOD-Document discardChain (F-019.R8)', () => {
+  it('F-019.R8 RULE-11 a cancelled picker chain is dropped with no redo; another chain or a broken one is kept', () => {
+    const s = startSession(image);
+    const start = s.doc;
+    s.history.apply(touch, ['a'], 'pick:1');
+    s.history.apply(touch, ['a'], 'pick:1');
+    expect(s.history.discardChain('pick:2')).toBeNull();
+    expect(s.history.discardChain('pick:1')).toEqual({ doc: start, selection: [] });
+    expect(s.doc).toBe(start);
+    expect(s.history.canUndo).toBe(false);
+    expect(s.history.canRedo).toBe(false);
+    s.history.apply(touch, [], 'pick:3');
+    s.history.breakChain();
+    expect(s.history.discardChain('pick:3')).toBeNull();
+    expect(s.history.canUndo).toBe(true);
+  });
+});
