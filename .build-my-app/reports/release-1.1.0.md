@@ -37,3 +37,11 @@ Owner sign-off 2026-11-10: "it's good" (hand test of 1.1.0-rc.1).
 ## Deploy
 Same steps as `docs/deploy/runbook.md` section 3 with `v1.1.0-rc.1` and `release/1.1.0-rc.1`, then the smoke checks
 of section 4 against `release/1.1.0-rc.1/dist.sha256`. Rollback: `wrangler rollback 517ae3cf-f6e5-45b9-a99a-6deda8f9f469`.
+
+## Deployed
+- Deploy authorised by the owner (2026-11-10, "Deploy now"). `v1.1.0-rc.1` archive verified 12/12 against
+  `dist.sha256`, then deployed with wrangler 4.158.0. Cloudflare Version ID `e4f26f6f-ff4a-4333-9f1a-785e4c70d0ee`
+  (previous: 1.0.0 `517ae3cf-f6e5-45b9-a99a-6deda8f9f469`, the rollback target).
+- Smoke checks passed: page and `/sw.js` policies, no-referrer, nosniff, COOP, HSTS, no-cache on the page,
+  `/assets/*` immutable; `/nonexistent`, `/.vite/`, `/_headers` return 404; all 10 served files match
+  `release/1.1.0-rc.1/dist.sha256`.
