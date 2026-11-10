@@ -7,8 +7,8 @@ import { commands } from '../../src/app/commands';
 import { commitFrame, shownCanvasSize } from '../../src/app/crop';
 import { panelModel, summaryDetail } from '../../src/app/drawing';
 import { undo } from '../../src/app/history';
-import { currentStyles, doc, loaded, selection, startNewSession, tool } from '../../src/app/state';
-import { DEFAULT_STYLES } from '../../src/core';
+import { currentStyleModel, currentStyles, doc, loaded, selection, startNewSession, tool } from '../../src/app/state';
+import { DEFAULT_CURRENT_STYLES } from '../../src/core';
 import type { DecodedImage } from '../../src/io';
 
 const image = (width: number, height: number): DecodedImage => ({
@@ -20,7 +20,7 @@ const model = () => panelModel(tool.value, selection.value, doc.value, currentSt
 describe('MOD-App padding and background', () => {
   beforeEach(() => {
     tool.value = 'select';
-    currentStyles.value = DEFAULT_STYLES;
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
     selection.value = [];
   });
 

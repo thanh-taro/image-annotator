@@ -5,7 +5,7 @@
 // stays free of signals; every change to the session goes through `commit` or `exported` here.
 import { computed, signal } from '@preact/signals';
 import { startSession, type Doc, type Restore, type Selection, type Session } from '../document';
-import { DEFAULT_STYLES, type DrawingTool, type Style, type ToolName, type View } from '../core';
+import { DEFAULT_CURRENT_STYLES, resolveStyles, type CurrentStyles, type ToolName, type View } from '../core';
 import { feedEffects, releaseEffects, type DecodedImage, type Size } from '../io';
 import { toolbarCount } from './export';
 import type { Notice } from './notice';
@@ -50,8 +50,15 @@ export function commit(restore: Restore): void {
 /** CMP-Toolbar: exactly one tool is active; select when the page opens, kept when a new image loads. */
 export const tool = signal<ToolName>('select');
 
-/** RULE-04: each drawing tool's current style, for the page's lifetime (kept across images, ENT-Session). */
-export const currentStyles = signal<Readonly<Record<DrawingTool, Style>>>(DEFAULT_STYLES);
+/**
+ * RULE-04 / D-045: the current styles, for the page's lifetime (kept across images, ENT-Session) — one
+ * colour shared by rectangle, ellipse, line, arrow, pen, text and step, highlight's and redaction's own,
+ * and each tool's other choices. Changed only by `setStyle` (MOD-App drawing).
+ */
+export const currentStyleModel = signal<CurrentStyles>(DEFAULT_CURRENT_STYLES);
+
+/** RULE-04: each drawing tool's full current style, resolved from `currentStyleModel` (read-only). */
+export const currentStyles = computed(() => resolveStyles(currentStyleModel.value));
 
 /** The selected annotations' ids, in selection order (not an undo step, RULE-11). */
 export const selection = signal<Selection>([]);

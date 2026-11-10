@@ -2,8 +2,10 @@
 // the new shape (RULE-11, F-003.R6); styles follow RULE-04; the panel shows the right choices; the
 // RULE-19 Esc chain; tool changes and placing are announced (NFR-06).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setBackground } from '../../src/app/padding';
 import { createAnnotation, escape, panelModel, select, setStyle, setTool, summaryDetail } from '../../src/app/drawing';
 import {
+  currentStyleModel,
   currentStyles,
   doc,
   loaded,
@@ -15,7 +17,7 @@ import {
   unexported,
 } from '../../src/app/state';
 import { canvasCommands } from '../../src/canvas';
-import { DEFAULT_STYLES, type Annotation } from '../../src/core';
+import { DEFAULT_CURRENT_STYLES, DEFAULT_STYLES, type Annotation } from '../../src/core';
 import { add, restyle, startSession } from '../../src/document';
 import type { DecodedImage } from '../../src/io';
 
@@ -63,7 +65,7 @@ describe('MOD-Document add and restyle', () => {
 describe('MOD-App drawing commands', () => {
   beforeEach(() => {
     tool.value = 'select';
-    currentStyles.value = DEFAULT_STYLES;
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
     sheetOpen.value = false;
     startNewSession(image());
   });
@@ -117,7 +119,7 @@ describe('MOD-App drawing commands', () => {
     setStyle({ color: 'green' });
     expect(doc.value?.annotations[0]?.style.color).toBe('red');
     expect(currentStyles.value.ellipse.color).toBe('green');
-    expect(currentStyles.value.rectangle.color).toBe('red');
+    expect(currentStyles.value.rectangle.color).toBe('green'); // RULE-04 the colour is shared (D-045)
     expect(loaded.value?.session.history.canUndo).toBe(true); // only the creation
     loaded.value?.session.history.undo();
     expect(loaded.value?.session.history.canUndo).toBe(false);
@@ -140,7 +142,8 @@ describe('MOD-App drawing commands', () => {
     setTool('rectangle');
     setStyle({ color: 'blue', fill: 'translucent' });
     expect(currentStyles.value.rectangle).toMatchObject({ color: 'blue', fill: 'translucent', strokeSize: 'M' });
-    expect(currentStyles.value.ellipse).toBe(DEFAULT_STYLES.ellipse);
+    // RULE-04 (D-045): the colour is shared, the fill stays the rectangle's own.
+    expect(currentStyles.value.ellipse).toEqual({ ...DEFAULT_STYLES.ellipse, color: 'blue' });
     expect(loaded.value?.session.history.canUndo).toBe(false);
     setTool('arrow');
     setStyle({ fill: 'solid' }); // arrows have no fill (RULE-04)
@@ -236,6 +239,71 @@ describe('MOD-App drawing commands', () => {
     setTool('highlight');
     setStyle({ color: 'green', strokeSize: 'M', fill: 'solid' });
     expect(currentStyles.value.highlight).toMatchObject({ color: 'green', strokeSize: 'M', fill: 'none' });
-    expect(currentStyles.value.pen).toBe(DEFAULT_STYLES.pen);
+    expect(currentStyles.value.pen).toEqual(DEFAULT_STYLES.pen);
+  });
+});
+
+const SHARED = ['rectangle', 'ellipse', 'line', 'arrow', 'pen', 'text', 'step'] as const;
+
+describe('RULE-04 D-045 one shared current colour', () => {
+  beforeEach(() => {
+    tool.value = 'select';
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
+    sheetOpen.value = false;
+    startNewSession(image());
+  });
+
+  it('F-003.AC10 green picked with the rectangle tool is the arrow’s colour; the highlight keeps yellow', () => {
+    setTool('rectangle');
+    setStyle({ color: 'green' });
+    setTool('arrow');
+    expect(panelModel(tool.value, selection.value, doc.value, currentStyles.value)).toMatchObject({
+      variant: 'tool',
+      subject: 'Arrow',
+      color: 'green',
+    });
+    for (const name of SHARED) expect(currentStyles.value[name].color).toBe('green');
+    setTool('highlight');
+    expect(panelModel(tool.value, selection.value, doc.value, currentStyles.value)).toMatchObject({ color: 'yellow' });
+    expect(currentStyles.value.redact.color).toBe('black');
+  });
+
+  it('RULE-04 size and fill stay per tool while the colour is shared', () => {
+    setTool('rectangle');
+    setStyle({ strokeSize: 'L', fill: 'solid' });
+    expect(currentStyles.value.rectangle).toMatchObject({ strokeSize: 'L', fill: 'solid' });
+    expect(currentStyles.value.ellipse).toMatchObject({ color: 'red', strokeSize: 'M', fill: 'none' });
+    expect(currentStyles.value.arrow.strokeSize).toBe('M');
+  });
+
+  it('F-003.AC11 F-011.R2 picking a background with canvas settings leaves the next rectangle’s colour unchanged', () => {
+    expect(panelModel('select', [], doc.value, currentStyles.value).variant).toBe('canvas');
+    setStyle({ color: 'green' }); // the select tool with nothing selected: no current style changes
+    setBackground('green');
+    expect(doc.value?.padding.background).toBe('green');
+    expect(currentStyles.value.rectangle.color).toBe('red');
+    expect(panelModel('rectangle', [], doc.value, currentStyles.value)).toMatchObject({ color: 'red' });
+  });
+
+  it('RULE-04 F-008.R4 a rectangle and a highlight selected, given blue: both blue, the shared and the highlight colour blue', () => {
+    setTool('rectangle');
+    createAnnotation(draft());
+    setTool('highlight');
+    createAnnotation({
+      id: 'draft',
+      kind: 'highlight',
+      style: DEFAULT_STYLES.highlight,
+      points: [
+        { x: 10, y: 10 },
+        { x: 90, y: 10 },
+      ],
+    });
+    setTool('select');
+    select((doc.value?.annotations ?? []).map((a) => a.id));
+    setStyle({ color: 'blue' });
+    expect(doc.value?.annotations.map((a) => a.style.color)).toEqual(['blue', 'blue']);
+    expect(currentStyles.value.highlight.color).toBe('blue');
+    for (const name of SHARED) expect(currentStyles.value[name].color).toBe('blue');
+    expect(currentStyles.value.redact.color).toBe('black');
   });
 });

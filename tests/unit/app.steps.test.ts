@@ -2,8 +2,17 @@
 // selected and announced (NFR-06), and the panel offers colour and size (no fill).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILT_TOOLS, createAnnotation, panelModel, setStyle, setTool } from '../../src/app/drawing';
-import { currentStyles, doc, loaded, polite, selection, startNewSession, tool } from '../../src/app/state';
-import { DEFAULT_STYLES, type StepAnnotation } from '../../src/core';
+import {
+  currentStyleModel,
+  currentStyles,
+  doc,
+  loaded,
+  polite,
+  selection,
+  startNewSession,
+  tool,
+} from '../../src/app/state';
+import { DEFAULT_CURRENT_STYLES, type StepAnnotation } from '../../src/core';
 import type { DecodedImage } from '../../src/io';
 
 const image = (): DecodedImage => ({
@@ -22,7 +31,7 @@ const steps = () => (doc.value?.annotations ?? []).flatMap((a) => (a.kind === 's
 describe('MOD-App steps', () => {
   beforeEach(() => {
     tool.value = 'select';
-    currentStyles.value = DEFAULT_STYLES;
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
     startNewSession(image());
   });
 

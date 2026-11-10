@@ -13,8 +13,17 @@ import {
   selectAll,
   setGeometry,
 } from '../../src/app/editing';
-import { currentStyles, doc, loaded, polite, selection, startNewSession, tool } from '../../src/app/state';
-import { DEFAULT_STYLES, shapeBox, type Annotation } from '../../src/core';
+import {
+  currentStyleModel,
+  currentStyles,
+  doc,
+  loaded,
+  polite,
+  selection,
+  startNewSession,
+  tool,
+} from '../../src/app/state';
+import { DEFAULT_CURRENT_STYLES, DEFAULT_STYLES, shapeBox, type Annotation } from '../../src/core';
 import type { DecodedImage } from '../../src/io';
 
 const image = (): DecodedImage => ({
@@ -56,7 +65,7 @@ const undo = () => {
 describe('MOD-App edit commands', () => {
   beforeEach(() => {
     tool.value = 'select';
-    currentStyles.value = DEFAULT_STYLES;
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
     startNewSession(image());
   });
 

@@ -6,8 +6,17 @@ import { commands } from '../../src/app/commands';
 import { commitFrame, moveFrame, resizeFrame, setFrameField, shownCanvasSize } from '../../src/app/crop';
 import { panelModel, setTool, summaryDetail } from '../../src/app/drawing';
 import { undo } from '../../src/app/history';
-import { currentStyles, doc, loaded, polite, selection, startNewSession, tool } from '../../src/app/state';
-import { DEFAULT_STYLES } from '../../src/core';
+import {
+  currentStyleModel,
+  currentStyles,
+  doc,
+  loaded,
+  polite,
+  selection,
+  startNewSession,
+  tool,
+} from '../../src/app/state';
+import { DEFAULT_CURRENT_STYLES } from '../../src/core';
 import type { DecodedImage } from '../../src/io';
 
 const image = (): DecodedImage => ({
@@ -20,7 +29,7 @@ const lastPolite = () => polite.value.at(-1)?.text;
 describe('MOD-App frame commands', () => {
   beforeEach(() => {
     tool.value = 'select';
-    currentStyles.value = DEFAULT_STYLES;
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
     startNewSession(image());
     polite.value = [];
   });

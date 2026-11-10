@@ -4,8 +4,18 @@
 // panel shows the edited text's style (the tool's for a new text, the text's own for an existing one).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILT_TOOLS, panelModel, setStyle, setTool, textEditEnded, textEditStarted } from '../../src/app/drawing';
-import { currentStyles, doc, loaded, polite, selection, startNewSession, textEditing, tool } from '../../src/app/state';
-import { DEFAULT_STYLES, textAt, type TextAnnotation } from '../../src/core';
+import {
+  currentStyleModel,
+  currentStyles,
+  doc,
+  loaded,
+  polite,
+  selection,
+  startNewSession,
+  textEditing,
+  tool,
+} from '../../src/app/state';
+import { DEFAULT_CURRENT_STYLES, textAt, type TextAnnotation } from '../../src/core';
 import type { DecodedImage } from '../../src/io';
 
 const image = (): DecodedImage => ({
@@ -26,7 +36,7 @@ function createBug(): string {
 describe('MOD-App text', () => {
   beforeEach(() => {
     tool.value = 'select';
-    currentStyles.value = DEFAULT_STYLES;
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
     textEditing.value = null;
     startNewSession(image());
   });
