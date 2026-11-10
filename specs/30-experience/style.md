@@ -55,7 +55,7 @@ values live in `tokens.json`; no hard-coded colours, sizes or fonts in component
   `checkerB` checkerboard of `size.checker` squares; outside the crop frame `cropDim` while cropping.
 - **Style panel:** sections with small `muted` headings: colour swatches (8, in RULE-04 order; from M-1b
   then the custom swatch, F-019, which shows its colour once one is picked and before that a neutral "pick a colour" mark from the icon set, with no colour of its own) · size S/M/L segmented control (from M-1b with the pixel field and,
-  wide and compact, a slider, F-019) · fill or redaction kind · position and size fields · selection
+  wide and compact, a slider, F-019) · fill (from M-1c with its fill colour swatches; for a text, its background and background colour, F-020) or redaction kind · position and size fields · selection
   actions. When nothing is selected with the select tool: padding and background. On narrow
   widths the panel becomes a bottom sheet that opens from the active tool.
 - **Notices:** CMP-Notice floats at the bottom centre of the work area, `space.4` above its edge, up to 680 px wide; it never covers the toolbar, style panel or status bar.

@@ -26,7 +26,7 @@ field (PRN-03).
 ## Requirements
 - **R1** With the rectangle or ellipse tool, dragging creates that shape spanning the drag.
 - **R2** With the line or arrow tool, dragging creates a line from the start to the end point; an arrow has its head at the end point, with head length 4 × and head width 3 × its stroke size.
-- **R3** New shapes get the tool's current style (RULE-04; the colour is shared with the other drawing tools except highlight and redaction, D-045); rectangles and ellipses can be outlined, filled solid, or filled translucent.
+- **R3** New shapes get the tool's current style (RULE-04; the colour is shared with the other drawing tools except highlight and redaction, D-045); rectangles and ellipses can be outlined, filled solid, or filled translucent, from M-1c in a fill colour of their own (F-020).
 - **R4** Holding Shift while dragging constrains the shape (RULE-06).
 - **R5** A click without dragging places a default-size shape (RULE-05); with the keyboard, the user can place one at the centre of the view (RULE-19).
 - **R6** After creating a shape, it is selected and the tool stays the same, so the next drag draws another.

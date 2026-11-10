@@ -11,9 +11,13 @@ portal's language. Features: F-001 … F-018. Scope chosen by the owner (D-001).
 Any colour through a custom swatch, and a size in pixels next to S, M and L, for every annotation
 that has them. Feature: F-019. Chosen by the owner after the 1.0.0 candidate (D-048, D-049, D-050).
 
+### M-1c — Fill colour and text background (version 1.2)
+Rectangles and ellipses get a fill colour of their own; texts get a background box with its own
+colour. Feature: F-020. Chosen by the owner after 1.1.1 (D-051, D-052, D-053).
+
 ### M-2 — Reach and polish
 HEIC input; images beyond the RULE-02 limit without scaling down; JPEG and WebP export; style
-presets; touch polish; text with background boxes; fixed crop ratios.
+presets; touch polish; fixed crop ratios.
 
 ### M-3 — Candidates
 Suggesting areas to redact using on-device text recognition; side-by-side comparison; templates

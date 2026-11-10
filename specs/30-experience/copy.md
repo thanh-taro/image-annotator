@@ -62,6 +62,9 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-style.fill_none** | None | Không | |
 | **COPY-style.fill_solid** | Solid | Đặc | |
 | **COPY-style.fill_translucent** | Translucent | Bán trong suốt | |
+| **COPY-style.fill_color** | Fill color | Màu tô | Colour of a rectangle's or ellipse's fill (F-020) |
+| **COPY-style.text_background** | Background | Nền chữ | A text's background box; its choices reuse COPY-style.fill_none, fill_solid, fill_translucent (F-020) |
+| **COPY-style.text_background_color** | Background color | Màu nền chữ | Colour of a text's background box (F-020) |
 | **COPY-style.strength** | Strength | Độ mạnh | Blur and pixelate |
 | **COPY-color.red** | Red | Đỏ | |
 | **COPY-color.orange** | Orange | Cam | |

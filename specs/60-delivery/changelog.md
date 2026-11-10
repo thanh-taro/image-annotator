@@ -2,6 +2,9 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
+## 2026-11-10 — M-1c fill colour and text background (version 1.2)
+- Owner's change request after 1.1.1 (D-051, D-052, D-053: ships as 1.2.0). New F-020 (draft) and RULE-22: rectangles and ellipses get a fill colour of their own (automatic, the outline colour, until one is picked); texts get a background (none, solid or 70 % translucent) on a rounded box with its own colour (automatic: the contrast pairing of the text colour), without the outline. RULE-04 fill and current style, RULE-08 outline, ENT-Style `fill` and new `fillColor`, F-003.R3, F-005 scope and R5, CMP-StylePanel anatomy and accessibility, style.md, MOD-Render, MOD-Core, copy COPY-style.fill_color, text_background, text_background_color, glossary fill colour and text background; roadmap milestone M-1c (text with background boxes moved out of M-2).
+
 ## 1.1.1 — 2026-11-10 (release candidate 1.1.1-rc.1)
 Bug fix, no spec change: CMP-TextEditor shows a visible selection again (ADR-0009 §2).
 

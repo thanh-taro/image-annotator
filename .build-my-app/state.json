@@ -93,8 +93,8 @@
     },
     "iterate": {
       "title": "8 Iterate",
-      "status": "pending",
-      "step": null,
+      "status": "in_progress",
+      "step": "spec F-020 fill colours and text background",
       "gate": {
         "status": "pending",
         "at": null,
@@ -861,6 +861,48 @@
       "answer": "S/M/L presets plus a number field in pixels, slider on wide layouts; text, step, pen, highlight, shape, line and arrow",
       "asked": "2026-11-10T04:39:38+00:00",
       "answered": "2026-11-10T04:39:38+00:00"
+    },
+    {
+      "id": "D-051",
+      "question": "How does a rectangle or ellipse get a fill colour?",
+      "options": [
+        "own,outline"
+      ],
+      "recommendation": "own",
+      "kind": "product",
+      "phase": null,
+      "status": "answered",
+      "answer": "Own fill colour: palette plus custom swatch, separate from the outline colour; fill stays none/solid/translucent; default fill colour is the outline colour",
+      "asked": "2026-11-10T10:29:25+00:00",
+      "answered": "2026-11-10T10:29:41+00:00"
+    },
+    {
+      "id": "D-052",
+      "question": "How does a text get a background?",
+      "options": [
+        "box-no-outline,box-outline,auto"
+      ],
+      "recommendation": "box-no-outline",
+      "kind": "product",
+      "phase": null,
+      "status": "answered",
+      "answer": "Background box behind the text: none/solid/translucent with its own colour (palette plus custom), padding and rounded corners; the text outline is dropped while a background shows; default none",
+      "asked": "2026-11-10T10:29:28+00:00",
+      "answered": "2026-11-10T10:29:42+00:00"
+    },
+    {
+      "id": "D-053",
+      "question": "Which version ships fill colours and text backgrounds?",
+      "options": [
+        "1.2.0,1.1.x"
+      ],
+      "recommendation": "1.2.0",
+      "kind": "release",
+      "phase": null,
+      "status": "answered",
+      "answer": "1.2.0",
+      "asked": "2026-11-10T10:29:29+00:00",
+      "answered": "2026-11-10T10:29:43+00:00"
     }
   ],
   "loops": {
@@ -906,46 +948,6 @@
     }
   },
   "log": [
-    {
-      "at": "2026-11-02T03:33:38+00:00",
-      "event": "design step: 2.4 design loop D4: round 1 review (9 boards made)"
-    },
-    {
-      "at": "2026-11-02T03:33:38+00:00",
-      "event": "D4: D-019 summary-bar sheet; D-020 padding wraps the frame (spec change reviewed, blocker fixed)"
-    },
-    {
-      "at": "2026-11-02T03:40:10+00:00",
-      "event": "design step: 2.4 design loop D4: round 1 fixed, publishing"
-    },
-    {
-      "at": "2026-11-02T03:40:30+00:00",
-      "event": "loop design-D4 round 2"
-    },
-    {
-      "at": "2026-11-02T03:40:30+00:00",
-      "event": "design step: 2.4 design loop D4: round 2 re-check"
-    },
-    {
-      "at": "2026-11-02T03:43:16+00:00",
-      "event": "loop design-D4 ended: converged in 2 rounds; 0 blockers"
-    },
-    {
-      "at": "2026-11-02T03:43:16+00:00",
-      "event": "design step: 2.4 design D4 converged; G2 checks"
-    },
-    {
-      "at": "2026-11-02T03:49:07+00:00",
-      "event": "decision D-021 opened: Approve designs at gate G2"
-    },
-    {
-      "at": "2026-11-02T03:49:07+00:00",
-      "event": "decision D-021 answered: approve"
-    },
-    {
-      "at": "2026-11-02T03:49:07+00:00",
-      "event": "gate design passed"
-    },
     {
       "at": "2026-11-02T03:49:07+00:00",
       "event": "G2 passed: designs approved (D-021); phase-2 draft spec changes accepted"
@@ -1705,9 +1707,49 @@
     {
       "at": "2026-11-10T08:04:33+00:00",
       "event": "gate deploy passed"
+    },
+    {
+      "at": "2026-11-10T08:35:08+00:00",
+      "event": "1.1.1-rc.1 tagged: text selection highlight fix; release build 752/668/96; reproducible"
+    },
+    {
+      "at": "2026-11-10T08:36:17+00:00",
+      "event": "1.1.1 deployed, version e9d11729-e4f1-49cf-a8cf-8de37ca1b58d; smoke passed; tagged v1.1.1"
+    },
+    {
+      "at": "2026-11-10T09:30:18+00:00",
+      "event": "context compaction (auto) at: build-my-app: 8/9 phases done · next: 8 Iterate"
+    },
+    {
+      "at": "2026-11-10T10:29:25+00:00",
+      "event": "decision D-051 opened: How does a rectangle or ellipse get a fill colour?"
+    },
+    {
+      "at": "2026-11-10T10:29:28+00:00",
+      "event": "decision D-052 opened: How does a text get a background?"
+    },
+    {
+      "at": "2026-11-10T10:29:29+00:00",
+      "event": "decision D-053 opened: Which version ships fill colours and text backgrounds?"
+    },
+    {
+      "at": "2026-11-10T10:29:41+00:00",
+      "event": "decision D-051 answered: Own fill colour: palette plus custom swatch, separate from the outline colour; fill stays none/solid/translucent; default fill colour is the outline colour"
+    },
+    {
+      "at": "2026-11-10T10:29:42+00:00",
+      "event": "decision D-052 answered: Background box behind the text: none/solid/translucent with its own colour (palette plus custom), padding and rounded corners; the text outline is dropped while a background shows; default none"
+    },
+    {
+      "at": "2026-11-10T10:29:43+00:00",
+      "event": "decision D-053 answered: 1.2.0"
+    },
+    {
+      "at": "2026-11-10T10:29:44+00:00",
+      "event": "phase iterate -> in_progress"
     }
   ],
-  "updated": "2026-11-10T08:04:33+00:00",
+  "updated": "2026-11-10T10:29:44+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",
