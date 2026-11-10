@@ -31,7 +31,7 @@ the view moves (and refits if fitted) above the narrow bottom sheet and restores
 - `<Canvas>` component bound to the document, selection, tool, current-style and view signals.
 - `viewCommands`: `zoomIn`, `zoomOut`, `fit`, `actualSize`, `setBottomInset(px)`.
 - `canvasCommands`: `placeAtCentre(tool)`, `dragging()` (true while a pointer drag is in progress; MOD-App ignores edit keys then), `selectNext/
-  Previous`, `cancelDrag`, `beginTextEdit`, `endTextEdit`.
+  Previous`, `cancelDrag`, `beginTextEdit`, `endTextEdit`, `focusTextEdit` (returns focus to the text being edited, F-019.R9); `PALETTE_HEX` re-exported from MOD-Render so MOD-App needs no MOD-Render import.
 
 ## Implements
 CMP-Canvas, CMP-TextEditor; F-002.R1/R2/R3/R4/R5, F-003.R1/R4/R5/R6, F-004.R1/R2/R3/R4,

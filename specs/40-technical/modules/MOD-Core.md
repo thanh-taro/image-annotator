@@ -29,6 +29,7 @@ the PNG chunk whitelist (ADR-0007); and the text metrics constants (ADR-0009).
 ## Public surface
 - Domain types and palette/size enums; `styleSizes(shortSide)` → stroke, text, badge, highlight,
   blur radius and pixelate block in pixels (RULE-04, RULE-10).
+- Custom styles (RULE-21, F-019): `isHexColour`, `pickedColour(value, palette)` (palette match ignoring case), `hexLabel`, `contrastRatio`, `customContrast(hex)` (RULE-07 pairing, black on a tie), `sizeClassOf(kind)`, `CUSTOM_SIZE_RANGE`, `customSize`, `parseCustomSize`, `sizePixels(class, size, shortSide)`.
 - `checkLimits(w, h)` / `scaleDownSize(w, h)` (RULE-02); `sniffFormat(bytes)` (RULE-01).
 - `canvasRect(frame, padding)`, `paddingPixels(frame, size)`, `availablePaddings(frame)`,
   `clampFrame(frame, image)`, `stepDownPadding(frame, padding)` (RULE-13, RULE-14).
