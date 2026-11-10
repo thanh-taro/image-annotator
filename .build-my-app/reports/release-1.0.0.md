@@ -1,9 +1,14 @@
-# Release report: Image Annotator 1.0.0-rc.1 (phase 6, local candidate)
+# Release report: Image Annotator 1.0.0-rc.2 (phase 6, local candidate)
 
-Branch `build/m1`. Nothing was uploaded, published, deployed or provisioned; no credentials were touched. Tagged locally `v1.0.0-rc.1` (not pushed).
+Branch `build/m1`. Nothing was uploaded, published, deployed or provisioned; no credentials were touched. Tagged locally `v1.0.0-rc.1` and `v1.0.0-rc.2` (not pushed). **Ship rc.2.**
 The owner signs off the manual checks below (D-038), reviews the drafts, then tags and ships (phase 7).
 
 ## Candidate
+- **rc.2 (current):** rc.1 plus the source licence (D-041: `LICENSE`, PolyForm Strict 1.0.0 as the sibling tools,
+  `package.json` "SEE LICENSE IN LICENSE", terms draft) and the catalog category note (D-042). The release build of
+  rc.2 is **byte-identical** to rc.1 (same `SHA256SUMS`, archive `764ab1f4…`), so rc.1's verification against the
+  release build (full suite, flows, smoke) applies unchanged; the release script's gates passed again on the clean
+  clone of rc.2. Release gate G6 approved by the owner (2026-11-10).
 - **Version:** `package.json` 1.0.0; changelog entry "## 1.0.0" in `specs/60-delivery/changelog.md`; spec lint 0 errors.
 - **Build commit:** `e46b59e` (version, changelog, release script). The later commits of this candidate change only
   docs, `.env.example`, a test file, the report and `release/`; a build of `8a3dae1` gave the same `dist/`. Tag the
@@ -12,7 +17,7 @@ The owner signs off the manual checks below (D-038), reviews the drafts, then ta
   `scripts/gen-headers.mjs`, ADR-0010), so `frame-ancestors https://tarokit.app`.
 
 ## Artifacts and checksums
-Kept in the repo at `release/1.0.0-rc.1/` (verify with `cd release/1.0.0-rc.1 && shasum -a 256 -c SHA256SUMS`).
+Kept in the repo at `release/1.0.0-rc.2/` (identical to `release/1.0.0-rc.1/`; verify with `cd release/1.0.0-rc.2 && shasum -a 256 -c SHA256SUMS`).
 
 | File | Size (bytes) | SHA-256 |
 |---|---|---|
@@ -111,9 +116,10 @@ Done by automation, not on the list: security review F-017 m3 (paste before the 
   (fixed by ADR-0025, awaiting check 4); Safari clipboard colour-space tags; separate embedded and standalone offline
   copies; the source file name in the download name.
 - **Decided:** no staging (D-040, ADR-0010 kept); the runbook written as a file in phase 6 (D-039), nothing run.
-- **Decisions still with the owner:** (1) catalog category `developer` or `media`; (2) the source licence for the terms
-  (`package.json` says UNLICENSED, while the tool links to its source); (3) legal review of the privacy policy, the
-  terms and the privacy declaration; (4) the GitHub repository is public by launch.
+- **Decided at the gate:** the source licence (D-041) and the catalog category (D-042: both, via the portal change
+  request `portal-change-request-multi-category.md`; ships as `developer` until it is live).
+- **Still with the owner:** (1) legal review of the privacy policy, the
+  terms and the privacy declaration; (2) the GitHub repository is public by launch.
 - **Deployment runbook:** `docs/deploy/runbook.md`: go/no-go, portal first, one-time setup, deploy of the verified
   archive (checksum steps dry-run locally: 12/12 files OK), smoke checks, monitoring and rollback (wrangler rollback,
   `Clear-Site-Data` or the kill-switch worker). Every account, token, domain, portal and upload step is USER-OWNED.
