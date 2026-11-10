@@ -1,7 +1,7 @@
 // MOD-Render palette constants generated from tokens.json (RULE-04, RULE-07, ADR-0013).
 import { describe, expect, it } from 'vitest';
-import { PALETTE_NAMES } from '../../src/core';
-import { contrastPair, PALETTE, colourValue } from '../../src/render';
+import { contrastPairing as contrastPair, PALETTE_NAMES } from '../../src/core';
+import { PALETTE, colourValue } from '../../src/render';
 
 const luminance = (hex: string) => {
   const [r, g, b] = [1, 3, 5].map((i) => {

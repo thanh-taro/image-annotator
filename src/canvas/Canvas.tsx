@@ -40,7 +40,7 @@ import {
   EDITOR_EXTRA_EM,
   HIT_TOLERANCE_PX,
   isEffectRedaction,
-  TEXT_BACKGROUND_MARGIN,
+  editorPadding,
   textFont,
   textLayout,
   toImage,
@@ -351,8 +351,9 @@ export function Canvas({
       // F-020.R8 / RULE-22 (CMP-TextEditor): with a background the field also covers the box's margin, so
       // its editing outline surrounds the background box and a press in the margin places the caret there
       // (the field's own nearest position) and keeps editing; only a press outside it reaches the canvas.
-      const margin = a.style.fill === 'none' ? 0 : TEXT_BACKGROUND_MARGIN * L.size * z;
-      s.padding = margin ? `calc(var(--tk-space-1) + ${margin}px)` : '';
+      const extra = Math.ceil(EDITOR_EXTRA_EM * L.size * z);
+      const pad = editorPadding(a.style, L.size, z, extra, EDITOR_CARET_ROOM_PX);
+      s.padding = pad ? `${pad.top}px ${pad.right}px ${pad.bottom}px ${pad.left}px` : '';
       const cs = getComputedStyle(ta);
       const left = ta.clientLeft + parseFloat(cs.paddingLeft);
       const top = ta.clientTop + parseFloat(cs.paddingTop);
@@ -365,7 +366,7 @@ export function Canvas({
       s.lineHeight = `${L.lineHeight * z}px`;
       s.width = `${Math.ceil(width) + EDITOR_CARET_ROOM_PX}px`;
       // ADR-0020: 0.2 em taller than the lines, so the field never scrolls inside.
-      s.height = `${L.lines.length * L.lineHeight * z + Math.ceil(EDITOR_EXTRA_EM * L.size * z)}px`;
+      s.height = `${L.lines.length * L.lineHeight * z + extra}px`;
       s.setProperty('--tk-text-colour', colourValue(a.style.color));
       ta.scrollLeft = 0;
       ta.scrollTop = 0;

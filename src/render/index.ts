@@ -505,7 +505,7 @@ function drawStep(ctx: Ctx, a: StepAnnotation, shortSide: number): void {
   ctx.font = b.font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = colourValue(contrastPair(a.style.color));
+  ctx.fillStyle = colourValue(contrastPairing(a.style.color)); // RULE-07 (MOD-Core)
   ctx.fillText(b.label, b.centre.x, b.baseline);
 }
 
@@ -541,7 +541,7 @@ function drawText(ctx: Ctx, a: TextAnnotation, shortSide: number, placeholder?: 
     ctx.lineJoin = 'round';
     ctx.miterLimit = 2;
     ctx.lineWidth = 2 * textOutlineWidth(m.size);
-    ctx.strokeStyle = colourValue(contrastPair(a.style.color));
+    ctx.strokeStyle = colourValue(contrastPairing(a.style.color)); // RULE-07 (MOD-Core)
   }
   ctx.fillStyle = colourValue(a.style.color);
   textLines(a.text).forEach((line, i) => {
@@ -759,12 +759,4 @@ function paintChecker(ctx: Ctx, r: Box, view: Backdrop, limit?: Box): void {
 /** The sRGB value of a palette colour (tokens.json, ADR-0013), or a custom colour's own (RULE-21, F-019). */
 export function colourValue(name: StyleColour): string {
   return isHexColour(name) ? name : PALETTE_HEX[name];
-}
-
-/**
- * RULE-07 contrast pairing: black on yellow, orange, green, white; white on red, blue, purple, black; a
- * custom colour (RULE-21) pairs with whichever has the higher contrast ratio, black on a tie (F-019.R6).
- */
-export function contrastPair(name: StyleColour): 'black' | 'white' {
-  return contrastPairing(name); // MOD-Core holds the pairing table, so the panel can mark it too (F-020.R4)
 }

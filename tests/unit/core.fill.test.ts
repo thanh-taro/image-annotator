@@ -8,6 +8,7 @@ import {
   boundsOf,
   contrastPairing,
   DEFAULT_STYLES,
+  editorPadding,
   fillColourOf,
   hitTest,
   marqueeHits,
@@ -97,6 +98,16 @@ describe('MOD-Core text background (RULE-22)', () => {
     expect(hitTest(a, { x: 80, y: 70 }, 0, SHORT, measure)).toBe(false);
     // Without a background the margin is not the text's.
     expect(hitTest(text(), { x: 96, y: 70 }, 0, SHORT, measure)).toBe(false);
+  });
+
+  it('F-020.AC18 F-020.R8 the editing field covers the margin: 8 px at 100 %, 16 at 200 %, the extra height and caret room counted in', () => {
+    // At M (32): the field is ceil(0.2 × 32 × z) taller than its lines and 2 px wider than its text.
+    expect(editorPadding({ fill: 'solid' }, 32, 1, 7, 2)).toEqual({ top: 8, right: 6, bottom: 1, left: 8 });
+    expect(editorPadding({ fill: 'translucent' }, 32, 2, 13, 2)).toEqual({ top: 16, right: 14, bottom: 3, left: 16 });
+    // Zoomed far out the margin is smaller than the extra height: no negative padding.
+    expect(editorPadding({ fill: 'solid' }, 32, 0.1, 1, 2)).toEqual({ top: 0.8, right: 0, bottom: 0, left: 0.8 });
+    // Without a background the field keeps its stylesheet padding.
+    expect(editorPadding({ fill: 'none' }, 32, 1, 7, 2)).toBeNull();
   });
 
   it('F-020.AC11 RULE-22 the bounds (the selection outline) and a selection box touching only the margin use the box', () => {

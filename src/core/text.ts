@@ -120,9 +120,28 @@ export function textArea(
   a: Pick<TextAnnotation, 'anchor' | 'text' | 'style'>,
   shortSide: number,
   measure: TextMeasure,
-  placeholder?: string,
 ): Box {
-  return textBackground(a, shortSide, measure, placeholder)?.box ?? textLayout(a, shortSide, measure).box;
+  return textBackground(a, shortSide, measure)?.box ?? textLayout(a, shortSide, measure).box;
+}
+
+/**
+ * ADR-0009 §2 / F-020.R8 (CMP-TextEditor): the padding of the editing field, in CSS pixels, for a text of
+ * `size` image pixels at `zoom` (1 = 100 %) whose field is `extra` CSS pixels taller than its lines
+ * (ADR-0020) and `caretRoom` CSS pixels wider than its text (SP-text) — null without a background (the field keeps its stylesheet padding). With a background the
+ * field covers exactly the background box: its margin (0.25 × the text size × zoom) on every side, the
+ * extra height counted in the bottom margin and the caret room in the right one, so its editing outline surrounds the box and a press anywhere
+ * in the box is the field's own (the caret goes to the nearest position) while one outside it is not.
+ */
+export function editorPadding(
+  style: Pick<Style, 'fill'>,
+  size: number,
+  zoom: number,
+  extra: number,
+  caretRoom: number,
+): { readonly top: number; readonly right: number; readonly bottom: number; readonly left: number } | null {
+  if (style.fill === 'none') return null;
+  const margin = TEXT_BACKGROUND_MARGIN * size * zoom;
+  return { top: margin, right: Math.max(0, margin - caretRoom), bottom: Math.max(0, margin - extra), left: margin };
 }
 
 /**

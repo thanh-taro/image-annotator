@@ -38,7 +38,7 @@ const colourGroup = (page: Page, name: 'Color' | 'Fill color' | 'Background colo
 const swatch = (group: Locator, name: string) => group.getByRole('radio', { name, exact: true });
 const customOf = (group: Locator) => group.getByRole('radio', { name: /^Custom color/ });
 const fillGroup = (page: Page) => panel(page).getByRole('group', { name: 'Fill', exact: true });
-const backgroundGroup = (page: Page) => panel(page).getByRole('group', { name: 'Background', exact: true });
+const backgroundGroup = (page: Page) => panel(page).getByRole('group', { name: 'Text background', exact: true });
 const choice = (group: Locator, name: 'None' | 'Solid' | 'Translucent') =>
   group.getByRole('radio', { name, exact: true });
 const undoButton = (page: Page) =>
@@ -83,14 +83,25 @@ async function row(page: Page, x: number, y: number, w: number): Promise<number[
   );
 }
 
+/** The editing field's border box in image pixels (100 % zoom). */
+async function editorBox(page: Page) {
+  const area = await workArea(page).boundingBox();
+  const r = await editor(page).boundingBox();
+  if (!area || !r) throw new Error('no editor');
+  const left = r.x - area.x - screen(0, 0).x;
+  const top = r.y - area.y;
+  return { left, top, right: left + r.width, bottom: top + r.height };
+}
+
 /** The rightmost image x of row y (from x0) whose pixel is `colour`. */
-async function rightEdge(page: Page, x0: number, y: number, colour: number[]): Promise<number> {
-  const pixels = await row(page, x0, y, 400);
+async function rightEdge(page: Page, x0: number, y: number, colour: number[], width = 400): Promise<number> {
+  const pixels = await row(page, x0, y, width);
+  const k = pixels.length / width; // device pixels per image pixel (WebKit may draw at 2×)
   let last = -1;
   pixels.forEach((p, i) => {
     if (near(p, colour, 30)) last = i;
   });
-  return x0 + last;
+  return x0 + (last + 1) / k;
 }
 
 type PickerWindow = { __pickerOpened: number };
@@ -333,7 +344,7 @@ test.describe('F-020 fill colour', () => {
 });
 
 test.describe('F-020 text background', () => {
-  test('F-020.AC7 the text tool shows Background with None marked and no background colour', async ({ page }) => {
+  test('F-020.AC7 the text tool shows Text background with None marked and no background colour', async ({ page }) => {
     await open(page);
     await toolButton(page, 'Text (T)').click();
     await expect(choice(backgroundGroup(page), 'None')).toBeChecked();
@@ -399,9 +410,13 @@ test.describe('F-020 text background', () => {
     await placeText(page, 'Bug');
     await deselect(page);
     await toolButton(page, 'Select (V)').click();
-    await clickImage(page, 96, 120);
+    // 7 px left of the text box: inside the 8 px margin, beyond the 6 px hit tolerance of a plain text.
+    await clickImage(page, 93, 120);
     await expect(state(page)).toHaveAttribute('data-state', 'selecting');
     await expect(summary(page)).toHaveText(count(1));
+    await deselect(page);
+    await clickImage(page, 96, 120); // the AC's own click, 4 px left
+    await expect(state(page)).toHaveAttribute('data-state', 'selecting');
     await frame(page);
     // The selection outline surrounds the box: just outside its left edge (x = 92), not the grey image.
     await expectPixel(page, 91, 120, GREY, 6, false, 'the outline is drawn at the box’s edge');
@@ -412,7 +427,12 @@ test.describe('F-020 text background', () => {
     await expect(state(page)).toHaveAttribute('data-state', 'selecting');
     await deselect(page);
     await toolButton(page, 'Text (T)').click();
-    await clickImage(page, 96, 120);
+    await clickImage(page, 93, 120); // 7 px left: beyond the tolerance, inside the margin
+    await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+    await expect(editor(page)).toHaveValue('Bug');
+    await page.keyboard.press('Escape');
+    await deselect(page);
+    await clickImage(page, 96, 120); // the AC's own click
     await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
     await expect(editor(page)).toHaveValue('Bug');
   });
@@ -460,7 +480,7 @@ test.describe('F-020 text background', () => {
     await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
   });
 
-  test('F-020.AC14 a rectangle and a text offer no fill or background; two texts’ colours mark nothing and Blue is one step; mixed fills mark nothing', async ({
+  test('F-020.AC14 a rectangle and a text selected together offer neither fill nor text background', async ({
     page,
   }) => {
     await open(page);
@@ -586,9 +606,65 @@ test.describe('F-020 text background', () => {
     await expect(editor(page)).toBeFocused();
     await expect(editor(page)).toHaveJSProperty('selectionStart', 0);
     await expect(editor(page)).toHaveJSProperty('selectionEnd', 0);
+    // F-020.R8: the editing field covers the whole background box (92–?, 92–148), and its outline
+    // surrounds it within its 2 px border.
+    const box = await editorBox(page);
+    expect(box.left).toBeLessThanOrEqual(92);
+    expect(box.left).toBeGreaterThanOrEqual(92 - 3);
+    expect(box.top).toBeLessThanOrEqual(92);
+    expect(box.top).toBeGreaterThanOrEqual(92 - 3);
+    expect(box.bottom).toBeGreaterThanOrEqual(148);
+    expect(box.bottom).toBeLessThanOrEqual(148 + 3);
+    const right = await rightEdge(page, 100, 120, WHITE, 150);
+    expect(box.right).toBeGreaterThanOrEqual(right);
+    expect(box.right).toBeLessThanOrEqual(right + 4);
+    // 7 px left of the text box: inside the margin, beyond the field's old 6 px reach.
+    await page.keyboard.press('End');
+    await clickImage(page, 93, 120);
+    await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+    await expect(editor(page)).toHaveJSProperty('selectionStart', 0);
+    // 7 px above the first line: the caret goes to line 1, nearest the click.
+    await page.keyboard.press('End');
+    await clickImage(page, 103, 93);
+    await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+    await expect(editor(page)).toHaveJSProperty('selectionStart', 0);
     await clickImage(page, 72, 120); // 20 px left of the box (x = 92)
     await expect(state(page)).not.toHaveAttribute('data-state', 'editing-text');
     await expect(summary(page)).toHaveText(count(1));
+  });
+
+  test('F-020.AC18 at 200 % a click 7 image px into the margin keeps editing with the caret before "B"; 20 px outside ends it', async ({
+    page,
+  }) => {
+    await open(page);
+    // Zoomed to 200 % first (the zoom buttons take focus, which would end an edit), then a text placed at
+    // the middle of the work area.
+    await page.locator('footer.tk-status-bar').getByRole('button', { name: 'Zoom in', exact: true }).click();
+    await page.locator('footer.tk-status-bar').getByRole('button', { name: 'Zoom in', exact: true }).click();
+    await expect(page.locator('.tk-zoom__level')).toHaveText('200 %');
+    await textToolWithBackground(page, 'Solid');
+    const area = await workArea(page).boundingBox();
+    if (!area) throw new Error('no work area');
+    await page.mouse.click(area.x + area.width / 2, area.y + area.height / 2);
+    await expect(editor(page)).toBeFocused();
+    await page.keyboard.type('Bug');
+    await frame(page);
+    // The text box's left edge and first line's centre on screen, from the field's content box.
+    const { x, y, padding } = await editor(page).evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return {
+        x: r.left + el.clientLeft + parseFloat(cs.paddingLeft),
+        y: r.top + el.clientTop + parseFloat(cs.paddingTop),
+        padding: parseFloat(cs.paddingLeft),
+      };
+    });
+    expect(padding).toBeCloseTo(16, 0); // the 8 px margin at 200 %
+    await page.mouse.click(x - 14, y + 40); // 7 image px left, at the first line's centre
+    await expect(state(page)).toHaveAttribute('data-state', 'editing-text');
+    await expect(editor(page)).toHaveJSProperty('selectionStart', 0);
+    await page.mouse.click(x - 16 - 40, y + 40); // 20 image px left of the box
+    await expect(state(page)).not.toHaveAttribute('data-state', 'editing-text');
   });
 
   test('F-020.AC19 an empty text with a solid background shows the placeholder in its box; Esc leaves no text, no box and no step', async ({

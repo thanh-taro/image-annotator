@@ -2,8 +2,14 @@
 // with its number in the contrast pairing, in the tool's face at the step's text size; the same calls
 // for the display and the export. Contexts are recording fakes; pixels are in tests/e2e/steps.spec.ts.
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_STYLES, PALETTE_NAMES, type Annotation, type Colour } from '../../src/core';
-import { contrastPair, paint, paintAnnotations, PALETTE_HEX, type Scene, type SceneImage } from '../../src/render';
+import {
+  contrastPairing as contrastPair,
+  DEFAULT_STYLES,
+  PALETTE_NAMES,
+  type Annotation,
+  type Colour,
+} from '../../src/core';
+import { paint, paintAnnotations, PALETTE_HEX, type Scene, type SceneImage } from '../../src/render';
 
 function recorder() {
   const calls: string[] = [];

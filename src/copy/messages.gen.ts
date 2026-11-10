@@ -58,7 +58,7 @@ export const CATALOG: { readonly [L in Language]: { readonly [K in MessageId]: s
     "style.fill_solid": "Solid",
     "style.fill_translucent": "Translucent",
     "style.fill_color": "Fill color",
-    "style.text_background": "Background",
+    "style.text_background": "Text background",
     "style.text_background_color": "Background color",
     "style.strength": "Strength",
     "color.red": "Red",
