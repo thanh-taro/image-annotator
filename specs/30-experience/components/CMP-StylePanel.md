@@ -15,7 +15,7 @@ Colour swatches (COPY-style.color: COPY-color.red, COPY-color.orange, COPY-color
 COPY-color.green, COPY-color.blue, COPY-color.purple, COPY-color.black, COPY-color.white; from M-1b
 then the custom swatch, COPY-style.color_custom or COPY-style.color_custom_value, F-019 — in the annotation colour choices, including the drawing colour in canvas settings, never in the background choices, D-049);
 COPY-style.size (COPY-style.size_s, COPY-style.size_m, COPY-style.size_l; from M-1b then the
-COPY-style.size_px field and, on the wide layout, a slider, F-019); COPY-style.fill;
+COPY-style.size_px field and, on the wide and compact layouts, a slider, F-019); COPY-style.fill;
 COPY-redact.kind with COPY-redact.not_secure_short on the blur and pixelate choices,
 COPY-redact.not_secure and COPY-redact.use_solid; COPY-style.strength (its choices reuse COPY-style.size_s, COPY-style.size_m, COPY-style.size_l);
 selection actions; position and size fields (COPY-geometry.title: COPY-geometry.x,
