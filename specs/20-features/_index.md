@@ -21,4 +21,4 @@
 | F-017 | Work offline | M-1 | P2 | shipped |
 | F-018 | Use the portal's language | M-1 | P1 | shipped |
 | F-019 | Custom colour and size | M-1b | P1 | shipped |
-| F-020 | Fill colour and text background | M-1c | P1 | draft |
+| F-020 | Fill colour and text background | M-1c | P1 | ready |

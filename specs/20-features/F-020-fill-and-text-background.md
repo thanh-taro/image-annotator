@@ -1,7 +1,7 @@
 ---
 id: F-020
 title: Fill colour and text background
-status: draft
+status: ready
 milestone: M-1c
 priority: P1
 personas: [PER-01]
@@ -51,17 +51,17 @@ around a translucent white fill (D-051, D-052, D-053).
 - **AC8** Given a 1000 × 800 image and the text tool at M (text size 32), red, text background solid, when the user types "Bug", then the text is red without an outline on an opaque white box that extends 8 pixels beyond the text box on every side with corners of radius 6.4 pixels in its rendering parameters. (R3, R4)
 - **AC9** Given a 1000 × 800 white image and a white text at M with a translucent text background with Black picked, when the result is exported, then the pixel 4 image pixels left of the text box's left edge, at its vertical centre, is (77, 77, 77) within 2 per channel. (R4, R9)
 - **AC10** Given a red text with a solid automatic background, when the user picks Blue in COPY-style.color, then the box is white (the pairing of blue); when they pick Yellow, then it is black. (R4)
-- **AC11** Given a text with a background and the select tool, when the user clicks 4 image pixels left of the text box, inside the box, then the text is selected and its selection outline surrounds the box; given the text tool instead, then that text is edited; given the select tool and a selection box that touches only the box's margin, then the text is selected. (R5)
+- **AC11** Given a 1000 × 800 image, a text at M (margin 8) with a background and the select tool, when the user clicks 4 image pixels left of the text box, inside the box, then the text is selected and its selection outline surrounds the box; given the text tool instead, then that text is edited; given the select tool and a selection box that touches only the box's margin, then the text is selected. (R5)
 - **AC12** Given a selected text with a solid background, when the user picks COPY-style.fill_none in COPY-style.text_background, then the box is gone and the outline is back, as one undo step. (R3, R6)
 - **AC13** Given a new text "Bug" being edited, when the user picks COPY-style.fill_solid in COPY-style.text_background and Yellow as its colour, then the text is still being edited and shows on a yellow box; when the user types "s", then the box grows with the text. (R8)
 - **AC14** Given a rectangle and a text selected, when the user looks at CMP-StylePanel, then neither COPY-style.fill nor COPY-style.text_background is offered; given two texts with solid black and solid white backgrounds selected, then COPY-style.text_background_color is offered with no swatch marked, and picking Blue makes both boxes blue as one undo step; given two rectangles selected, one with fill none and one solid, then COPY-style.fill has no option marked and COPY-style.fill_color is not shown. (R7)
 - **AC15** Given a rectangle with a red outline and a solid white fill and a text with a solid yellow background, when the user duplicates both and exports, then the copies have the same fill and background, and the exported pixel at the rectangle's centre is white and a pixel of the box's margin is yellow. (R5, R9)
 - **AC16** Given focus on COPY-style.fill_color or COPY-style.text_background_color, when a screen reader reads it, then it is a radio group named by its label whose options are named by their colour names and the custom swatch, and it reports which one is checked. (R1, R3)
 - **AC17** Given a selected red rectangle with fill solid and an automatic fill colour, when the user presses Space on the marked Red swatch of COPY-style.fill_color, then nothing changes and no undo step is added; when they pick Blue in COPY-style.color, then the fill is blue too. (R2)
-- **AC18** Given a text "Bug" with a solid background being edited with the caret at its end, when the user clicks in the box's margin 4 image pixels left of the text box, then editing continues with the caret before "B"; when they click 20 image pixels outside the box, then editing ends. (R8)
+- **AC18** Given a 1000 × 800 image and a text "Bug" at M (margin 8) with a solid background being edited with the caret at its end, when the user clicks in the box's margin 4 image pixels left of the text box, then editing continues with the caret before "B"; when they click 20 image pixels outside the box, then editing ends. (R8)
 - **AC19** Given the text tool with a solid background, when the user clicks empty canvas, then before anything is typed the placeholder shows inside the box; when they press Esc, then no text and no box remain and no undo step is added. (R8)
 - **AC20** Given a selected rectangle with fill solid and fill colour White, when the user picks COPY-style.fill_none and then COPY-style.fill_solid, then the fill is white. (R2)
-- **AC21** Given the text tool with a solid Yellow text background, when the user picks the rectangle tool, draws a rectangle and picks the text tool again, then the rectangle has no fill and the text tool's background is still solid Yellow. (R6)
+- **AC21** Given a new page and the text tool with a solid Yellow text background, when the user picks the rectangle tool (fill none), draws a rectangle and picks the text tool again, then the rectangle has no fill and the text tool's background is still solid Yellow. (R6)
 
 ## UX notes
 COPY-style.fill_color, COPY-style.text_background, COPY-style.text_background_color; the fill
