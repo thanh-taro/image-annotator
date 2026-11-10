@@ -17,3 +17,10 @@ Branch `build/1.1`. Tagged locally `v1.1.1-rc.1` (not pushed). Production runs 1
 
 ## Deploy
 As 1.1.0: runbook section 3 with `v1.1.1-rc.1` and `release/1.1.1-rc.1`, then the smoke checks of section 4.
+
+## Deployed
+- Deploy authorised by the owner (2026-11-10, "Deploy now"). `v1.1.1-rc.1` archive verified against `dist.sha256`,
+  deployed with wrangler 4.158.0. Cloudflare Version ID `e9d11729-e4f1-49cf-a8cf-8de37ca1b58d` (previous: 1.1.0
+  `e4f26f6f-ff4a-4333-9f1a-785e4c70d0ee`, the rollback target).
+- Smoke checks passed: all 6 page headers and the `/sw.js` policy; `/nonexistent`, `/.vite/`, `/_headers` return
+  404; all 10 served files match `release/1.1.1-rc.1/dist.sha256`.
