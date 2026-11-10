@@ -7,6 +7,7 @@ Spec changes to items that are `building` or `shipped`. Newest first.
 - Spec review round 1 of F-020: choosing the marked swatch of an automatic colour applies nothing (R2); a press in the background box's margin while editing places the caret, and the box surrounds the placeholder of an empty text (R8, RULE-22, CMP-TextEditor, F-005.R3); one remembered custom colour across the three colour choices (R1); ACs made concrete and AC17–AC21 added; RULE-07 pairing also used by RULE-22; fill drawn under the outline (MOD-Render); bounds and hit-testing by the box (MOD-Core); CMP-StylePanel differing choices; glossary automatic and text background colour.
 - Spec review round 2 of F-020: AC11, AC18 and AC21 state their setup; F-020 `ready`.
 - Accessibility audit of F-020: COPY-style.text_background reads "Text background" in English, so it differs from COPY-canvas.background.
+- F-020 fix round 1: MOD-Core surface adds `contrastPairing`, `fillColourOf`, `textBackground`, `textArea`, `editorPadding`; MOD-Render takes the pairing from MOD-Core.
 
 ## 1.1.1 — 2026-11-10 (release candidate 1.1.1-rc.1)
 Bug fix, no spec change: CMP-TextEditor shows a visible selection again (ADR-0009 §2).
