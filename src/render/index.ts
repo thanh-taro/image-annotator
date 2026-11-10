@@ -12,6 +12,7 @@ import {
   arrowHead,
   boundsOf,
   canvasRect,
+  customContrast,
   handleBox,
   handlesOf,
   HIGHLIGHT_OPACITY,
@@ -22,6 +23,7 @@ import {
   isSolidRedaction,
   isStepAnnotation,
   intersectBoxes,
+  isHexColour,
   redactionBox,
   isTextAnnotation,
   shapeBox,
@@ -33,12 +35,12 @@ import {
   TRANSLUCENT_FILL_OPACITY,
   type Annotation,
   type Box,
-  type Colour,
   type Frame,
   type Padding,
   type PathAnnotation,
   type RedactionAnnotation,
   type StepAnnotation,
+  type StyleColour,
   type TextAnnotation,
   type TextMeasure,
 } from '../core';
@@ -338,7 +340,7 @@ function drawSolid(ctx: Ctx, a: RedactionAnnotation): void {
   const b = redactionBox(a.box);
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = paletteColour(a.style.color);
+  ctx.fillStyle = colourValue(a.style.color);
   ctx.fillRect(b.x, b.y, b.width, b.height);
 }
 
@@ -369,7 +371,7 @@ function drawEffect(
   ctx.globalCompositeOperation = 'source-over';
   const background = scene.padding.background;
   if (background !== 'transparent') {
-    ctx.fillStyle = paletteColour(background);
+    ctx.fillStyle = colourValue(background);
     ctx.fillRect(b.x, b.y, b.width, b.height);
   } else {
     ctx.clearRect(b.x, b.y, b.width, b.height);
@@ -396,7 +398,7 @@ function drawEffect(
   for (const s of solids) {
     const r = intersectBoxes(redactionBox(s.box), b);
     if (!r) continue;
-    ctx.fillStyle = paletteColour(s.style.color);
+    ctx.fillStyle = colourValue(s.style.color);
     ctx.fillRect(r.x, r.y, r.width, r.height);
   }
   ctx.restore();
@@ -414,7 +416,7 @@ function paintBackdrop(ctx: Ctx, scene: Scene, box: Box, transform: Transform, b
 /** One annotation in image pixels (the context already carries the transform). */
 function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
   const stroke = strokePixels(a.style, shortSide);
-  const colour = paletteColour(a.style.color);
+  const colour = colourValue(a.style.color);
   ctx.globalAlpha = 1;
   ctx.strokeStyle = colour;
   ctx.fillStyle = colour;
@@ -485,14 +487,14 @@ function drawAnnotation(ctx: Ctx, a: Annotation, shortSide: number): void {
 function drawStep(ctx: Ctx, a: StepAnnotation, shortSide: number): void {
   const b = stepBadge(a, shortSide);
   const r = b.height / 2;
-  ctx.fillStyle = paletteColour(a.style.color);
+  ctx.fillStyle = colourValue(a.style.color);
   if (b.width > b.height) ctx.roundRect(b.centre.x - b.width / 2, b.centre.y - r, b.width, b.height, r);
   else ctx.arc(b.centre.x, b.centre.y, r, 0, 2 * Math.PI);
   ctx.fill();
   ctx.font = b.font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = paletteColour(contrastPair(a.style.color));
+  ctx.fillStyle = colourValue(contrastPair(a.style.color));
   ctx.fillText(b.label, b.centre.x, b.baseline);
 }
 
@@ -512,8 +514,8 @@ function drawText(ctx: Ctx, a: TextAnnotation, shortSide: number): void {
   ctx.lineJoin = 'round';
   ctx.miterLimit = 2;
   ctx.lineWidth = 2 * textOutlineWidth(m.size);
-  ctx.strokeStyle = paletteColour(contrastPair(a.style.color));
-  ctx.fillStyle = paletteColour(a.style.color);
+  ctx.strokeStyle = colourValue(contrastPair(a.style.color));
+  ctx.fillStyle = colourValue(a.style.color);
   textLines(a.text).forEach((line, i) => {
     if (!line) return;
     const y = a.anchor.y + i * m.lineHeight + m.baseline;
@@ -663,7 +665,7 @@ function paintScene(ctx: Ctx, scene: Scene, image: CanvasImageSource, transform:
   ctx.setTransform(scale, 0, 0, scale, dx, dy);
   const background = scene.padding.background;
   if (background !== 'transparent') {
-    ctx.fillStyle = paletteColour(background);
+    ctx.fillStyle = colourValue(background);
     ctx.fillRect(canvas.x, canvas.y, canvas.width, canvas.height);
   }
   const { frame } = scene;
@@ -726,12 +728,16 @@ function paintChecker(ctx: Ctx, r: Box, view: Backdrop, limit?: Box): void {
   ctx.fill();
 }
 
-/** The sRGB value of a palette colour (tokens.json, ADR-0013). */
-export function paletteColour(name: Colour): string {
-  return PALETTE_HEX[name];
+/** The sRGB value of a palette colour (tokens.json, ADR-0013), or a custom colour's own (RULE-21, F-019). */
+export function colourValue(name: StyleColour): string {
+  return isHexColour(name) ? name : PALETTE_HEX[name];
 }
 
-/** RULE-07 contrast pairing: black on yellow, orange, green, white; white on red, blue, purple, black. */
-export function contrastPair(name: Colour): 'black' | 'white' {
+/**
+ * RULE-07 contrast pairing: black on yellow, orange, green, white; white on red, blue, purple, black; a
+ * custom colour (RULE-21) pairs with whichever has the higher contrast ratio, black on a tie (F-019.R6).
+ */
+export function contrastPair(name: StyleColour): 'black' | 'white' {
+  if (isHexColour(name)) return customContrast(name);
   return name === 'yellow' || name === 'orange' || name === 'green' || name === 'white' ? 'black' : 'white';
 }

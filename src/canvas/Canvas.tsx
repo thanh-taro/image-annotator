@@ -57,7 +57,7 @@ import {
   measureWith,
   paint as paintScene,
   paintOverlays,
-  paletteColour,
+  colourValue,
   type BaseView,
   type OverlayLook,
   type Patches,
@@ -129,6 +129,8 @@ export interface ActiveCanvas {
   beginTextEdit(id: string): boolean;
   /** RULE-19 Esc: ends the text edit, keeping the text, and returns focus to the canvas; true if one was open. */
   endTextEdit(): boolean;
+  /** F-019.R9: focus returns to the text being edited (after the size field or the colour picker); true if open. */
+  focusTextEdit(): boolean;
   /** RULE-19 Tab (1) / Shift+Tab (−1) through the annotations (./list.tsx); false when nothing was done. */
   selectStep(dir: 1 | -1): boolean;
   /** RULE-19: pans the view so these annotations (newly placed or selected) are visible. */
@@ -358,7 +360,7 @@ export function Canvas({
       s.width = `${Math.ceil(width) + EDITOR_CARET_ROOM_PX}px`;
       // ADR-0020: 0.2 em taller than the lines, so the field never scrolls inside.
       s.height = `${L.lines.length * L.lineHeight * z + Math.ceil(EDITOR_EXTRA_EM * L.size * z)}px`;
-      s.setProperty('--tk-text-colour', paletteColour(a.style.color));
+      s.setProperty('--tk-text-colour', colourValue(a.style.color));
       ta.scrollLeft = 0;
       ta.scrollTop = 0;
     };
@@ -811,6 +813,11 @@ export function Canvas({
         const ended = text.end('escape');
         if (ended) region()?.focus({ preventScroll: true });
         return ended;
+      },
+      focusTextEdit: () => {
+        if (ta.dataset['open'] === undefined) return false;
+        ta.focus({ preventScroll: true });
+        return true;
       },
       selectStep: (dir) => {
         const area = region();

@@ -10,7 +10,8 @@
 // Implements: F-003.R3/R6, F-004.R1/R2 (the pen and highlight tools), F-006.R1 (the step tool), F-005.R1/R3/R4/R6
 // (the text tool), F-007.R1/R2/R4/R6 (the redaction tool and its choices), RULE-04, RULE-10, RULE-08, RULE-11, RULE-19 (Esc chain, Enter on a text), CMP-Toolbar "Behavior",
 // CMP-StylePanel "tool" and "selection" variants, CMP-Canvas "Accessibility" (tool_active, placed, deleted_count;
-// F-013: the annotation options' names and the selection announcements).
+// F-013: the annotation options' names and the selection announcements); F-019.R2/R3/R4/R6/R7, RULE-21 (custom
+// colours and sizes as style choices, the size field's model, the remembered custom colour).
 import { canvasCommands, type TextEdit, type TextEndReason } from '../canvas';
 import { t, type MessageId } from '../copy';
 import {
@@ -21,12 +22,19 @@ import {
   isLineAnnotation,
   isEffectRedaction,
   isDrawingTool,
+  isHexColour,
+  sizeClassOf,
+  sizePixels,
+  CUSTOM_SIZE_RANGE,
   TOOL_KIND,
   toolOf,
   withToolStyle,
   type Annotation,
   type Colour,
   type DrawingTool,
+  type SizeClass,
+  type StyleColour,
+  type StyleSize,
   type Fill,
   type Frame,
   type GeometryField,
@@ -43,6 +51,7 @@ import {
   commit,
   currentStyleModel,
   currentStyles,
+  customColour,
   doc,
   loaded,
   selection,
@@ -224,13 +233,20 @@ const toSolid = (patch: StylePatch, a: Annotation, current: Style): StylePatch =
     ? { ...patch, color: current.color }
     : patch;
 
+/** RULE-21 (F-019.R2): a custom colour that is applied is the one remembered for the custom swatch. */
+function remember(color: StyleColour | undefined): void {
+  if (isHexColour(color)) customColour.value = color;
+}
+
 /**
  * RULE-04: changing a style while annotations are selected changes them (one undo step, RULE-11) and
  * becomes the current style for their tools; with nothing selected it changes the active drawing
  * tool's current style (no step). A colour is shared by the seven tools of D-045, so it is the next
- * colour of all of them; highlight and redaction keep their own.
+ * colour of all of them; highlight and redaction keep their own. F-019.R6: custom colours and sizes
+ * follow the same rules; `coalesceKey` chains the changes of one picker opening or one slider drag
+ * into one step (RULE-11, F-019.R8).
  */
-export function setStyle(patch: StylePatch): void {
+export function setStyle(patch: StylePatch, coalesceKey?: string): void {
   const l = loaded.value;
   const picked = selectedAnnotations(doc.value, selection.value);
   let styles = currentStyleModel.value;
@@ -245,7 +261,7 @@ export function setStyle(patch: StylePatch): void {
       groups.set(key, g);
     }
     const op: Op = (d) => [...groups.values()].reduce((acc, g) => restyle(g.ids, g.patch)(acc), d);
-    commit(l.session.history.apply(op, selection.value));
+    commit(l.session.history.apply(op, selection.value, coalesceKey));
     // Implements: RULE-04 (D-045) — a colour becomes the shared colour, or highlight's or redaction's own.
     for (const a of picked) styles = withToolStyle(styles, toolOf(a.kind), patchFor(patch, a.kind));
   } else {
@@ -253,6 +269,7 @@ export function setStyle(patch: StylePatch): void {
     if (!isDrawingTool(active)) return;
     styles = withToolStyle(styles, active, patchFor(patch, TOOL_KIND[active]));
   }
+  remember(patch.color);
   currentStyleModel.value = styles;
 }
 
@@ -260,9 +277,45 @@ export function setStyle(patch: StylePatch): void {
  * RULE-04 / D-047: the drawing colour picked in canvas settings (select tool, nothing selected) is the
  * shared current colour of rectangle, ellipse, line, arrow, pen, text and step. Not an undo step (RULE-11).
  */
-export function setDrawingColour(color: Colour): void {
+export function setDrawingColour(color: StyleColour): void {
+  remember(color); // F-019.R1: the drawing colour also offers the custom swatch (D-047)
   const styles = currentStyleModel.value;
   currentStyleModel.value = { ...styles, colours: { ...styles.colours, shared: color } };
+}
+
+/**
+ * F-019.R4/R5 (RULE-21): a size from the size field or the slider, already rounded and kept within its
+ * range, becomes a custom size of the subject — even when it equals a preset's width. Like any style
+ * choice (F-019.R6); `coalesceKey` makes one slider drag, or repeated slider keys, one step (RULE-11).
+ */
+export function setCustomSize(px: number, coalesceKey?: string): void {
+  setStyle({ strokeSize: px }, coalesceKey);
+}
+
+let sizeDrag: string | null = null;
+let sizeDrags = 0;
+
+/** F-019.R5 / RULE-11: the slider was pressed; the sizes until it is released are one step. */
+export function beginSizeDrag(): void {
+  sizeDrag = `slider:${selection.value.join(',')}:${++sizeDrags}`;
+}
+
+/**
+ * F-019.R5 / RULE-11: the slider was released (moved or not): that drag's step ends, and later slider keys
+ * chain on their own.
+ */
+export function endSizeDrag(): void {
+  if (sizeDrag === null) return;
+  sizeDrag = null;
+  loaded.value?.session.history.breakChain();
+}
+
+/**
+ * F-019.R5: a size from the slider, applied while it moves — one drag, or repeated slider keys on the same
+ * selection, is one step (RULE-11).
+ */
+export function setSliderSize(px: number): void {
+  setCustomSize(px, sizeDrag ?? `slider:${selection.value.join(',')}:keys`);
 }
 
 /**
@@ -296,10 +349,30 @@ export interface PanelModel {
   readonly subject: string;
   /** D-031 / RULE-10: the subject is a blur or pixelate redaction, so COPY-redact.not_secure_short follows it. */
   readonly subjectNotSecure?: true;
-  /** Offered unless a subject is a blur or pixelate redaction (RULE-10: only solid has a colour). */
-  readonly color?: Colour | null;
-  /** Offered unless a subject is a redaction (RULE-10: redactions have no stroke size). */
-  readonly size?: Size | null;
+  /**
+   * Offered unless a subject is a blur or pixelate redaction (RULE-10: only solid has a colour); a palette
+   * colour or a custom colour (RULE-21, F-019.R2).
+   */
+  readonly color?: StyleColour | null;
+  /**
+   * Offered unless a subject is a redaction (RULE-10: redactions have no stroke size); a preset, or a
+   * custom size in pixels (F-019.R4: then no preset is marked).
+   */
+  readonly size?: StyleSize | null;
+  /**
+   * F-019.R3/R7 (RULE-21): the size field and slider, offered with the size when every subject is sized
+   * the same way: its value in pixels (null, so empty, when the subjects' widths differ), the range, and
+   * whether the slider is shown (not when the widths differ, F-019.R7). The panel is only shown with an
+   * image (SCR-Annotator empty), so a preset always has a width here.
+   */
+  readonly sizeField?: {
+    /** RULE-21: how the subjects are sized (stroke, highlight width or text size), for the range. */
+    readonly cls: SizeClass;
+    readonly value: number | null;
+    readonly min: number;
+    readonly max: number;
+    readonly slider: boolean;
+  };
   /** Offered only when every subject kind has a fill (rectangle, ellipse). */
   readonly fill?: Fill | null;
   /** COPY-redact.kind: offered when every subject is a redaction (F-007.R4/R6). */
@@ -328,8 +401,8 @@ export interface PanelModel {
     readonly padding: PaddingSize;
     readonly background: 'transparent' | Colour;
     readonly available: readonly PaddingSize[];
-    /** D-047: the shared drawing colour (RULE-04), offered first as COPY-style.color. */
-    readonly drawColor: Colour;
+    /** D-047: the shared drawing colour (RULE-04), offered first as COPY-style.color; may be custom (F-019). */
+    readonly drawColor: StyleColour;
   };
 }
 
@@ -339,9 +412,26 @@ function geometryModel(a: Annotation): NonNullable<PanelModel['geometry']> {
   return { kind: isLineAnnotation(a) ? 'line' : fields.length === 2 ? 'point' : 'box', fields };
 }
 
+/**
+ * F-019.R3/R7 (RULE-21): the size field for these subjects — only when they are all sized the same way;
+ * empty when their widths in pixels differ. `shortSide` is the image's shorter side (null: no image).
+ */
+function sizeField(
+  subjects: readonly { kind: Annotation['kind']; style: Style }[],
+  shortSide: number | null,
+): Pick<PanelModel, 'sizeField'> {
+  const classes = new Set(subjects.map((x) => sizeClassOf(x.kind)));
+  const [cls] = classes;
+  if (classes.size !== 1 || !cls) return {};
+  const widths = subjects.map((x) => sizePixels(cls, x.style.strokeSize, shortSide));
+  const value = widths.every((w) => w === widths[0]) ? (widths[0] ?? null) : null;
+  return { sizeField: { cls, value, ...CUSTOM_SIZE_RANGE[cls], slider: value !== null } };
+}
+
 /** The redaction choices (and which general ones apply) for subjects with these styles and kinds. */
 function choices(
   subjects: readonly { kind: Annotation['kind']; style: Style }[],
+  shortSide: number | null,
 ): Omit<PanelModel, 'variant' | 'subject'> {
   const styles = subjects.map((x) => x.style);
   const redactions = subjects.filter((x) => x.kind === 'redaction');
@@ -349,7 +439,7 @@ function choices(
   const allRedactions = redactions.length === subjects.length;
   return {
     ...(effects.length ? {} : { color: shared(styles.map((x) => x.color)) }),
-    ...(redactions.length ? {} : { size: shared(styles.map((x) => x.strokeSize)) }),
+    ...(redactions.length ? {} : { size: shared(styles.map((x) => x.strokeSize)), ...sizeField(subjects, shortSide) }),
     ...(subjects.every((x) => hasFill(x.kind)) ? { fill: shared(styles.map((x) => x.fill)) } : {}),
     ...(allRedactions ? { kind: shared(styles.map((x) => x.redactionKind)), notSecure: effects.length > 0 } : {}),
     ...(allRedactions && effects.length === subjects.length ? { strength: shared(styles.map((x) => x.strength)) } : {}),
@@ -363,6 +453,8 @@ const shared = <T>(values: readonly T[]): T | null =>
  * CMP-StylePanel "tool", "selection" and "canvas" variants for the current state (RULE-04, F-008.R4); a
  * selection also offers its actions (F-008.R5) and, when single, its position and size fields (F-008.R8).
  * While a text is edited (`editing`, SCR-Annotator "editing-text") only its colour and size are shown.
+ * `shortSide` is the loaded image's shorter side, for the size field's preset widths (F-019.R3); null with
+ * no image.
  */
 export function panelModel(
   active: ToolName,
@@ -370,6 +462,7 @@ export function panelModel(
   d: Doc | null,
   styles: Readonly<Record<DrawingTool, Style>>,
   editing = false,
+  shortSide: number | null = null,
 ): PanelModel {
   // CMP-StylePanel "crop": with the crop tool the panel is the frame's (F-010.R4/R6), whatever is selected.
   if (active === 'crop' && d && !editing) return { variant: 'crop', subject: toolLabel('crop'), frame: d.frame };
@@ -379,7 +472,7 @@ export function panelModel(
     const [first] = picked;
     const subject =
       kinds.size === 1 && first ? toolLabel(toolOf(first.kind)) : t('a11y.selected_count', { count: picked.length });
-    const c = choices(picked);
+    const c = choices(picked, shortSide);
     const edits =
       editing || !first
         ? {}
@@ -387,7 +480,7 @@ export function panelModel(
     return { variant: 'selection', ...subjectOf(c, subject), ...c, ...edits };
   }
   if (isDrawingTool(active)) {
-    const c = choices([{ kind: TOOL_KIND[active], style: styles[active] }]);
+    const c = choices([{ kind: TOOL_KIND[active], style: styles[active] }], shortSide);
     return { variant: 'tool', ...subjectOf(c, toolLabel(active)), ...c };
   }
   if (!d) return { variant: 'canvas', subject: t('canvas.title') };
@@ -429,14 +522,19 @@ export const sizeLabel = (size: Size): string => t(SIZE_COPY[size]);
 export const paddingLabel = (size: PaddingSize): string =>
   size === 'none' ? t('canvas.padding_none') : sizeLabel(size);
 
+/** COPY-style.size_value: a custom size, "7 px" (F-019). */
+export const sizeValue = (px: number): string => t('style.size_value', { value: px });
+
 /**
- * COPY-style.sheet_summary's detail: the size (a blur or pixelate redaction's strength; none for solid), or
- * for the canvas COPY-canvas.padding, a space and the padding size ("Padding None", F-011).
+ * COPY-style.sheet_summary's detail: the size (a blur or pixelate redaction's strength; none for solid; a
+ * custom size as COPY-style.size_value, F-019.AC12), or for the canvas COPY-canvas.padding, a space and the
+ * padding size ("Padding None", F-011).
  */
 export function summaryDetail(model: PanelModel): string {
   // COPY-style.sheet_summary: COPY-tool.crop · COPY-crop.size.
   if (model.frame) return t('crop.size', { width: model.frame.width, height: model.frame.height });
   if (model.variant === 'canvas') return `${t('canvas.padding')} ${paddingLabel(model.canvas?.padding ?? 'none')}`;
   const size = model.size ?? model.strength;
+  if (typeof size === 'number') return sizeValue(size);
   return size ? sizeLabel(size) : '';
 }

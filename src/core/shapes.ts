@@ -13,7 +13,7 @@
 // sizes)`. Here stroke widths need the image's shorter side (RULE-04), so they take `shortSide`, and
 // `constrain` takes the drag's two points. Hit-testing and handles are used by F-008.
 import { DEFAULT_SIZE_FACTOR } from './constants';
-import { styleSizes } from './sizes';
+import { highlightWidthOf, strokeSizeOf } from './sizes';
 import { distanceToStep, isStepAnnotation, stepBox } from './steps';
 import { hitsText, isTextAnnotation, textLayout, type TextMeasure } from './text';
 import type { Annotation, AnnotationKind, Box, Point, Style } from './types';
@@ -39,15 +39,17 @@ export const ARROW_HEAD_WIDTH = 3;
 export const HIT_TOLERANCE_PX = 6;
 
 /** RULE-04: the stroke size in pixels of a style on an image whose shorter side is `shortSide`. */
-export const strokePixels = (style: Style, shortSide: number): number => styleSizes(shortSide, style.strokeSize).stroke;
+export const strokePixels = (style: Style, shortSide: number): number => strokeSizeOf(shortSide, style.strokeSize);
 
 /**
  * RULE-04: the width of an annotation's mark in pixels — the stroke size, or for a highlight 3 × the
  * stroke size of its size.
  */
 export function markWidth(a: Annotation, shortSide: number): number {
-  const sizes = styleSizes(shortSide, a.style.strokeSize);
-  return a.kind === 'highlight' ? sizes.highlight : sizes.stroke;
+  // RULE-21 (F-019): a custom size is the stroke, or a highlight's whole width.
+  return a.kind === 'highlight'
+    ? highlightWidthOf(shortSide, a.style.strokeSize)
+    : strokeSizeOf(shortSide, a.style.strokeSize);
 }
 
 /** RULE-05: the default size of a click-placed shape (20 % of the shorter side, rounded). */

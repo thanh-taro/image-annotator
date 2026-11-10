@@ -4,7 +4,7 @@
 // step numbering in `add`, `remove` and `duplicate` (F-006, RULE-07); `update`, `edit` and `reorder`
 // (F-008, wired with `remove` and `duplicate` to the keys and the panel by MOD-App); the text commit rules
 // in `commitText` (F-005); `setFrame` with the padding step-down (F-010, F-011.R6); `setPadding` and
-// `setBackground` (F-011).
+// `setBackground` (F-011); `discardChain` for a cancelled colour picker (F-019.R8).
 import {
   availablePaddings,
   DUPLICATE_OFFSET,
@@ -249,6 +249,12 @@ export interface History {
   noteSelection(selection: Selection): void;
   /** Any other command (tool change, …) breaks the coalescing chain (ADR-0008 §3). */
   breakChain(): void;
+  /**
+   * F-019.R8: a cancelled colour picker — when the top step is the chain `coalesceKey` (nothing else since),
+   * it is dropped without a redo, so the document returns to before it and no step is recorded. Null when
+   * that chain made no step.
+   */
+  discardChain(coalesceKey: string): Restore | null;
 }
 
 /** A session: the current document, the history and the change epoch for RULE-18. */
@@ -297,6 +303,7 @@ export function startSession(image: ImageInfo): Session {
   let cursor = 0; // steps[0..cursor) are done
   let current: Selection = [];
   let chain: string | undefined; // coalescing key of the top step, while nothing else happened
+  let chainEpoch = 0; // the epoch before the chain's first step (F-019.R8: a discarded chain restores it)
   let epoch = 0;
   let exportedEpoch = 0;
   let ids = 0;
@@ -314,6 +321,7 @@ export function startSession(image: ImageInfo): Session {
         steps[cursor - 1] = { ...top, after, selectionAfter: selection };
       } else {
         steps = steps.slice(0, cursor);
+        chainEpoch = epoch;
         steps.push({ before: doc, after, selectionBefore: current, selectionAfter: selection });
         if (steps.length > HISTORY_STEPS) steps = steps.slice(steps.length - HISTORY_STEPS);
         cursor = steps.length;
@@ -356,6 +364,20 @@ export function startSession(image: ImageInfo): Session {
     },
     breakChain() {
       chain = undefined;
+    },
+    discardChain(coalesceKey) {
+      const top = steps[cursor - 1];
+      if (chain !== coalesceKey || !top || cursor !== steps.length) return null;
+      chain = undefined;
+      steps = steps.slice(0, cursor - 1);
+      cursor = steps.length;
+      doc = top.before;
+      current = top.selectionBefore;
+      // RULE-18: no step was recorded, so the document is as it was before the chain: if that state was
+      // the exported one, it still is. Epochs only grow, so an export still running never sees one reused.
+      epoch++;
+      if (exportedEpoch === chainEpoch) exportedEpoch = epoch;
+      return { doc, selection: current };
     },
   };
 

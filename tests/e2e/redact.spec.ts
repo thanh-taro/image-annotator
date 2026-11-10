@@ -139,7 +139,7 @@ test.describe('F-007 redact', () => {
     await toolButton(page, 'Redact (X)').click();
     await expect(kindGroup(page).getByRole('radio', { name: /^Solid \(secure\)/ })).toBeChecked();
     // Solid offers colour only: no size, fill or strength (F-007.R2), and no warning.
-    await expect(panel(page).getByRole('group', { name: 'Color' })).toBeVisible();
+    await expect(panel(page).getByRole('radiogroup', { name: 'Color' })).toBeVisible();
     for (const name of ['Size', 'Fill', 'Strength'])
       await expect(panel(page).getByRole('group', { name, exact: true })).toHaveCount(0);
     await expect(panel(page).getByRole('note')).toHaveCount(0);

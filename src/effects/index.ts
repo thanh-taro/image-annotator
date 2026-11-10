@@ -15,7 +15,7 @@ import {
   type WorkerLike,
 } from './client';
 
-export { CACHE_IMAGE_AREAS, CACHE_LIMIT, EffectsClient, hexRgb, IDLE_MS } from './client';
+export { CACHE_IMAGE_AREAS, CACHE_LIMIT, EffectsClient, IDLE_MS } from './client';
 export type { ApproxRequest, EffectsDeps, EffectsDoc, HeldPatches, Patch, SourceImage, WorkerLike } from './client';
 export type { FromWorker, ToWorker, WireSolid } from './protocol';
 export { PROTOCOL_VERSION } from './protocol';

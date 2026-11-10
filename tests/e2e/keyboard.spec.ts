@@ -477,12 +477,14 @@ test.describe('F-013 work from the keyboard', () => {
     await focusCanvas(page);
     await place(page, 'r');
     const x = await field(page, 'X').inputValue();
-    const colours = panel(page).getByRole('group', { name: 'Color' });
-    const checked = colours.locator('input:checked');
-    const before = await checked.getAttribute('value');
+    const colours = panel(page).getByRole('radiogroup', { name: 'Color' });
+    // F-019 (platform-mapping): an ARIA radio group with a roving tabindex; the checked option is its Tab stop.
+    const checked = colours.locator('[role="radio"][aria-checked="true"]');
+    const before = await checked.getAttribute('aria-label');
     await checked.focus();
     await page.keyboard.press('ArrowRight');
-    await expect(checked).not.toHaveAttribute('value', before ?? '');
+    await expect(checked).not.toHaveAttribute('aria-label', before ?? '');
+    await expect(colours.locator('[role="radio"][tabindex="0"]')).toBeFocused();
     await expect(field(page, 'X')).toHaveValue(x);
     await expect(summary(page)).toHaveText(count(1));
   });
