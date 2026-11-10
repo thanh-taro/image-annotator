@@ -10,7 +10,9 @@ name: Image Annotator
 summary:
   en-US: Mark up screenshots, redact what matters and copy the result. Nothing leaves your browser.
   vi-VN: Chú thích ảnh chụp màn hình, che thông tin nhạy cảm và sao chép kết quả. Không gì rời khỏi trình duyệt.
-# Owner's choice: `developer` (the suite folder and the primary persona) or `media` (images).
+# The owner wants the tool in both `developer` and `media` (D-042). The portal allows exactly one
+# category per tool (its INV-07), so this ships as `developer` until the portal change in
+# .build-my-app/reports/portal-change-request-multi-category.md is live; then list both.
 category: developer
 url: https://image-annotator.tarokit.app/
 origin: own

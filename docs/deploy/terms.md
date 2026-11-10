@@ -11,8 +11,9 @@ The Image Annotator ("the tool") is a free web page that lets you mark up and re
 It is offered by [owner's name or project] as part of TaroKit.
 
 ## 2. Using the tool
-- You may use the tool for personal and work purposes at no charge, within these terms and [the source licence,
-  to be decided by the owner: the repository is currently marked UNLICENSED].
+- You may use the tool for personal and work purposes at no charge, within these terms and the source licence, PolyForm Strict 1.0.0
+  (the `LICENSE` file in the repository, the same as the other TaroKit tools): you may use the software, but not
+  distribute it or make changes or new works based on it.
 - You are responsible for the images you open and what you do with the results. Only open images you have the right
   to use.
 - Do not try to disrupt the tool or the site that serves it.

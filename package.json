@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "A private, in-browser screenshot annotator: mark up, redact and export a metadata-free PNG — part of the TaroKit developer-tools suite.",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "packageManager": "pnpm@11.25.0",
   "engines": {
     "node": ">=24"
