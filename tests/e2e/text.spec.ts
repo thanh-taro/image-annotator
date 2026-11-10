@@ -260,6 +260,24 @@ test.describe('F-005 add text', () => {
     await expect(summary(page)).toHaveText(count(0)); // not in the document until editing ends
   });
 
+  test('F-005.R2 ADR-0009 selected characters in the text being edited show a visible selection', async ({ page }) => {
+    await open(page);
+    await startText(page, 200, 150);
+    await page.keyboard.type('Wrong total');
+    await settled(page);
+    const clip = await editor(page).boundingBox();
+    if (!clip) throw new Error('no editor box');
+    const before = await page.screenshot({ clip, caret: 'hide' });
+    // Select every character in the field (keys belong to the text while editing, RULE-19).
+    await editor(page).evaluate((el) => (el as HTMLTextAreaElement).select());
+    await expect
+      .poll(async () => (await page.screenshot({ clip, caret: 'hide' })).equals(before), {
+        message: 'the selection changes how the field looks',
+      })
+      .toBe(false);
+    await expect(editor(page)).toHaveValue('Wrong total'); // selecting never changes the text
+  });
+
   test('F-005.AC2 Enter while editing starts a second line', async ({ page }) => {
     await open(page);
     await startText(page, 200, 150);

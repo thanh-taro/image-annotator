@@ -512,7 +512,11 @@
     color: var(--tk-text-colour);
     opacity: 0.5;
   }
+  /* ADR-0009 §2: a visible selection. The field's own text stays transparent (the canvas draws the
+     glyphs), so the highlight must be a translucent fill the glyphs show through; without a background
+     here, browsers paint no highlight for transparent text. */
   .tk-text-editor::selection {
     color: transparent;
+    background: color-mix(in srgb, var(--tk-color-selection-outline) 40%, transparent);
   }
 }

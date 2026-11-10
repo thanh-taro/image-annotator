@@ -147,7 +147,8 @@ describe('MOD-Effects optimised == reference (ADR-0006, ADR-0017)', () => {
       const box = { x: 70.3, y: 60.7, width: 40.2, height: 25.9 };
       expect(blur(img, F, box, r, [])).toEqual(referenceBlur(img, F, box, r, []));
     }
-  });
+    // The slow reference blur makes this take ~4 s on a busy machine; it checks exactness, not speed.
+  }, 20_000);
 
   it('RULE-10 RULE-13 a frame reaching outside the image is clamped to it: no read past a row or the last row', () => {
     const img = makeImg(30, 20, true, 11);
