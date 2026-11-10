@@ -2,8 +2,8 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
-## 1.0.0 — 2026-11-10 (milestone M-1, release candidate 1.0.0-rc.3)
-First release. All 18 features of M-1 are `shipped`. After the owner's hand test of rc.2: picking a drawing tool clears the selection (D-043), highlight and stroke handles sit on the drawn mark (D-044), one drawing colour is shared across tools (D-045), and canvas settings have a Canvas heading (D-046).
+## 1.0.0 — 2026-11-10 (milestone M-1, release candidate 1.0.0-rc.4)
+First release. All 18 features of M-1 are `shipped`. After the owner's hand test of rc.2: picking a drawing tool clears the selection (D-043), highlight and stroke handles sit on the drawn mark (D-044), one drawing colour is shared across tools (D-045), canvas settings have a Canvas heading (D-046), and the select tool's panel offers the drawing colour too (D-047).
 - Open an image by paste, drop or file picker (F-001); zoom and pan (F-002).
 - Draw rectangles, ellipses, lines and arrows (F-003); pen and highlighter strokes (F-004); text (F-005); numbered steps (F-006).
 - Redact with solid fill (secure) or blur and pixelate (labelled not secure); the exported file never holds the hidden pixels (F-007).
@@ -99,3 +99,4 @@ First release. All 18 features of M-1 are `shipped`. After the owner's hand test
 ## 2026-11-10 — Release candidate feedback
 - Owner's manual test of 1.0.0-rc.2: CMP-Toolbar picking any tool other than select clears the selection, so a style choice changes only what is drawn next (D-043; was "picking a tool clears nothing"); F-008.R3 stroke and highlight handles sit on the box of the drawn mark (points' box grown by half the line width), so a thin highlight can be scaled (D-044). New F-008.AC18, AC19. Builder gaps: re-picking the active drawing tool also clears the selection; the selection outline uses the drawn-mark box; RULE-06 Shift keeps a stroke's points proportions.
 - Owner's manual test (2): RULE-04 one current colour shared by rectangle, ellipse, line, arrow, pen, text and step; highlight and redaction keep their own (D-045). CMP-StylePanel canvas settings start with the heading COPY-canvas.title (D-046). New F-003.AC10, AC11.
+- Owner's manual test (3) of rc.3: with the select tool and nothing selected, the panel starts with the shared drawing colour (COPY-style.color), then the Canvas heading, padding and background, so green picked there is the next rectangle's colour (D-047, refines D-046; was background only). RULE-04, RULE-11, CMP-StylePanel, F-003.AC11 changed; new F-003.AC12.

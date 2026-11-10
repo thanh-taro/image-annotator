@@ -257,6 +257,15 @@ export function setStyle(patch: StylePatch): void {
 }
 
 /**
+ * RULE-04 / D-047: the drawing colour picked in canvas settings (select tool, nothing selected) is the
+ * shared current colour of rectangle, ellipse, line, arrow, pen, text and step. Not an undo step (RULE-11).
+ */
+export function setDrawingColour(color: Colour): void {
+  const styles = currentStyleModel.value;
+  currentStyleModel.value = { ...styles, colours: { ...styles.colours, shared: color } };
+}
+
+/**
  * RULE-19 Esc: cancel the current drag; else (D-019) close the narrow sheet; else end text editing,
  * keeping the text (F-005.R3); else clear the selection; else switch to the select tool.
  */
@@ -319,6 +328,8 @@ export interface PanelModel {
     readonly padding: PaddingSize;
     readonly background: 'transparent' | Colour;
     readonly available: readonly PaddingSize[];
+    /** D-047: the shared drawing colour (RULE-04), offered first as COPY-style.color. */
+    readonly drawColor: Colour;
   };
 }
 
@@ -381,7 +392,12 @@ export function panelModel(
   }
   if (!d) return { variant: 'canvas', subject: t('canvas.title') };
   const { size, background } = d.padding;
-  const canvas = { padding: size, background, available: availablePaddings(d.frame) };
+  const canvas = {
+    padding: size,
+    background,
+    available: availablePaddings(d.frame),
+    drawColor: styles.rectangle.color,
+  };
   // CMP-StylePanel "narrow": the summary bar shows a palette background's colour, none when transparent.
   const color = background === 'transparent' ? {} : { color: background };
   return { variant: 'canvas', subject: t('canvas.title'), ...color, canvas };

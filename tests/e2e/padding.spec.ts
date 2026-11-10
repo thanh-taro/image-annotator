@@ -246,7 +246,7 @@ test.describe('F-011 padding and background', () => {
     await expect(bar.locator('.tk-panel__chip')).toHaveCount(0);
     await bar.click();
     const sheet = page.locator('#tk-style-sheet');
-    await sheet.getByRole('radio', { name: 'Blue', exact: true }).check();
+    await sheet.getByRole('group', { name: 'Background' }).getByRole('radio', { name: 'Blue', exact: true }).check();
     await expect(bar.locator('.tk-panel__chip.tk-swatch--blue')).toBeVisible();
     await expect(bar).toHaveAccessibleName('Style options: Canvas · Padding None');
     await sheet.getByRole('radio', { name: 'Transparent', exact: true }).check();

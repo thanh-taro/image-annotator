@@ -3,7 +3,16 @@
 // RULE-19 Esc chain; tool changes and placing are announced (NFR-06).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setBackground } from '../../src/app/padding';
-import { createAnnotation, escape, panelModel, select, setStyle, setTool, summaryDetail } from '../../src/app/drawing';
+import {
+  createAnnotation,
+  escape,
+  panelModel,
+  select,
+  setDrawingColour,
+  setStyle,
+  setTool,
+  summaryDetail,
+} from '../../src/app/drawing';
 import {
   currentStyleModel,
   currentStyles,
@@ -283,6 +292,22 @@ describe('RULE-04 D-045 one shared current colour', () => {
     expect(doc.value?.padding.background).toBe('green');
     expect(currentStyles.value.rectangle.color).toBe('red');
     expect(panelModel('rectangle', [], doc.value, currentStyles.value)).toMatchObject({ color: 'red' });
+  });
+
+  it('F-003.AC12 D-047 green picked as the drawing colour with the select tool is the next rectangle’s colour, no undo step', () => {
+    expect(panelModel('select', [], doc.value, currentStyles.value)).toMatchObject({
+      variant: 'canvas',
+      canvas: { drawColor: 'red' },
+    });
+    const steps = loaded.value?.session.history.canUndo;
+    setDrawingColour('green');
+    expect(panelModel('select', [], doc.value, currentStyles.value).canvas?.drawColor).toBe('green');
+    setTool('rectangle');
+    expect(panelModel(tool.value, selection.value, doc.value, currentStyles.value)).toMatchObject({ color: 'green' });
+    for (const name of SHARED) expect(currentStyles.value[name].color).toBe('green');
+    expect(currentStyles.value.highlight.color).toBe('yellow');
+    expect(doc.value?.padding.background).toBe('transparent');
+    expect(loaded.value?.session.history.canUndo).toBe(steps);
   });
 
   it('RULE-04 F-008.R4 a rectangle and a highlight selected, given blue: both blue, the shared and the highlight colour blue', () => {

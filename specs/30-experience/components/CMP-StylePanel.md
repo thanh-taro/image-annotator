@@ -10,7 +10,7 @@ Change the style of the active tool or the selection, the position and size of a
 selection or the frame, or canvas settings when nothing is selected.
 
 ## Anatomy
-With a multi-selection, the wide panel starts with a heading COPY-a11y.selected_count (D-035); with canvas settings it starts with a heading COPY-canvas.title, so its colours read as the background, not the drawing colour (D-046); the narrow sheet shows it in its summary bar (COPY-style.sheet_summary).
+With a multi-selection, the wide panel starts with a heading COPY-a11y.selected_count (D-035); with canvas settings it starts with the drawing colour (COPY-style.color, the shared current colour of RULE-04, D-047), then a heading COPY-canvas.title above padding and background, so those colours read as the background, not the drawing colour (D-046); the narrow sheet shows it in its summary bar (COPY-style.sheet_summary).
 Colour swatches (COPY-style.color: COPY-color.red, COPY-color.orange, COPY-color.yellow,
 COPY-color.green, COPY-color.blue, COPY-color.purple, COPY-color.black, COPY-color.white);
 COPY-style.size (COPY-style.size_s, COPY-style.size_m, COPY-style.size_l); COPY-style.fill;
@@ -27,13 +27,13 @@ COPY-canvas.padding_unavailable; COPY-canvas.background); crop size and reset.
 |---|---|
 | tool | Choices for the active drawing tool's current style |
 | selection | Only choices shared by every selected annotation kind; position and size fields for a single selection |
-| canvas | Padding and background, when the select tool is active and nothing is selected |
+| canvas | The shared drawing colour (RULE-04, D-047), then padding and background, when the select tool is active and nothing is selected |
 | crop | Frame size (COPY-crop.size), position and size fields, reset |
 | narrow | Narrow layout width (style.md, D-014, D-019): a summary bar named COPY-style.sheet_toggle sits between the work area and the status bar, showing the current colour (when the subject has one; for the canvas, a palette background colour, none when transparent) and COPY-style.sheet_summary; for a blur or pixelate redaction the summary carries the COPY-redact.not_secure_short tag (RULE-10, D-031). Tapping the bar, or the active tool again, opens the panel as a bottom sheet over the lower part of the work area, at most half its height including the bar, scrolling inside, with the bar as its header; while it is open the view moves (and refits, if it was fitted) so the canvas, or the frame while cropping, shows above it, and closing it restores the view; tapping the bar again, the active tool again, or Esc closes it. Selecting annotations updates the bar and does not open the sheet. Hidden when no image is loaded |
 
 ## Behavior
 Changes apply immediately. Changes to selected annotations, padding, background or the frame
-are one undo step each (RULE-11); changes to a tool's current style are not. Position and size
+are one undo step each (RULE-11); changes to a tool's current style, or to the drawing colour in canvas settings, are not. Position and size
 fields accept whole image pixels and apply on Enter or when focus leaves the field; values are
 kept within the same limits as dragging (width and height at least 1 image pixel; X and Y may be negative, so an annotation can sit partly outside the canvas, RULE-14). Padding sizes that would exceed the size limit are
 unavailable (RULE-14).

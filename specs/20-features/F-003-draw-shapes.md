@@ -42,7 +42,8 @@ field (PRN-03).
 - **AC8** Given the arrow tool and focus on the canvas, when the user presses Enter, then a default-size arrow appears at the centre of the view and is selected. (R5)
 - **AC9** Given the arrow tool, when the user draws an arrow, then it is selected and the arrow tool is still active. (R6)
 - **AC10** Given the rectangle tool and green picked, when the user picks the arrow tool, then the panel shows green and the next arrow is green; when they pick the highlight tool, then the panel shows yellow. (R3)
-- **AC11** Given the select tool and nothing selected, when the user looks at the wide CMP-StylePanel, then it starts with the heading COPY-canvas.title and its colours are labelled COPY-canvas.background; picking green there leaves the next rectangle's colour unchanged. (R3)
+- **AC11** Given the select tool and nothing selected, when the user looks at the wide CMP-StylePanel, then it starts with COPY-style.color showing the shared current colour, followed by the heading COPY-canvas.title and the colours labelled COPY-canvas.background; picking green in COPY-canvas.background leaves the next rectangle's colour unchanged. (R3)
+- **AC12** Given a newly loaded image and the select tool with nothing selected, when the user picks green in COPY-style.color and then picks the rectangle tool, then the panel shows green and the next rectangle is green; no undo step is recorded. (R3)
 
 ## UX notes
 Tools in CMP-Toolbar: COPY-tool.rectangle, COPY-tool.ellipse, COPY-tool.line, COPY-tool.arrow.

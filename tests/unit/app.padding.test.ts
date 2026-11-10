@@ -67,7 +67,12 @@ describe('MOD-App padding and background', () => {
     const m = model();
     expect(m.variant).toBe('canvas');
     expect(m.subject).toBe('Canvas');
-    expect(m.canvas).toEqual({ padding: 'M', background: 'white', available: ['none', 'S', 'M', 'L'] });
+    expect(m.canvas).toEqual({
+      padding: 'M',
+      background: 'white',
+      available: ['none', 'S', 'M', 'L'],
+      drawColor: 'red',
+    });
   });
 
   it('F-011.AC6 F-011.R5 a 4096 × 4096 image: S, M and L are unavailable', () => {

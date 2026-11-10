@@ -11,7 +11,7 @@
 // over the lower part of the work area, at most half its height including the bar, scrolling inside.
 // The view moves above it (MOD-Canvas bottom inset) and is restored when it closes; Esc closes it.
 // Opening it does not move focus. Selecting annotations updates the bar and does not open it.
-// Implements: CMP-StylePanel (anatomy: colour, size, fill; variants tool, selection, narrow; the canvas heading, D-046), F-003.R3,
+// Implements: CMP-StylePanel (anatomy: colour, size, fill; variants tool, selection, narrow; the canvas heading, D-046; the drawing colour in canvas settings, D-047), F-003.R3,
 // RULE-04, NFR-06 (colour choices named, not shown by colour alone); F-007.R2/R4/R6, RULE-10 (not-secure
 // labels wherever blur and pixelate are shown or chosen), style.md principle 5 (honest safety);
 // F-008.R4/R5/R8, D-008, NFR-06 (the position and size fields are the non-drag alternative); F-010.R3/R4/R6
@@ -34,7 +34,15 @@ import {
   type Size,
 } from '../core';
 import { cropSizeText, resetFrame, setFrameField } from './crop';
-import { paddingLabel, panelModel, setStyle, sizeLabel, summaryDetail, type PanelModel } from './drawing';
+import {
+  paddingLabel,
+  panelModel,
+  setDrawingColour,
+  setStyle,
+  sizeLabel,
+  summaryDetail,
+  type PanelModel,
+} from './drawing';
 import { setBackground, setPadding } from './padding';
 import { deleteSelection, duplicateSelection, reorderSelection, setGeometry } from './editing';
 import { Icon } from './icons';
@@ -138,8 +146,8 @@ function KindLabel({ kind }: { kind: RedactionKind }) {
   );
 }
 
-function Sections({ model }: { model: PanelModel }) {
-  if (model.canvas) return <CanvasSettings canvas={model.canvas} />;
+function Sections({ model, narrow }: { model: PanelModel; narrow: boolean }) {
+  if (model.canvas) return <CanvasSettings canvas={model.canvas} narrow={narrow} />;
   if (model.frame) return <Crop frame={model.frame} />;
   return (
     <>
@@ -369,10 +377,23 @@ const UNAVAILABLE_NOTE = 'tk-padding-unavailable';
  * COPY-canvas.padding_unavailable below them (describing the group) — and COPY-canvas.background:
  * COPY-canvas.transparent (the checkerboard), then the palette, named by colour (NFR-06). One step each.
  */
-function CanvasSettings({ canvas }: { canvas: NonNullable<PanelModel['canvas']> }) {
+function CanvasSettings({ canvas, narrow }: { canvas: NonNullable<PanelModel['canvas']>; narrow: boolean }) {
   const unavailable = PADDINGS.some((p) => !canvas.available.includes(p));
   return (
     <>
+      {/* Implements: D-047, F-003.AC11/AC12, RULE-04 — the shared drawing colour comes first, so a colour
+          picked here is the next shape's; the Canvas heading (D-046) then heads padding and background. */}
+      <Choice
+        name="tk-canvas-draw-color"
+        legend={t('style.color')}
+        values={PALETTE_NAMES}
+        value={canvas.drawColor}
+        label={(c) => t(COLOUR_COPY[c])}
+        onPick={setDrawingColour}
+        swatches
+      />
+      {/* Same level and style as D-035's heading; the narrow bar's summary names it instead. */}
+      {!narrow && <h2 class="tk-panel__count">{t('canvas.title')}</h2>}
       <Choice
         name="tk-canvas-padding"
         legend={t('canvas.padding')}
@@ -542,10 +563,7 @@ export function StylePanel() {
           {!narrow && model.variant === 'selection' && selection.value.length > 1 && (
             <h2 class="tk-panel__count">{t('a11y.selected_count', { count: selection.value.length })}</h2>
           )}
-          {/* Implements: D-046, F-003.AC11 — canvas settings are headed COPY-canvas.title, so their colours
-              read as the background, not the drawing colour; same level and style as D-035's heading. */}
-          {!narrow && model.variant === 'canvas' && <h2 class="tk-panel__count">{t('canvas.title')}</h2>}
-          <Sections model={model} />
+          <Sections model={model} narrow={narrow} />
         </div>
       </div>
     </aside>
