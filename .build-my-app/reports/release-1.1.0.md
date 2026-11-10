@@ -25,6 +25,7 @@ Production runs 1.0.0 (Cloudflare version `517ae3cf-f6e5-45b9-a99a-6deda8f9f469`
 | Reviews | spec review 3 rounds; code review and accessibility audit, 2 fix rounds (`review-F-019-*.md`, `a11y-F-019.md`) |
 
 ## Manual sign-off (owner)
+Owner sign-off 2026-11-10: "it's good" (hand test of 1.1.0-rc.1).
 - [ ] Custom swatch in Chrome and Safari: opens the real picker by click and by Enter/Space; live preview; the
       swatch remembers the colour; cancel (Esc in the picker) where the browser supports it
 - [ ] Custom size: type a size, drag the slider, pick S/M/L again; text, step, pen, highlighter, shapes
