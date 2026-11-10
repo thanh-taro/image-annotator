@@ -2,6 +2,9 @@
 
 Spec changes to items that are `building` or `shipped`. Newest first.
 
+## 1.2.0 — 2026-11-10 (milestone M-1c, release candidate 1.2.0-rc.1)
+Fill colour and text background (F-020 `shipped`): rectangles and ellipses get a fill colour of their own; texts get a background box (none, solid or 70 % translucent) with its own colour. Choosing an already checked swatch applies nothing in every colour choice (F-019.R1, F-020.R2).
+
 ## 2026-11-10 — M-1c fill colour and text background (version 1.2)
 - Owner's change request after 1.1.1 (D-051, D-052, D-053: ships as 1.2.0). New F-020 (draft) and RULE-22: rectangles and ellipses get a fill colour of their own (automatic, the outline colour, until one is picked); texts get a background (none, solid or 70 % translucent) on a rounded box with its own colour (automatic: the contrast pairing of the text colour), without the outline. RULE-04 fill and current style, RULE-08 outline, ENT-Style `fill` and new `fillColor`, F-003.R3, F-005 scope and R5, CMP-StylePanel anatomy and accessibility, style.md, MOD-Render, MOD-Core, copy COPY-style.fill_color, text_background, text_background_color, glossary fill colour and text background; roadmap milestone M-1c (text with background boxes moved out of M-2).
 - Spec review round 1 of F-020: choosing the marked swatch of an automatic colour applies nothing (R2); a press in the background box's margin while editing places the caret, and the box surrounds the placeholder of an empty text (R8, RULE-22, CMP-TextEditor, F-005.R3); one remembered custom colour across the three colour choices (R1); ACs made concrete and AC17–AC21 added; RULE-07 pairing also used by RULE-22; fill drawn under the outline (MOD-Render); bounds and hit-testing by the box (MOD-Core); CMP-StylePanel differing choices; glossary automatic and text background colour.

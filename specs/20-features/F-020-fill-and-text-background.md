@@ -1,7 +1,7 @@
 ---
 id: F-020
 title: Fill colour and text background
-status: ready
+status: shipped
 milestone: M-1c
 priority: P1
 personas: [PER-01]

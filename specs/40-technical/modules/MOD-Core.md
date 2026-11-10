@@ -29,7 +29,7 @@ the PNG chunk whitelist (ADR-0007); and the text metrics constants (ADR-0009).
 ## Public surface
 - Domain types and palette/size enums; `styleSizes(shortSide)` → stroke, text, badge, highlight,
   blur radius and pixelate block in pixels (RULE-04, RULE-10).
-- Fill colour and text background (RULE-22, F-020): `contrastPairing(colour)` (RULE-07, palette or custom), `fillColourOf(kind, style)` (the fill or text background colour as drawn, automatic resolved), `textBackground(annotation, shortSide, measure)` (the rounded box, margin and radius), `textArea` (the text's area: the background box when it has one), `editorPadding(style, size, zoom, extra, caretRoom)` (CMP-TextEditor padding covering the box, F-020.R8).
+- Fill colour and text background (RULE-22, F-020): `contrastPairing(colour)` (RULE-07, palette or custom), `fillColourOf(kind, style)` (the fill or text background colour as drawn, automatic resolved), `textBackground(annotation, shortSide, measure, placeholder?)` (the rounded box, margin and radius), `textArea` (the text's area: the background box when it has one), `editorPadding(style, size, zoom, extra, caretRoom)` (CMP-TextEditor padding covering the box, F-020.R8).
 - Custom styles (RULE-21, F-019): `isHexColour`, `pickedColour(value, palette)` (palette match ignoring case), `hexLabel`, `contrastRatio`, `customContrast(hex)` (RULE-07 pairing, black on a tie), `sizeClassOf(kind)`, `CUSTOM_SIZE_RANGE`, `customSize`, `parseCustomSize`, `sizePixels(class, size, shortSide)`.
 - `checkLimits(w, h)` / `scaleDownSize(w, h)` (RULE-02); `sniffFormat(bytes)` (RULE-01).
 - `canvasRect(frame, padding)`, `paddingPixels(frame, size)`, `availablePaddings(frame)`,
