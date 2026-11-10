@@ -16,7 +16,7 @@ hand (ADR-0014); Claude prepares and checks, but never logs in, holds a token, u
    on this candidate (D-038). Any failure means a fix and a new candidate (`rc.N+1`), re-verified.
 2. **USER-OWNED:** the privacy policy and terms drafts (`privacy-policy.md`, `terms.md`) have had the
    legal review they are marked for, or you have decided the portal's own pages cover the tool.
-3. The release gate (G6) is approved, and the candidate is tagged `v1.0.0-rc.2` locally.
+3. The release gate (G6) is approved, and the candidate is tagged `v1.0.0-rc.3` locally.
 4. **USER-OWNED:** the GitHub repository the tool links to (F-016.R3) is public, or will be at launch.
 
 ## 1. Portal first (release order)
@@ -48,10 +48,10 @@ spec fallbacks apply (F-015.R7): no downloads, no leave-page warning, no focus o
 From a clean checkout of the tag, deploying the verified archive rather than a rebuild:
 
 ```sh
-git switch --detach v1.0.0-rc.2           # the approved candidate
+git switch --detach v1.0.0-rc.3           # the approved candidate
 git status --short                        # must print nothing
 pnpm install --frozen-lockfile            # wrangler is a dev dependency (DEP-24)
-R=release/1.0.0-rc.2
+R=release/1.0.0-rc.3
 (cd $R && shasum -a 256 -c SHA256SUMS)    # archive and checksum list: both OK
 rm -rf dist && mkdir dist
 tar -xzf $R/image-annotator-1.0.0.tar.gz -C dist
@@ -80,7 +80,7 @@ nothing is changed.
    - one `/assets/*` file has `immutable`;
    - `curl -sI .../nonexistent` returns 404;
    - no `*.map` file is served.
-2. **Bytes:** fetch each shipped path in `release/1.0.0-rc.2/dist.sha256` (all but `.vite/`) from production and compare the SHA-256 (a script can
+2. **Bytes:** fetch each shipped path in `release/1.0.0-rc.3/dist.sha256` (all but `.vite/`) from production and compare the SHA-256 (a script can
    loop over the file). The page and every asset must match.
 3. **USER-OWNED, in a browser, standalone:**
    - open `https://image-annotator.tarokit.app/`;
@@ -138,7 +138,7 @@ the portal's frame attributes (section 1). The usual fixes are a candidate with 
 
 ## 7. After the deploy
 - Record the version ID, time and smoke-check results in the release report.
-- **USER-OWNED:** if you want the tag on the remote, push it: `git push origin v1.0.0-rc.2`. Optionally
+- **USER-OWNED:** if you want the tag on the remote, push it: `git push origin v1.0.0-rc.3`. Optionally
   tag the same commit `v1.0.0`.
 - Before the next release:
   - bump the dev tools with open advisories (release report, open notes);

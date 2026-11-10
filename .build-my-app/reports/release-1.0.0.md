@@ -1,9 +1,16 @@
-# Release report: Image Annotator 1.0.0-rc.2 (phase 6, local candidate)
+# Release report: Image Annotator 1.0.0-rc.3 (phase 6, local candidate)
 
-Branch `build/m1`. Nothing was uploaded, published, deployed or provisioned; no credentials were touched. Tagged locally `v1.0.0-rc.1` and `v1.0.0-rc.2` (not pushed). **Ship rc.2.**
+Branch `build/m1`. Nothing was uploaded, published, deployed or provisioned; no credentials were touched. Tagged locally `v1.0.0-rc.1`, `v1.0.0-rc.2` and `v1.0.0-rc.3` (not pushed). **Ship rc.3.**
 The owner signs off the manual checks below (D-038), reviews the drafts, then tags and ships (phase 7).
 
 ## Candidate
+- **rc.3 (current):** rc.2 plus the owner's hand-test changes (2026-11-10): picking a drawing tool clears the
+  selection (D-043); stroke and highlight handles on the drawn mark, so thin highlights resize (D-044); one drawing
+  colour shared by the seven drawing tools, highlight and redaction keep theirs (D-045); a Canvas heading on canvas
+  settings (D-046). Built and fully tested from a clean clone of `c3bc538` (results in `traceability.md`).
+  Artifacts: `release/1.0.0-rc.3/` (archive `95fdf037c7310651258801cee14d31fa27b3d56f693c024dd5fbdc608a2488e3`,
+  160,328 bytes; `dist.sha256` `57d7986ec47d8345c410a07779e73c03ab9201f956ebc2b41a9255c2bd8ec543`). The rc.1/rc.2
+  checksums below are kept for history. **The manual sign-off list below is for rc.3.**
 - **rc.2 (current):** rc.1 plus the source licence (D-041: `LICENSE`, PolyForm Strict 1.0.0 as the sibling tools,
   `package.json` "SEE LICENSE IN LICENSE", terms draft) and the catalog category note (D-042). The release build of
   rc.2 is **byte-identical** to rc.1 (same `SHA256SUMS`, archive `764ab1f4…`), so rc.1's verification against the
@@ -17,7 +24,7 @@ The owner signs off the manual checks below (D-038), reviews the drafts, then ta
   `scripts/gen-headers.mjs`, ADR-0010), so `frame-ancestors https://tarokit.app`.
 
 ## Artifacts and checksums
-Kept in the repo at `release/1.0.0-rc.2/` (identical to `release/1.0.0-rc.1/`; verify with `cd release/1.0.0-rc.2 && shasum -a 256 -c SHA256SUMS`).
+rc.1 and rc.2 (history) are kept at `release/1.0.0-rc.2/` (identical to `release/1.0.0-rc.1/`; verify with `cd release/1.0.0-rc.2 && shasum -a 256 -c SHA256SUMS`).
 
 | File | Size (bytes) | SHA-256 |
 |---|---|---|
