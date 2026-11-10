@@ -12,6 +12,7 @@ import {
   arrowHead,
   boundsOf,
   canvasRect,
+  handleBox,
   handlesOf,
   HIGHLIGHT_OPACITY,
   markWidth,
@@ -577,12 +578,14 @@ function paintSelection(
   ctx.rect(c.x, c.y, c.width, c.height);
   ctx.clip();
   for (const a of selected) {
-    // F-008: a straight (Shift) highlight's points box has zero height, so its outline is a line through
-    // the band; MOD-Core `handlesOf` gives it only the handles along its length, so none stack.
+    // F-008.R3 (D-044): a stroke's or highlight's outline and handles sit on its drawn mark's box (its
+    // points' box grown by half its width), so a straight (Shift) highlight's outline is the band's edge;
+    // MOD-Core `handlesOf` gives it only the handles along its length, at its ends, so none stack.
     if (!single || !isLineAnnotation(a)) {
       // F-006: a step's outline is its badge (no stroke), which needs the image's shorter side; F-005:
       // a text's is its box (RULE-08, ADR-0020), measured in the tool's face.
-      const b = isStepAnnotation(a) || isTextAnnotation(a) ? boundsOf(a, shortSide, measureWith(ctx)) : shapeBox(a);
+      const b =
+        isStepAnnotation(a) || isTextAnnotation(a) ? boundsOf(a, shortSide, measureWith(ctx)) : handleBox(a, shortSide);
       const x = X(b.x);
       const y = Y(b.y);
       ctx.lineWidth = look.lineWidth + 2;
@@ -595,7 +598,7 @@ function paintSelection(
     if (!single) continue;
     const s = Math.round(look.handleSize);
     const w = Math.round(look.lineWidth);
-    for (const [, p] of handlesOf(a)) {
+    for (const [, p] of handlesOf(a, shortSide)) {
       const x = Math.round(X(p.x) - s / 2);
       const y = Math.round(Y(p.y) - s / 2);
       ctx.fillStyle = look.handleBorder;

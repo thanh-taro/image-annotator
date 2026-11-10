@@ -281,7 +281,8 @@ test.describe('F-007 redact', () => {
     await dragImage(page, shot, [40, 200], [360, 200]);
     await page.mouse.up();
     await toolButton(page, 'Redact (X)').click();
-    await deselect(page); // the arrow stays selected after it is drawn; the kind is then the tool's
+    // D-043: picking the redaction tool clears the arrow's selection, so the kind is the tool's.
+    await expect(page.locator('[data-screen="SCR-Annotator"]')).not.toHaveAttribute('data-state', 'selecting');
     await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
     await dragImage(page, shot, [150, 170], [250, 230]);
     await page.mouse.up();
@@ -417,7 +418,8 @@ test.describe('F-007 redact', () => {
     await dragImage(page, shot, [40, 200], [360, 200]);
     await page.mouse.up();
     await toolButton(page, 'Redact (X)').click();
-    await deselect(page);
+    // D-043: picking the redaction tool clears the arrow's selection, so the kind is the tool's.
+    await expect(page.locator('[data-screen="SCR-Annotator"]')).not.toHaveAttribute('data-state', 'selecting');
     await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
     await dragImage(page, shot, [150, 170], [250, 230]);
     await page.mouse.up();
@@ -511,7 +513,8 @@ test.describe('F-007 redact', () => {
     await dragImage(page, shot, [40, 200], [360, 200]);
     await page.mouse.up();
     await toolButton(page, 'Redact (X)').click();
-    await deselect(page);
+    // D-043: picking the redaction tool clears the arrow's selection, so the kind is the tool's.
+    await expect(page.locator('[data-screen="SCR-Annotator"]')).not.toHaveAttribute('data-state', 'selecting');
     await kindGroup(page).getByRole('radio', { name: /^Blur/ }).check();
     await dragImage(page, shot, [150, 170], [250, 230]);
     await page.mouse.up();

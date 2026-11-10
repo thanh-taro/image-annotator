@@ -5,6 +5,7 @@ import {
   altResized,
   DEFAULT_STYLES,
   geometryOf,
+  handleBox,
   handlesOf,
   marqueeHits,
   moved,
@@ -30,13 +31,17 @@ const arrow: Annotation = {
   head: { x: 110, y: 60 },
 };
 const line: Annotation = { ...arrow, id: 'l', kind: 'line' } as Annotation;
-const highlight = (
-  points = [
-    { x: 100, y: 100 },
-    { x: 150, y: 120 },
-    { x: 200, y: 140 },
-  ],
-): Annotation => ({ id: 'h', kind: 'highlight', style: DEFAULT_STYLES.highlight, points });
+const pathPoints = [
+  { x: 100, y: 100 },
+  { x: 150, y: 120 },
+  { x: 200, y: 140 },
+] as const;
+const highlight = (points: readonly { x: number; y: number }[] = pathPoints): Annotation => ({
+  id: 'h',
+  kind: 'highlight',
+  style: DEFAULT_STYLES.highlight,
+  points,
+});
 const text: Annotation = { id: 't', kind: 'text', style: DEFAULT_STYLES.text, anchor: { x: 40, y: 50 }, text: 'Hi' };
 const step: Annotation = { id: 's', kind: 'step', style: DEFAULT_STYLES.step, centre: { x: 300, y: 300 }, number: 1 };
 
@@ -54,21 +59,21 @@ describe('MOD-Core edit geometry', () => {
   });
 
   it('F-008.AC2 dragging an arrow’s head handle moves only the head; the tail stays', () => {
-    const r = resized(arrow, 'head', 30, -20);
+    const r = resized(arrow, 'head', 30, -20, 800);
     expect(r).toMatchObject({ tail: { x: 10, y: 10 }, head: { x: 140, y: 40 } });
   });
 
   it('F-008.AC3 RULE-06 a corner handle dragged with Shift keeps a rectangle’s aspect ratio', () => {
-    const r = resized(rect(), 'se', 100, 10, true);
+    const r = resized(rect(), 'se', 100, 10, 800, true);
     const b = shapeBox(r);
     expect(b.width / b.height).toBeCloseTo(2);
     expect(b).toMatchObject({ x: 100, y: 100, width: 200, height: 100 });
     // Without Shift the box follows the handle.
-    expect(shapeBox(resized(rect(), 'se', 100, 10))).toMatchObject({ width: 200, height: 60 });
+    expect(shapeBox(resized(rect(), 'se', 100, 10, 800))).toMatchObject({ width: 200, height: 60 });
   });
 
   it('F-008.R3 a stroke or highlight is scaled by its handles: the points follow their bounding box', () => {
-    const r = resized(highlight(), 'se', 100, 40);
+    const r = resized(highlight(), 'se', 100, 40, 800);
     expect(shapeBox(r)).toEqual({ x: 100, y: 100, width: 200, height: 80 });
     expect(r).toMatchObject({
       points: [
@@ -84,10 +89,68 @@ describe('MOD-Core edit geometry', () => {
       { x: 100, y: 100 },
       { x: 300, y: 100 },
     ]);
-    expect(handlesOf(flat).map(([h]) => h)).toEqual(['e', 'w']);
-    expect(shapeBox(resized(flat, 'e', 50, 30))).toEqual({ x: 100, y: 100, width: 250, height: 0 });
+    expect(handlesOf(flat, 800).map(([h]) => h)).toEqual(['e', 'w']);
+    expect(shapeBox(resized(flat, 'e', 50, 30, 800))).toEqual({ x: 100, y: 100, width: 250, height: 0 });
     // A dot has no handles at all.
-    expect(handlesOf(highlight([{ x: 5, y: 5 }]))).toEqual([]);
+    expect(handlesOf(highlight([{ x: 5, y: 5 }]), 800)).toEqual([]);
+  });
+
+  it('F-008.R3 D-044 F-008 edge case a straight highlight’s handles sit at the ends of its drawn mark', () => {
+    // s = 800: the default highlight is 30 px wide, so its mark reaches 15 px past each end point.
+    const flat = highlight([
+      { x: 100, y: 100 },
+      { x: 300, y: 100 },
+    ]);
+    expect(handlesOf(flat, 800)).toEqual([
+      ['e', { x: 315, y: 100 }],
+      ['w', { x: 85, y: 100 }],
+    ]);
+    const tall = highlight([
+      { x: 100, y: 100 },
+      { x: 100, y: 300 },
+    ]);
+    expect(handlesOf(tall, 800)).toEqual([
+      ['n', { x: 100, y: 85 }],
+      ['s', { x: 100, y: 315 }],
+    ]);
+    // Never scaled across it: the s handle dragged sideways only lengthens it.
+    expect(shapeBox(resized(tall, 's', 40, 20, 800))).toEqual({ x: 100, y: 100, width: 0, height: 220 });
+  });
+
+  it('F-008.R3 D-044 a stroke’s or highlight’s handles sit on its points’ box grown by half its line width', () => {
+    expect(handleBox(highlight(), 800)).toEqual({ x: 85, y: 85, width: 130, height: 70 });
+    const pen = { id: 'p', kind: 'stroke', style: DEFAULT_STYLES.pen, points: [...pathPoints] } as Annotation;
+    // The default pen is 5 px wide on s = 800.
+    expect(handleBox(pen, 800)).toEqual({ x: 97.5, y: 97.5, width: 105, height: 45 });
+    expect(Object.fromEntries(handlesOf(pen, 800))).toMatchObject({
+      nw: { x: 97.5, y: 97.5 },
+      se: { x: 202.5, y: 142.5 },
+    });
+    // A box annotation's handles stay on its box.
+    expect(handleBox(rect(), 800)).toEqual(shapeBox(rect()));
+  });
+
+  it('F-008.AC18 F-008.R3 D-044 a thin highlight’s se handle dragged scales its points; the line width stays', () => {
+    const thin = highlight([
+      { x: 100, y: 102 },
+      { x: 200, y: 101 },
+      { x: 300, y: 100 },
+    ]);
+    const r = resized(thin, 'se', 60, 40, 800);
+    expect(r.style).toBe(thin.style);
+    // The mark box's se corner follows the drag, so the points' box grows by the same amount.
+    expect(shapeBox(r)).toEqual({ x: 100, y: 100, width: 260, height: 42 });
+    expect(handleBox(r, 800)).toEqual({ x: 85, y: 85, width: 290, height: 72 });
+  });
+
+  it('F-008.R3 D-044 a mark box dragged past its opposite edge flips the points; until then they stop 1 px short', () => {
+    // highlight(): points 100–200 wide, mark 85–215. Dragging e by −120 puts the mark's e edge at 95,
+    // still right of its w edge (85): the points stop 1 px short of flipping (MIN_EDIT_SIZE).
+    expect(shapeBox(resized(highlight(), 'e', -120, 0, 800))).toMatchObject({ x: 100, width: 1 });
+    // By −200 the mark's e edge is at 15, past its w edge: the flipped mark is 15–115, its points 30–100.
+    const flipped = resized(highlight(), 'e', -200, 0, 800);
+    expect(shapeBox(flipped)).toMatchObject({ x: 30, width: 70 });
+    expect(handleBox(flipped, 800)).toMatchObject({ x: 15, width: 100 });
   });
 
   it('F-008.AC10 RULE-19 Alt+Right makes a 100 × 50 rectangle 101 × 50 with its top-left kept; text does nothing', () => {
@@ -202,27 +265,27 @@ describe('MOD-Core edit geometry — F-008 review round 1', () => {
 
   it('F-008 review m1 CMP-StylePanel a handle drag never makes a box smaller than 1 × 1, and a scaled stroke can be widened again', () => {
     // Dragging the e handle exactly onto the w edge stops 1 pixel short.
-    expect(resized(rect(), 'e', -100, 0)).toMatchObject({ box: { x: 100, width: 1, height: 50 } });
+    expect(resized(rect(), 'e', -100, 0, 800)).toMatchObject({ box: { x: 100, width: 1, height: 50 } });
     // Past it, the box flips: still at least 1 wide.
-    expect(resized(rect(), 'e', -100.5, 0)).toMatchObject({ box: { width: 1 } });
-    const s = resized(highlight(), 'e', -100, 0);
+    expect(resized(rect(), 'e', -100.5, 0, 800)).toMatchObject({ box: { width: 1 } });
+    const s = resized(highlight(), 'e', -100, 0, 800);
     expect(shapeBox(s).width).toBe(1);
-    expect(handlesOf(s).map(([h]) => h)).toContain('e');
-    expect(shapeBox(resized(s, 'e', 99, 0)).width).toBe(100);
+    expect(handlesOf(s, 800).map(([h]) => h)).toContain('e');
+    expect(shapeBox(resized(s, 'e', 99, 0, 800)).width).toBe(100);
   });
 
   it('F-008.R3 RULE-06 Shift on an edge handle scales the other axis by the same factor about its centre', () => {
     // 100 × 50 at (100, 100): e by +100 doubles the width; the height doubles about y = 125.
-    expect(resized(rect(), 'e', 100, 0, true)).toMatchObject({ box: { x: 100, y: 75, width: 200, height: 100 } });
-    expect(resized(rect(), 's', 0, 50, true)).toMatchObject({ box: { x: 50, y: 100, width: 200, height: 100 } });
+    expect(resized(rect(), 'e', 100, 0, 800, true)).toMatchObject({ box: { x: 100, y: 75, width: 200, height: 100 } });
+    expect(resized(rect(), 's', 0, 50, 800, true)).toMatchObject({ box: { x: 50, y: 100, width: 200, height: 100 } });
   });
 
   it('F-008.R3 RULE-06 Shift on a line’s end handle snaps it to 45° steps about the other end', () => {
     // Tail (10, 10), head (110, 60) dragged to (110, 100): nearest 45°.
-    const r = resized(line, 'head', 0, 40, true) as LineAnnotation;
+    const r = resized(line, 'head', 0, 40, 800, true) as LineAnnotation;
     expect(r.tail).toEqual({ x: 10, y: 10 });
     expect(r.head.x - 10).toBeCloseTo(r.head.y - 10, 6);
-    const t = resized(arrow, 'tail', 0, 45, true) as LineAnnotation;
+    const t = resized(arrow, 'tail', 0, 45, 800, true) as LineAnnotation;
     expect(t.head).toEqual({ x: 110, y: 60 });
     expect(t.tail.y).toBeCloseTo(60, 6); // horizontal: closer to 0° than 45°
   });

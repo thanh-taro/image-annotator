@@ -82,17 +82,45 @@ describe('MOD-App drawing commands', () => {
     expect(undone?.selection).toEqual([]);
   });
 
-  it('CMP-Toolbar picking a tool clears nothing and is announced (the crop tool too, F-010)', () => {
+  it('CMP-Toolbar D-043 picking a tool other than select clears the selection and is announced (the crop tool too, F-010)', () => {
     createAnnotation(draft());
-    const selected = selection.value;
     setTool('ellipse');
     expect(tool.value).toBe('ellipse');
-    expect(selection.value).toBe(selected);
+    expect(selection.value).toEqual([]);
     expect(lastPolite()).toBe('Ellipse tool');
+    select([doc.value?.annotations[0]?.id ?? '']);
     setTool('crop');
     expect(tool.value).toBe('crop');
-    expect(selection.value).toBe(selected);
+    expect(selection.value).toEqual([]);
     expect(lastPolite()).toBe('Crop tool');
+    expect(loaded.value?.session.history.canRedo).toBe(false);
+  });
+
+  it('CMP-Toolbar D-043 picking the select tool keeps the selection', () => {
+    setTool('rectangle');
+    createAnnotation(draft());
+    const selected = selection.value;
+    setTool('select');
+    expect(tool.value).toBe('select');
+    expect(selection.value).toBe(selected);
+  });
+
+  it('F-008.AC19 CMP-Toolbar a selected rectangle, the ellipse tool picked, green: the rectangle keeps its colour and the next ellipse is green', () => {
+    createAnnotation(draft());
+    expect(selection.value).toHaveLength(1);
+    setTool('ellipse');
+    expect(selection.value).toEqual([]);
+    expect(panelModel(tool.value, selection.value, doc.value, currentStyles.value)).toMatchObject({
+      variant: 'tool',
+      subject: 'Ellipse',
+    });
+    setStyle({ color: 'green' });
+    expect(doc.value?.annotations[0]?.style.color).toBe('red');
+    expect(currentStyles.value.ellipse.color).toBe('green');
+    expect(currentStyles.value.rectangle.color).toBe('red');
+    expect(loaded.value?.session.history.canUndo).toBe(true); // only the creation
+    loaded.value?.session.history.undo();
+    expect(loaded.value?.session.history.canUndo).toBe(false);
   });
 
   it('F-003.AC1 F-003.R3 RULE-04 with nothing selected a style change is the tool’s current style, no step', () => {

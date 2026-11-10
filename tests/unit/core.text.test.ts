@@ -70,7 +70,7 @@ describe('MOD-Core text layout', () => {
 
   it('F-008.R3 RULE-08 text has no handles; it moves by its anchor; it is hit anywhere on its box', () => {
     const a = text('Bug');
-    expect(handlesOf(a)).toEqual([]);
+    expect(handlesOf(a, 800)).toEqual([]);
     expect(moved(a, 10, 10)).toMatchObject({ anchor: { x: 110, y: 60 }, text: 'Bug' });
     expect(boundsOf(a, SHORT, fake)).toEqual({ x: 100, y: 50, width: 48, height: 40 });
     expect(hitTest(a, { x: 120, y: 70 }, 0, SHORT, fake)).toBe(true);
