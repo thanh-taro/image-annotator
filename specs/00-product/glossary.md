@@ -10,6 +10,9 @@ Use these words in specs, UI copy, code and tests. Avoid the listed alternatives
 | Shape | Rectangle, ellipse, line or arrow annotation. | figure |
 | Stroke | A freehand pen annotation. Also the line width of a shape ("stroke width"). | path, scribble |
 | Highlight | A translucent freehand marker annotation. | marker (in UI copy) |
+| Custom colour | An annotation colour outside the palette, chosen in the browser's colour picker through the custom swatch (RULE-21). | other colour |
+| Custom size | A size in whole image pixels instead of S, M or L (RULE-21). | free size |
+| Custom swatch | The ninth colour choice that applies and picks a custom colour (F-019). | colour button |
 | Step | A numbered badge annotation (1, 2, 3…). | counter, bullet |
 | Redaction | An annotation that hides part of the image. Kinds: *solid* (secure), *blur*, *pixelate* (not secure). | censor, mask |
 | Style | Colour, stroke width and other appearance values of an annotation (ENT-Style). | properties |

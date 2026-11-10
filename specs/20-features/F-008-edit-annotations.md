@@ -6,7 +6,7 @@ milestone: M-1
 priority: P0
 personas: [PER-01]
 entities: [ENT-Annotation, ENT-Style, ENT-Session]
-rules: [RULE-04, RULE-05, RULE-06, RULE-07, RULE-08, RULE-11, RULE-19]
+rules: [RULE-04, RULE-05, RULE-06, RULE-07, RULE-08, RULE-11, RULE-19, RULE-21]
 screens: [SCR-Annotator]
 components: [CMP-Toolbar, CMP-Canvas, CMP-StylePanel]
 nfr: [NFR-02, NFR-06]
@@ -28,7 +28,7 @@ not a redo (PRN-04).
 ## Requirements
 - **R1** With the select tool, clicking an annotation selects it; Shift+click adds or removes it; dragging on empty canvas selects every annotation the box touches (with Shift, they are added to the current selection, D-032); select all selects every annotation. Clicking empty canvas clears the selection.
 - **R2** Dragging a selected annotation moves the whole selection; arrow keys move it by 1 or 10 image pixels (RULE-19).
-- **R3** A single selected annotation shows handles to resize it (rectangle, ellipse, redaction), to move its end points (line, arrow), or to scale it (stroke, highlight: the handles sit on the box of the drawn mark, its points' box grown by half its line width, so they stay at the mark's edge, D-044; the selection outline is drawn on the same box); text and steps have no handles (their size is S/M/L). Shift keeps proportions while dragging a handle (RULE-06).
+- **R3** A single selected annotation shows handles to resize it (rectangle, ellipse, redaction), to move its end points (line, arrow), or to scale it (stroke, highlight: the handles sit on the box of the drawn mark, its points' box grown by half its line width, so they stay at the mark's edge, D-044; the selection outline is drawn on the same box); text and steps have no handles (their size is S/M/L or, from M-1b, a custom size, RULE-21). Shift keeps proportions while dragging a handle (RULE-06).
 - **R4** Changing a style while annotations are selected changes them all at once (RULE-04); only choices that apply to every selected annotation kind are shown.
 - **R5** The user can delete, duplicate (offset 10 image pixels right and down) and bring forward or send backward the selection.
 - **R6** With any drawing tool active, the user can move an existing annotation by dragging it with Alt held, or by switching to select; a plain drag always draws.

@@ -18,7 +18,7 @@ depends_on: [F-001]
 A short label ("Wrong total", "Click here") turns a mark into an explanation (PRN-03).
 
 ## Scope
-- In: creating and editing text annotations, multi-line, in three sizes and the palette colours
+- In: creating and editing text annotations, multi-line, in three sizes and the palette colours (from M-1b also custom ones, F-019)
   (RULE-04, RULE-08).
 - Out: choosing typefaces, bold/italic, wrapping to a width, text boxes with backgrounds (M-2
   candidate), spell check beyond what the browser offers.

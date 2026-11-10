@@ -55,7 +55,7 @@ form per plural category (en-US: `one` / `other`; vi-VN: one form).
 | **COPY-style.size_m** | Medium | Vừa | |
 | **COPY-style.size_l** | Large | Lớn | |
 | **COPY-style.color_custom** | Custom color | Màu tùy chọn | Accessible name of the custom swatch before a custom colour is picked (F-019) |
-| **COPY-style.color_custom_value** | Custom color {hex} | Màu tùy chọn {hex} | Accessible name of the custom swatch once a colour is picked; hex like #1E90FF (F-019) |
+| **COPY-style.color_custom_value** | Custom color {hex} | Màu tùy chọn {hex} | Accessible name of the custom swatch once a colour is picked; hex shown in uppercase, e.g. #1E90FF, whatever case the picker reports (F-019) |
 | **COPY-style.size_px** | Size in pixels | Cỡ (pixel) | Label of the size field and slider (F-019) |
 | **COPY-style.size_value** | {value} px | {value} px | A custom size, e.g. in the narrow summary bar's detail (F-019) |
 | **COPY-style.fill** | Fill | Tô nền | |

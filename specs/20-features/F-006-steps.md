@@ -19,7 +19,7 @@ How-to guides and bug repro steps need "1, 2, 3" badges in order, without typing
 (PRN-03).
 
 ## Scope
-- In: step badges that number themselves (RULE-07), in the palette colours and three sizes.
+- In: step badges that number themselves (RULE-07), in the palette colours and three sizes (from M-1b also custom ones, F-019).
 - Out: choosing a start number, letters instead of numbers, connecting steps with lines.
 
 ## Requirements
