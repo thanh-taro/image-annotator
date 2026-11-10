@@ -9,7 +9,7 @@ import { redo, undo, viewChanged } from '../../src/app/history';
 import {
   canRedo,
   canUndo,
-  currentStyles,
+  currentStyleModel,
   doc,
   exported,
   loaded,
@@ -20,7 +20,7 @@ import {
   tool,
   unexported,
 } from '../../src/app/state';
-import { DEFAULT_STYLES, moved, type Annotation } from '../../src/core';
+import { DEFAULT_CURRENT_STYLES, DEFAULT_STYLES, moved, type Annotation } from '../../src/core';
 import type { DecodedImage } from '../../src/io';
 
 const image = (): DecodedImage => ({
@@ -47,7 +47,7 @@ const lastPolite = () => polite.value.at(-1)?.text;
 describe('MOD-App undo and redo', () => {
   beforeEach(() => {
     tool.value = 'select';
-    currentStyles.value = DEFAULT_STYLES;
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
     textEditing.value = null;
     startNewSession(image());
   });

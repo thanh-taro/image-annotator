@@ -14,6 +14,8 @@ const VIEWPORT = { width: AREA.width + PANEL, height: 40 + AREA.height + 28 };
 const IMAGE = { width: 1000, height: 800 };
 const GREY = [200, 200, 200, 255];
 const RED = [214, 40, 40, 255]; // annotation.color.red #D62828
+const GREEN = [45, 184, 77, 255]; // annotation.color.green #2DB84D
+const BLUE = [11, 99, 229, 255]; // annotation.color.blue #0B63E5
 const WHITE = [255, 255, 255, 255]; // handleFill
 const HANDLE_BORDER = [104, 55, 224, 255]; // handleBorder #6837E0
 const near = (a: number[], b: number[], tolerance = 24) => a.every((v, i) => Math.abs(v - (b[i] ?? 0)) <= tolerance);
@@ -361,9 +363,68 @@ test.describe('F-003 draw shapes', () => {
     const panel = page.getByRole('complementary', { name: 'Style' });
     await panel.getByRole('radio', { name: 'Blue' }).check();
     await deselect(page);
-    const BLUE = [11, 99, 229, 255];
     expect(near(await pixel(page, 100, 150), BLUE)).toBe(true);
     await expect(panel.getByRole('radio', { name: 'Blue' })).toBeChecked(); // the tool's current colour now
+  });
+
+  test('F-003.AC10 green picked with the rectangle tool shows with the arrow tool and draws the next arrow; highlight shows yellow', async ({
+    page,
+  }) => {
+    await open(page);
+    const panel = page.getByRole('complementary', { name: 'Style' });
+    await toolButton(page, 'Rectangle (R)').click();
+    await panel.getByRole('radio', { name: 'Green' }).check();
+    await toolButton(page, 'Arrow (A)').click();
+    await expect(panel.getByRole('radio', { name: 'Green' })).toBeChecked();
+    await dragImage(page, [100, 400], [400, 400]);
+    await deselect(page);
+    expect(near(await pixel(page, 250, 400), GREEN), 'the arrow is green').toBe(true);
+    await toolButton(page, 'Highlight (H)').click();
+    await expect(panel.getByRole('radio', { name: 'Yellow' })).toBeChecked();
+  });
+
+  test('F-003.AC11 D-046 canvas settings start with the heading "Canvas"; a background colour leaves the next rectangle red', async ({
+    page,
+  }) => {
+    await open(page);
+    const panel = page.getByRole('complementary', { name: 'Style' });
+    // D-036: level 2 under the h1, first in the panel, like the D-035 multi-selection heading.
+    const heading = panel.getByRole('heading', { level: 2, name: 'Canvas' });
+    await expect(heading).toBeVisible();
+    expect(await panel.evaluate((el) => el.querySelector('.tk-panel__body > *')?.tagName)).toBe('H2');
+    const background = panel.getByRole('group', { name: 'Background' });
+    await expect(background.getByRole('radio', { name: 'Green' })).toBeVisible();
+    await background.getByRole('radio', { name: 'Green' }).check();
+    await toolButton(page, 'Rectangle (R)').click();
+    await expect(heading).toHaveCount(0);
+    await expect(panel.getByRole('radio', { name: 'Red' })).toBeChecked();
+    await dragImage(page, [100, 100], [300, 200]);
+    await deselect(page);
+    expect(near(await pixel(page, 100, 150), RED), 'the rectangle is red').toBe(true);
+  });
+
+  test('RULE-04 F-008.R4 a rectangle and a highlight selected, given blue: both blue, and blue is the next colour of both tools', async ({
+    page,
+  }) => {
+    await open(page);
+    const panel = page.getByRole('complementary', { name: 'Style' });
+    await toolButton(page, 'Rectangle (R)').click();
+    await dragImage(page, [100, 100], [300, 200]);
+    await toolButton(page, 'Highlight (H)').click();
+    await dragImage(page, [500, 500], [800, 500]);
+    await toolButton(page, 'Select (V)').click();
+    await deselect(page);
+    await dragImage(page, [50, 50], [900, 600]);
+    await expect(panel.getByRole('heading', { level: 2, name: '2 annotations selected' })).toBeVisible();
+    await panel.getByRole('radio', { name: 'Blue' }).check();
+    await deselect(page);
+    expect(near(await pixel(page, 100, 150), BLUE), 'the rectangle is blue').toBe(true);
+    const [r, , b] = await pixel(page, 650, 500);
+    expect((b ?? 0) > (r ?? 0) + 40, 'the highlight is blue').toBe(true);
+    for (const tool of ['Highlight (H)', 'Ellipse (O)', 'Pen (P)']) {
+      await toolButton(page, tool).click();
+      await expect(panel.getByRole('radio', { name: 'Blue' }), tool).toBeChecked();
+    }
   });
 });
 

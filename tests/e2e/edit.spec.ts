@@ -140,7 +140,8 @@ test.describe('F-008 select and edit', () => {
     const colour = await panel(page).locator('.tk-panel__section').first().boundingBox();
     expect(head && colour && head.y + head.height <= colour.y).toBe(true);
     await deselect(page);
-    await expect(panel(page).getByRole('heading')).toHaveCount(0);
+    // Nothing selected with the select tool: the canvas settings' own heading instead (D-046).
+    await expect(panel(page).getByRole('heading')).toHaveText(['Canvas']);
   });
 
   test('F-008.AC17 RULE-05 a press moved 3 px selects without moving; moved 10 px it moves 10 px', async ({ page }) => {

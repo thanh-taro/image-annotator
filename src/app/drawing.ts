@@ -23,6 +23,7 @@ import {
   isDrawingTool,
   TOOL_KIND,
   toolOf,
+  withToolStyle,
   type Annotation,
   type Colour,
   type DrawingTool,
@@ -37,7 +38,18 @@ import {
   type ToolName,
 } from '../core';
 import { add, commitText, restyle, type Doc, type Op, type Selection } from '../document';
-import { announcePolite, commit, currentStyles, doc, loaded, selection, sheetOpen, textEditing, tool } from './state';
+import {
+  announcePolite,
+  commit,
+  currentStyleModel,
+  currentStyles,
+  doc,
+  loaded,
+  selection,
+  sheetOpen,
+  textEditing,
+  tool,
+} from './state';
 
 /** The tools, in CMP-Toolbar order (all built since F-010). */
 export const BUILT_TOOLS: readonly ToolName[] = [
@@ -215,17 +227,18 @@ const toSolid = (patch: StylePatch, a: Annotation, current: Style): StylePatch =
 /**
  * RULE-04: changing a style while annotations are selected changes them (one undo step, RULE-11) and
  * becomes the current style for their tools; with nothing selected it changes the active drawing
- * tool's current style (no step).
+ * tool's current style (no step). A colour is shared by the seven tools of D-045, so it is the next
+ * colour of all of them; highlight and redaction keep their own.
  */
 export function setStyle(patch: StylePatch): void {
   const l = loaded.value;
   const picked = selectedAnnotations(doc.value, selection.value);
-  const styles = { ...currentStyles.value };
+  let styles = currentStyleModel.value;
   if (l && picked.length) {
     // One step (RULE-11) of one restyle per distinct patch (only F-007.AC8 makes them differ).
     const groups = new Map<string, { patch: StylePatch; ids: string[] }>();
     for (const a of picked) {
-      const p = toSolid(patchFor(patch, a.kind), a, styles.redact);
+      const p = toSolid(patchFor(patch, a.kind), a, currentStyles.value.redact);
       const key = JSON.stringify(p);
       const g = groups.get(key) ?? { patch: p, ids: [] };
       g.ids.push(a.id);
@@ -233,16 +246,14 @@ export function setStyle(patch: StylePatch): void {
     }
     const op: Op = (d) => [...groups.values()].reduce((acc, g) => restyle(g.ids, g.patch)(acc), d);
     commit(l.session.history.apply(op, selection.value));
-    for (const a of picked) {
-      const owner = toolOf(a.kind);
-      styles[owner] = { ...styles[owner], ...patchFor(patch, a.kind) };
-    }
+    // Implements: RULE-04 (D-045) — a colour becomes the shared colour, or highlight's or redaction's own.
+    for (const a of picked) styles = withToolStyle(styles, toolOf(a.kind), patchFor(patch, a.kind));
   } else {
     const active = tool.value;
     if (!isDrawingTool(active)) return;
-    styles[active] = { ...styles[active], ...patchFor(patch, TOOL_KIND[active]) };
+    styles = withToolStyle(styles, active, patchFor(patch, TOOL_KIND[active]));
   }
-  currentStyles.value = styles;
+  currentStyleModel.value = styles;
 }
 
 /**

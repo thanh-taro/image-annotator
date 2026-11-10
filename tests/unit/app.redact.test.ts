@@ -3,9 +3,9 @@
 // blur and pixelate), "Use solid", and changing a placed redaction's kind (RULE-04, RULE-10, F-007.R4/R6).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BUILT_TOOLS, createAnnotation, panelModel, setStyle, setTool, summaryDetail } from '../../src/app/drawing';
-import { currentStyles, doc, loaded, selection, startNewSession, tool } from '../../src/app/state';
+import { currentStyleModel, currentStyles, doc, loaded, selection, startNewSession, tool } from '../../src/app/state';
 import { defaultAt, drawKindOf, placeKindOf } from '../../src/canvas';
-import { DEFAULT_STYLES, type Annotation, type Style } from '../../src/core';
+import { DEFAULT_CURRENT_STYLES, DEFAULT_STYLES, type Annotation, type Style } from '../../src/core';
 import type { DecodedImage } from '../../src/io';
 
 const image = (): DecodedImage => ({
@@ -29,7 +29,7 @@ const model = () => panelModel(tool.value, selection.value, doc.value, currentSt
 describe('F-007 the redaction tool (MOD-App)', () => {
   beforeEach(() => {
     tool.value = 'select';
-    currentStyles.value = DEFAULT_STYLES;
+    currentStyleModel.value = DEFAULT_CURRENT_STYLES;
     startNewSession(image());
   });
 
