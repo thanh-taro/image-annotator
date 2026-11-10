@@ -94,7 +94,7 @@
     "iterate": {
       "title": "8 Iterate",
       "status": "in_progress",
-      "step": "spec F-020 fill colours and text background",
+      "step": "F-020 spec review round 1",
       "gate": {
         "status": "pending",
         "at": null,
@@ -949,10 +949,6 @@
   },
   "log": [
     {
-      "at": "2026-11-02T03:49:07+00:00",
-      "event": "G2 passed: designs approved (D-021); phase-2 draft spec changes accepted"
-    },
-    {
       "at": "2026-11-02T03:52:06+00:00",
       "event": "set stack"
     },
@@ -1747,9 +1743,13 @@
     {
       "at": "2026-11-10T10:29:44+00:00",
       "event": "phase iterate -> in_progress"
+    },
+    {
+      "at": "2026-11-10T10:33:34+00:00",
+      "event": "iterate step: F-020 spec review round 1"
     }
   ],
-  "updated": "2026-11-10T10:29:44+00:00",
+  "updated": "2026-11-10T10:33:34+00:00",
   "environment": {
     "git": "2.54.0",
     "node": "24.19.0",

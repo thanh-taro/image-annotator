@@ -9,7 +9,7 @@ depends_on: [MOD-Core]
 Draws the scene from the document onto any Canvas 2D context (ADR-0004). Order: the background
 over the canvas; the image **clipped to the frame** (image pixels outside the frame never show,
 RULE-14, D-020); annotations in painter's order — rectangles and ellipses (outline, solid or 30 %
-fill, in the fill colour from M-1c, RULE-22), lines and arrows (head 4 × / 3 × the stroke size), pen strokes as midpoint quadratics,
+fill over the shape's box, in the fill colour from M-1c, RULE-22, then the outline over it), lines and arrows (head 4 × / 3 × the stroke size), pen strokes as midpoint quadratics,
 highlights as one path at 40 % opacity with no self-darkening (RULE-09), text with its outline (from M-1c, or on its rounded background box without the outline, RULE-22)
 (RULE-08, ADR-0009), step badges and pills with contrast pairing (RULE-07), solid redactions as
 integer boxes with no antialiasing (INV-02), and blur/pixelate as the patches MOD-Effects

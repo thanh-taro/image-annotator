@@ -25,7 +25,7 @@ A short label ("Wrong total", "Click here") turns a mark into an explanation (PR
 ## Requirements
 - **R1** With the text tool, clicking empty canvas places a text annotation whose top-left corner is the click point and starts editing it; clicking an existing text edits that text (the topmost text under the pointer, even when another annotation lies above it). A click outside the canvas does nothing (D-030).
 - **R2** While editing, the user types and edits text as in any text field, including new lines, and the text appears at its final size and colour; keys belong to the text except Esc and Mod+S (RULE-19).
-- **R3** Editing ends when the user clicks outside the text (which only ends the edit) or presses Esc, or focus moves anywhere other than the text or CMP-StylePanel (choosing a style in the panel keeps editing); the text stays and is selected, and the text tool stays active. Text left empty is removed (RULE-08).
+- **R3** Editing ends when the user clicks outside the text (from M-1c, outside its background box, F-020.R8; which only ends the edit) or presses Esc, or focus moves anywhere other than the text or CMP-StylePanel (choosing a style in the panel keeps editing); the text stays and is selected, and the text tool stays active. Text left empty is removed (RULE-08).
 - **R4** With the select tool, double-clicking a text annotation (or pressing Enter when it is the only selection) edits it again.
 - **R5** Exported text looks the same as on screen at 100 % (NFR-08), with the outline from RULE-08 (or, from M-1c, its background, F-020), in the tool's own typeface including Vietnamese letters.
 - **R6** Creating a text is one undo step; editing an existing text to empty deletes it as one undo step (RULE-11).

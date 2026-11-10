@@ -14,7 +14,8 @@ Use these words in specs, UI copy, code and tests. Avoid the listed alternatives
 | Custom size | A size in whole image pixels instead of S, M or L (RULE-21). | free size |
 | Custom swatch | The ninth colour choice that applies and picks a custom colour (F-019). | colour button |
 | Fill colour | The colour inside a filled rectangle or ellipse; automatic (the annotation's colour) until one is picked (RULE-22). | inner colour |
-| Text background | The box with rounded corners behind a text, with its own colour (RULE-22). | label box, highlight box |
+| Text background | The box with rounded corners behind a text, with its own colour, the *text background colour* (RULE-22). | label box, highlight box |
+| Automatic | A fill colour or text background colour that follows the annotation's colour until one is picked: the colour itself for a fill, its contrast pairing (RULE-07) for a text background (RULE-22). | default colour |
 | Step | A numbered badge annotation (1, 2, 3…). | counter, bullet |
 | Redaction | An annotation that hides part of the image. Kinds: *solid* (secure), *blur*, *pixelate* (not secure). | censor, mask |
 | Style | Colour, stroke width and other appearance values of an annotation (ENT-Style). | properties |

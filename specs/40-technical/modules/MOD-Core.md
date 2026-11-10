@@ -34,7 +34,7 @@ the PNG chunk whitelist (ADR-0007); and the text metrics constants (ADR-0009).
 - `canvasRect(frame, padding)`, `paddingPixels(frame, size)`, `availablePaddings(frame)`,
   `clampFrame(frame, image)`, `stepDownPadding(frame, padding)` (RULE-13, RULE-14).
 - `zoomIn/zoomOut/fitZoom(content, viewport)` (RULE-12).
-- `hitTest(annotation, point, tolerance, shortSide, measure)`, `boundsOf(annotation, shortSide, measure)` (stroke
+- `hitTest(annotation, point, tolerance, shortSide, measure)`, `boundsOf(annotation, shortSide, measure)` (a text with a background: its background box, RULE-22) (stroke
   widths depend on the image's shorter side, RULE-04; `measure` is a required `TextMeasure` that sizes text from the font metrics, ADR-0020), `marqueeHits(annotations, box, shortSide, measure)` (an annotation is touched when its drawn shape, not only its bounds, meets the box; a text with a background by its background box, RULE-22), `constrain(from, to, kind)`,
   `defaultAnnotationAt(point, kind, shortSide, …)`, `redactionBox(box)`.
 - `renumberSteps(annotations)` (RULE-07); `redactionCount(annotations, canvas)` (RULE-20).
